@@ -21,7 +21,8 @@ const engine = script.slice(0, cut);
 const NAMES = ['PERIODS','LORE','NUMBERS','TAROT','EL_REL','Q_REL','SIGNS','ELEMENTS','QUALITIES',
                'DIM','MONTHS','profileOf','reduceNum','digitSum','tarotFor','tarotIndex','relKey',
                'isLeap','parseBirthday','parseBulkLine','renderCrest','renderReading','renderPath','renderPair',
-               'parseCSV','parseContactsCSV','parseVCF','parseContacts','parseContactDate'];
+               'parseCSV','parseContactsCSV','parseVCF','parseContacts','parseContactDate',
+               'WELLBEING','SIGN_BODY','SIGN_SWATCH','PLANET_LORE','BIRTHSTONE'];
 const ctx = vm.createContext({console});
 vm.runInContext(engine + `\n;globalThis.__api = {${NAMES.join(',')}};`, ctx, {filename:'index.html:engine'});
 const api = ctx.__api;
@@ -30,7 +31,8 @@ if(missing.length){ console.error('engine did not export: ' + missing.join(', ')
 const {PERIODS, LORE, NUMBERS, TAROT, EL_REL, Q_REL, SIGNS, ELEMENTS, QUALITIES, DIM, MONTHS,
        profileOf, reduceNum, digitSum, tarotFor, tarotIndex, relKey, isLeap,
        parseBirthday, parseBulkLine, renderCrest, renderReading, renderPath, renderPair,
-       parseCSV, parseContactsCSV, parseVCF, parseContacts, parseContactDate} = api;
+       parseCSV, parseContactsCSV, parseVCF, parseContacts, parseContactDate,
+       WELLBEING, SIGN_BODY, SIGN_SWATCH, PLANET_LORE, BIRTHSTONE} = api;
 
 let failures = 0, checks = 0;
 function ok(label){ checks++; console.log('  ✓ ' + label); }
@@ -197,6 +199,65 @@ lineFails.length ? bad('bulk lines split name from date', lineFails.join('\n    
 is(parseBulkLine('   '), null, 'blank lines are ignored');
 is(parseBulkLine('# a comment'), null, 'comment lines are ignored');
 ok('unreadable lines report an error instead of throwing: ' + JSON.stringify(parseBulkLine('Just A Name').error));
+
+/* ---------------------------------------------------------- */
+group('Correspondences and wellbeing');
+
+const wellGaps = [];
+PERIODS.forEach(p=>{
+  const W = WELLBEING[p.n];
+  if(!W) return wellGaps.push(`no wellbeing entry for ${p.n}`);
+  ['h','m'].forEach(f=>{ if(!W[f] || W[f].length < 20) wellGaps.push(`${p.n}.${f} missing or too short`); });
+});
+Object.keys(WELLBEING).forEach(k=>{ if(!PERIODS.some(p=>p.n === k)) wellGaps.push(`orphan wellbeing key "${k}"`); });
+wellGaps.length ? bad('all 48 periods have health and state-of-mind text', wellGaps.join('\n      '))
+                : ok('all 48 periods have health and state-of-mind text');
+is(new Set(PERIODS.map(p=>WELLBEING[p.n].h)).size, 48, 'all 48 health entries are distinct');
+is(new Set(PERIODS.map(p=>WELLBEING[p.n].m)).size, 48, 'all 48 state-of-mind entries are distinct');
+
+const signGaps = Object.keys(SIGNS).filter(s=>!SIGN_BODY[s] || !SIGN_BODY[s].zone || !SIGN_BODY[s].colour || !SIGN_BODY[s].flower);
+signGaps.length ? bad('all 12 signs have a body zone, colour and flower', signGaps.join(', '))
+                : ok('all 12 signs have a body zone, colour and flower');
+const swatchGaps = Object.keys(SIGNS).filter(s=>!/^#[0-9a-f]{6}$/i.test(SIGN_SWATCH[s] || ''));
+swatchGaps.length ? bad('every sign has a colour swatch', swatchGaps.join(', ')) : ok('every sign has a colour swatch');
+is(BIRTHSTONE.length, 12, 'a birthstone for all 12 months');
+is(BIRTHSTONE[1], 'amethyst', 'February is amethyst');
+is(BIRTHSTONE[6], 'ruby', 'July is ruby');
+
+const planetGaps = [];
+for(let n = 1; n <= 9; n++){
+  const P = PLANET_LORE[n];
+  if(!P) { planetGaps.push(`no entry for ${n}`); continue; }
+  if(!P.stone || !P.colour) planetGaps.push(`${n} missing stone or colour`);
+}
+planetGaps.length ? bad('all nine numbers have a planetary stone and colour', planetGaps.join(', '))
+                  : ok('all nine numbers have a planetary stone and colour');
+
+/* The classical seven have a metal and a day; Uranus (4) and Neptune (7) must not pretend to. */
+const classical = {1:['gold','Sunday'], 2:['silver','Monday'], 3:['tin','Thursday'], 5:['quicksilver','Wednesday'],
+                   6:['copper','Friday'], 8:['lead','Saturday'], 9:['iron','Tuesday']};
+const metalDrift = Object.keys(classical).filter(n=>PLANET_LORE[n].metal !== classical[n][0] || PLANET_LORE[n].day !== classical[n][1]);
+metalDrift.length ? bad('the seven classical planets have their traditional metal and day', metalDrift.join(', '))
+                  : ok('the seven classical planets have their traditional metal and day');
+is(PLANET_LORE[4].metal, null, 'Uranus claims no classical metal');
+is(PLANET_LORE[4].day, null, 'Uranus claims no classical day');
+is(PLANET_LORE[7].metal, null, 'Neptune claims no classical metal');
+is(PLANET_LORE[7].day, null, 'Neptune claims no classical day');
+
+/* The new sections must appear, and the birthstone must follow the birth month, not the period. */
+const marA = profileOf({name:'A', month:3, day:28, year:1990});   // Aries I, born in March
+const aprB = profileOf({name:'B', month:4, day:1,  year:1990});   // Aries I, born in April
+is(marA.per.n, aprB.per.n, 'two people share a period across a month boundary');
+is(marA.birthstone, 'aquamarine', 'the March-born one gets the March stone');
+is(aprB.birthstone, 'diamond', 'the April-born one gets the April stone, same period');
+
+const sampleReading = renderReading(profileOf({name:'Ada', month:11, day:29, year:1988}));
+['State of mind','Body and wellbeing','Correspondences','Birthstone','Metal','not medical advice']
+  .forEach(label=>{ sampleReading.includes(label) ? ok(`the reading shows "${label}"`) : bad(`the reading shows "${label}"`); });
+
+const modern = renderReading(profileOf({name:'Uranian', month:1, day:4, year:1990}));  // day 4 -> Uranus
+modern.includes('modern planet') ? ok('a Uranus reading says outright that it has no classical metal')
+                                 : bad('a Uranus reading says outright that it has no classical metal');
 
 /* ---------------------------------------------------------- */
 group('Contact files (Google/Outlook CSV, vCard)');

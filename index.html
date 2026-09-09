@@ -217,6 +217,13 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 .legend .e{background:rgba(95,217,196,.5)} .legend .c{background:rgba(167,139,250,.55)} .legend .g{background:rgba(240,145,159,.5)}
 .tally{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px}
 .tally div{background:rgba(0,0,0,.24); border:1px solid var(--line2); border-radius:11px; padding:11px 15px; font-size:13px}
+
+.corr{display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:10px; margin-top:6px}
+.corr > div{background:rgba(0,0,0,.24); border:1px solid var(--line2); border-radius:11px; padding:12px 13px}
+.corr .ck{font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--dimmer); margin-bottom:5px}
+.corr .cv{font-family:var(--serif); font-size:15.5px; line-height:1.35; color:#e6e1f2}
+.swatch{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:0; border:1px solid rgba(255,255,255,.25)}
+.disclaim{font-size:12px; color:var(--dimmer); font-style:italic; margin-top:12px}
 .tally b{font-family:var(--serif); font-size:21px; display:block; color:var(--ink); font-weight:500}
 </style>
 </head>
@@ -487,6 +494,53 @@ const TAROT = {
   21:{r:'XXI',  n:'The World',           line:'Completion and scope. This card asks you to close the circle before you start a wider one.'},
   22:{r:'XXII', n:'The Fool',            line:'The leap without a guarantee. This card asks for the beginning nobody has authorised.'}
 };
+
+/* ============================================================
+   CORRESPONDENCES
+   Traditional attributions: the body region each sign rules, the
+   classical planetary metal, day and colour, and the common modern
+   birthstone list by month. Uranus and Neptune are modern planets and
+   have no classical metal or day — that is said rather than invented.
+   ============================================================ */
+const SIGN_BODY = {
+  Aries:      {zone:'head, face and jaw',              colour:'red',                     flower:'honeysuckle and thistle'},
+  Taurus:     {zone:'neck, throat and thyroid',        colour:'deep green',              flower:'rose and poppy'},
+  Gemini:     {zone:'hands, arms, lungs and nerves',   colour:'yellow',                  flower:'lavender and lily of the valley'},
+  Cancer:     {zone:'chest, stomach and digestion',    colour:'silver-white',            flower:'white rose'},
+  Leo:        {zone:'heart, spine and upper back',     colour:'gold',                    flower:'sunflower and marigold'},
+  Virgo:      {zone:'digestion and intestines',        colour:'navy and slate',          flower:'buttercup and aster'},
+  Libra:      {zone:'kidneys, lower back and skin',    colour:'pale blue and rose',      flower:'bluebell and hydrangea'},
+  Scorpio:    {zone:'pelvis and eliminative organs',   colour:'deep crimson and black',  flower:'chrysanthemum'},
+  Sagittarius:{zone:'hips, thighs and liver',          colour:'purple',                  flower:'carnation and dandelion'},
+  Capricorn:  {zone:'bones, knees, teeth and skin',    colour:'charcoal and dark brown', flower:'pansy and ivy'},
+  Aquarius:   {zone:'ankles, shins and circulation',   colour:'electric blue',           flower:'orchid'},
+  Pisces:     {zone:'feet, lymph and immunity',        colour:'sea green and lilac',     flower:'water lily and jasmine'}
+};
+
+/* Approximate hexes for the sign colours above, for the little swatch. */
+const SIGN_SWATCH = {
+  Aries:'#d9483f', Taurus:'#3f8a4f', Gemini:'#e0c04a', Cancer:'#d8dde6',
+  Leo:'#e0a83c', Virgo:'#3d4a63', Libra:'#c3a7c8', Scorpio:'#7d1f2c',
+  Sagittarius:'#7a4bbd', Capricorn:'#4a4238', Aquarius:'#3f9ad9', Pisces:'#5fb8a8'
+};
+
+/* Keyed by the reduced day-number, i.e. by its ruling planet. */
+const PLANET_LORE = {
+  1:{metal:'gold',        day:'Sunday',    stone:'sunstone and amber',      colour:'gold and orange'},
+  2:{metal:'silver',      day:'Monday',    stone:'moonstone and pearl',     colour:'white and pale grey'},
+  3:{metal:'tin',         day:'Thursday',  stone:'amethyst and sapphire',   colour:'royal purple'},
+  4:{metal:null,          day:null,        stone:'labradorite',             colour:'electric blue'},
+  5:{metal:'quicksilver', day:'Wednesday', stone:'agate and citrine',       colour:'iridescent, mixed shades'},
+  6:{metal:'copper',      day:'Friday',    stone:'emerald and rose quartz', colour:'soft green and pink'},
+  7:{metal:null,          day:null,        stone:'aquamarine and amethyst', colour:'sea green'},
+  8:{metal:'lead',        day:'Saturday',  stone:'onyx and jet',            colour:'black and dark grey'},
+  9:{metal:'iron',        day:'Tuesday',   stone:'bloodstone and garnet',   colour:'scarlet'}
+};
+
+/* The common modern birthstone list, by the month of birth. */
+const BIRTHSTONE = ['garnet','amethyst','aquamarine','diamond','emerald','pearl and moonstone',
+                    'ruby','peridot','sapphire','opal and tourmaline','topaz and citrine',
+                    'turquoise and tanzanite'];
 
 /* ============================================================
    LORE — original interpretation written for this app.
@@ -832,6 +886,61 @@ const LORE = {
   pur:"to bring at least one vision all the way down to the ground where people can stand on it"}
 };
 
+/* ============================================================
+   WELLBEING — original writing, one entry per period.
+   General observations about temperament, not medical advice.
+   ============================================================ */
+const WELLBEING = {
+"Pisces–Aries Cusp":{h:"Sleep is the whole foundation here — the restart energy spends reserves faster than it rebuilds them.", m:"A mind that resets easily. Yesterday's certainty rarely survives into today, which is freedom and instability at once."},
+"Aries I":{h:"Head and jaw tension tracks almost exactly with what has gone unsaid. This one speaks or aches.", m:"Immediate and uncomplicated, reacting before the second thought has landed."},
+"Aries II":{h:"Energy runs high and then drops hard. Regular meals and an actual bedtime do more here than more willpower.", m:"Self-aware to the edge of self-conscious, always half-watching how it lands."},
+"Aries III":{h:"Built for exertion and careless about recovery. Trouble here comes from not stopping, never from weakness.", m:"Forward-facing and impatient with retrospection, happiest with an unsolved problem in front of it."},
+"Aries–Taurus Cusp":{h:"Strength that stores tension in the neck and jaw. Physical work discharges it better than rest alone.", m:"Determined and slow to shift once a position is taken — persuasion has to arrive early."},
+"Taurus I":{h:"A sturdy constitution that quietly accumulates strain. Comfort eating is the signal, not the problem.", m:"Concrete and patient. Abstractions are tolerated right up until something can be built."},
+"Taurus II":{h:"The throat and voice are the pressure point; long stretches of talking need water and real silence afterwards.", m:"Orderly and explanatory, always reaching for the clearest version of the thing."},
+"Taurus III":{h:"Good baseline health, taken for granted. Movement has to be scheduled here or it quietly stops happening.", m:"Unforced and present — rarely overthinking, occasionally under-thinking."},
+"Taurus–Gemini Cusp":{h:"Nervous energy on a solid frame. Sleep is the first thing to suffer when there is too much going on.", m:"Two speeds at once: a quick surface over a slow, steady base."},
+"Gemini I":{h:"Breath and nerves are the barometer. Anything that slows the breathing works better than anything that distracts.", m:"Restless and curious, quick to bore and honest about it."},
+"Gemini II":{h:"A mind that runs late into the night, and a body that pays for the last two hours of it.", m:"Verbal and inventive, forever reaching for a better word than the one just used."},
+"Gemini III":{h:"Irregular routine is the real risk — eating and sleeping get postponed for whatever is currently interesting.", m:"Questioning by default and uncomfortable with settled answers."},
+"Gemini–Cancer Cusp":{h:"The stomach registers a feeling well before the mind admits to it.", m:"Imaginative and impressionable, with strong intuitions it can usually also explain."},
+"Cancer I":{h:"Digestion tracks emotional load almost exactly. What goes unprocessed emotionally tends to sit physically.", m:"Receptive and retentive, remembering how things felt long after what was said."},
+"Cancer II":{h:"Appetite swings with mood. Regular meals matter more here than any particular diet.", m:"Feeling-led but contrary, refusing the obvious emotional script."},
+"Cancer III":{h:"Carries other people's stress in the gut, and needs a way to put the day down that isn't food.", m:"Reads the room continuously, often calculating without noticing that it is."},
+"Cancer–Leo Cusp":{h:"The swing between exposure and retreat is tiring in a way rest alone doesn't fix; predictability helps more than recovery.", m:"Alternates between warm outward display and complete inward withdrawal, both entirely genuine."},
+"Leo I":{h:"The back and posture carry the weight of responsibility. Strength work protects it better than rest does.", m:"Decisive and self-assured, slower than it thinks to admit uncertainty."},
+"Leo II":{h:"Strong and durable, with a habit of pushing well past the point where stopping was the sensible move.", m:"Measured and proud, weighing dignity into decisions other people make on practicality."},
+"Leo III":{h:"The heart is the traditional zone and a fitting one — this one carries pressure inwardly and shows none of it.", m:"Responsible and forward-planning, reluctant ever to be seen uncertain."},
+"Leo–Virgo Cusp":{h:"Scrutiny turned inward shows up in the stomach. Fewer audiences helps more than more discipline.", m:"Sharply observant and critical, quicker to catch a flaw than a strength."},
+"Virgo I":{h:"Digestion is the traditional zone and the honest one. Routine matters more than any particular regime.", m:"Analytical and orderly, noticeably calmer when a system is running."},
+"Virgo II":{h:"Holds tension quietly and privately, so it goes unnoticed until it has become physical.", m:"Reserved and self-contained, thinking a great deal more than it says."},
+"Virgo III":{h:"Worry is the real health question here, and it settles in the gut.", m:"Precise and literal, uneasy with vagueness and unfinished meaning."},
+"Virgo–Libra Cusp":{h:"Refinement extends to the body — balance in food and sleep does more than any intervention.", m:"Discerning and aesthetic, measuring everything against a standard."},
+"Libra I":{h:"The lower back holds the strain of never quite being satisfied.", m:"Evaluative and exacting, and hardest by far on itself."},
+"Libra II":{h:"Runs down when social obligation outruns rest. Saying no is the treatment.", m:"Socially attuned, weighing the group's view alongside its own."},
+"Libra III":{h:"Performance costs real energy. The flatness afterwards is the price, not a failing.", m:"Expressive and image-aware, thinking in terms of how a thing will read."},
+"Libra–Scorpio Cusp":{h:"Intensity held rather than expressed tends to settle in the lower back.", m:"Penetrating and judgmental, seeing the flaw before the whole."},
+"Scorpio I":{h:"All-or-nothing extends to the body: either rigorous or entirely neglected, rarely in between.", m:"Focused to the point of obsession and uninterested in the surface of anything."},
+"Scorpio II":{h:"Sleep and mood move together here. When one goes, watch the other.", m:"Probing and private, drawn to exactly what other people avoid."},
+"Scorpio III":{h:"Manages appearance carefully and health carelessly, and the two get confused.", m:"Strategic and socially fluent, with a layer always held back."},
+"Scorpio–Sagittarius Cusp":{h:"Appetites run large in both directions — excess and abstinence are the same impulse here.", m:"Convinced and combative, allergic to received wisdom."},
+"Sagittarius I":{h:"Needs genuine physical freedom. Movement outdoors does more than any indoor routine.", m:"Blunt and self-directed, uncomfortable being managed."},
+"Sagittarius II":{h:"Enthusiasm outruns the body's schedule, and the crash arrives after the exciting part is over.", m:"Generative and forward-looking, noticeably less engaged once the idea exists."},
+"Sagittarius III":{h:"A large appetite for everything, and a liver that eventually mentions it.", m:"Expansive and ambitious, impatient with small framing."},
+"Sagittarius–Capricorn Cusp":{h:"Carries the future's weight in the shoulders and jaw. The tension is anticipatory rather than present.", m:"Long-sighted and serious, frequently out of step with the current moment."},
+"Capricorn I":{h:"Structure is the theme — bones, teeth and joints. This one ages well if it keeps moving and badly if it doesn't.", m:"Responsible and planning, reluctant to hand anything over."},
+"Capricorn II":{h:"Endurance masks the warning signs. Symptoms get worked through rather than noticed.", m:"Persistent and unhurried, willing to be uncomfortable for a very long time."},
+"Capricorn III":{h:"Pressure held in the jaw, neck and shoulders — the body braced for weight it isn't currently carrying.", m:"Commanding and self-contained, uneasy without control."},
+"Capricorn–Aquarius Cusp":{h:"Circulation and warmth matter more than expected; this one runs cold and sits still too long.", m:"Practical on the surface and genuinely strange underneath."},
+"Aquarius I":{h:"Lives in the head and forgets the body entirely. Movement has to become a scheduled appointment.", m:"Original and detached, several steps ahead and not always able to show the working."},
+"Aquarius II":{h:"Naturally resilient, which becomes the reason no habits ever get built.", m:"Light and open, slow to take anything heavily."},
+"Aquarius III":{h:"Absorbs a great deal without complaint, so the strain shows late and all at once.", m:"Tolerant and even-handed, reluctant to judge even where it should."},
+"Aquarius–Pisces Cusp":{h:"Highly reactive — to noise, food, weather and people. Reducing input works better than adding remedies.", m:"Permeable and perceptive, picking up more than is comfortable to hold."},
+"Pisces I":{h:"Immunity tracks sleep and stress closely: run down emotionally, run down physically.", m:"Imaginative and trusting, oriented to meaning rather than to fact."},
+"Pisces II":{h:"Solitude genuinely restores here. Isolation, past a certain point, does the opposite.", m:"Inward and self-sufficient, richly occupied without any company at all."},
+"Pisces III":{h:"Feet and rhythm — healthiest when physically moving to something it actually enjoys.", m:"Fluid and image-led, reasoning by feel rather than by argument."}
+};
+
 /* Element pair relations (symmetric). mode: easy | complementary | charged */
 const EL_REL = {
   'Fire|Fire'  :{mode:'easy',          line:'Two fires. Enormous combined output, and a standing question about who is tending which flame.'},
@@ -875,6 +984,8 @@ function findPeriod(month, day){
   });
 }
 
+const signsOf = per => per.signs;
+
 function profileOf(person){
   const per = findPeriod(person.month, person.day);
   const signs = per.signs.map(s=>({name:s, ...SIGNS[s]}));
@@ -888,6 +999,10 @@ function profileOf(person){
     tarot: tarotFor(person.day),
     card: tarotIndex(person.day),
     lore: LORE[per.n],
+    well: WELLBEING[per.n],
+    body: signsOf(per).map(x=>SIGN_BODY[x]),
+    planetLore: PLANET_LORE[num],
+    birthstone: BIRTHSTONE[person.month - 1],
     cusp: per.signs.length > 1,
     idx: PERIODS.indexOf(per)
   };
@@ -1142,6 +1257,25 @@ function renderReading(P){
         <div><div class="t">The gift</div><div class="b">${L.g}</div></div>
         <div><div class="t">The cost</div><div class="b">${L.s}</div></div>
         <div><div class="t">The practice</div><div class="b">${L.p}</div></div>
+      </div>
+
+      <h4>State of mind</h4>
+      <p>${P.well.m} ${NUMBERS[P.num].key.charAt(0).toUpperCase() + NUMBERS[P.num].key.slice(1)} is the register it keeps returning to, under ${P.planet}.</p>
+
+      <h4>Body and wellbeing</h4>
+      <p>${P.signs.map(s=>s.name).join(' and ')} traditionally rule${P.signs.length > 1 ? '' : 's'} the <strong>${P.body.map(b=>b.zone).join('</strong>, and the <strong>')}</strong>. ${P.well.h}</p>
+      <p class="disclaim">Traditional correspondences and general observations about temperament &mdash; not medical advice.</p>
+
+      <h4>Correspondences</h4>
+      <div class="corr">
+        <div><div class="ck">Birthstone</div><div class="cv">${cap(P.birthstone)}</div></div>
+        <div><div class="ck">Planet stone</div><div class="cv">${cap(P.planetLore.stone)}</div></div>
+        <div><div class="ck">Sign colour</div><div class="cv">${P.signs.map((s, i)=>`<span class="swatch" style="background:${SIGN_SWATCH[s.name]}"></span>${cap(P.body[i].colour)}`).join('<br>')}</div></div>
+        <div><div class="ck">Planet colour</div><div class="cv">${cap(P.planetLore.colour)}</div></div>
+        <div><div class="ck">Metal</div><div class="cv">${P.planetLore.metal ? cap(P.planetLore.metal) : 'None &mdash; ' + P.planet.replace(/^the /, '') + ' is a modern planet'}</div></div>
+        <div><div class="ck">Day of the week</div><div class="cv">${P.planetLore.day || 'None &mdash; no classical day'}</div></div>
+        <div><div class="ck">Flower</div><div class="cv">${cap(P.body.map(b=>b.flower).join('; '))}</div></div>
+        <div><div class="ck">Body zone</div><div class="cv">${cap(P.body.map(b=>b.zone).join('; '))}</div></div>
       </div>
     </div>
   </div>`;
