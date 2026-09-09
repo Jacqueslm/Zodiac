@@ -36,6 +36,17 @@ Numeric dates are read month/day; the year is optional. Lines that cannot be rea
 are reported individually rather than silently dropped, and duplicates are
 skipped. The same tab exports and re-imports everyone as JSON.
 
+**Import contacts** takes a contacts export directly:
+
+- **Google Contacts** — contacts.google.com → Export → Google CSV
+- **Outlook** — a CSV with `First Name` / `Last Name` / `Birthday` columns
+- **iPhone / iCloud** — a vCard (`.vcf`), including multi-card exports
+
+Only contacts that actually have a birthday saved are imported; the rest are
+counted and reported so nothing disappears quietly. Birthdays stored without a
+year — Google's `--11-29`, Apple's `X-APPLE-OMIT-YEAR` — import as a day and
+month, which is all the reading needs.
+
 The address bar always holds a permalink to the reading on screen, so a reading
 can be bookmarked or reopened directly.
 
