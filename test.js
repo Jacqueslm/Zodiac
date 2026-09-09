@@ -380,6 +380,16 @@ html.includes('function retargetClips') ? ok('clip tracks are retargeted onto th
 html.includes('function groundFeet') ? ok('feet are grounded off the foot bones, not the rest pose')
                                      : bad('feet are grounded off the foot bones, not the rest pose');
 
+/* Facing. Mixamo bodies face +Z, the primitive fallback faces -Z, so the flip
+   has to depend on which one is in the ring. Getting this wrong put the
+   fighters back to back, twice. */
+html.includes('const faceFlip = GLB ? Math.PI : 0')
+  ? ok('the facing flip depends on whether the rigged model loaded')
+  : bad('the facing flip depends on whether the rigged model loaded');
+(html.includes('S.you.group.rotation.y  = faceFlip') && html.includes('S.them.group.rotation.y = Math.PI - faceFlip'))
+  ? ok('the two fighters are always turned to face each other')
+  : bad('the two fighters are always turned to face each other');
+
 /* The page must actually ship Three.js and reference it. */
 const hasVendor = fs.existsSync(path.join(ROOT, 'three.min.js'));
 hasVendor ? ok('three.min.js is vendored beside index.html') : bad('three.min.js is vendored beside index.html');

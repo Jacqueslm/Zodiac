@@ -2442,9 +2442,14 @@ function buildRing(elementColour){
     S.you = makeBoxer(0x9c7355, false, col, 0x2f5fd6);
     S.them = makeBoxer(0x07060c, true, col, 0x0a0812);
   }
-  S.you.group.position.set(-0.30, 0, 2.30);
+  /* Mixamo bodies face +Z. You stand nearer the camera and must face away
+     from it (-Z) toward the opponent; the opponent faces back down +Z at you.
+     The primitive fallback is modelled facing -Z, so it takes the opposite. */
+  const faceFlip = GLB ? Math.PI : 0;
+  S.you.group.position.set(-0.50, 0, 2.55);
   S.them.group.position.set(0, 0, -1.55);
-  S.them.group.rotation.y = Math.PI;
+  S.you.group.rotation.y  = faceFlip;
+  S.them.group.rotation.y = Math.PI - faceFlip;
   S.scene.add(S.you.group); S.scene.add(S.them.group);
   S.rim.target.position.copy(S.them.group.position);
   return S;
@@ -3083,7 +3088,7 @@ function drawRing(dt){
   /* the opponent's lean on its tell, and both fighters' idle sway */
   const sway = Math.sin(now / 420) * .045;
   S.them.group.position.x = (F && F.swing ? (F.swing.lean === 'left' ? -.46 : .46) : 0) + sway;
-  S.you.group.position.x = -0.30 - sway;
+  S.you.group.position.x = -0.50 - sway;
   S.them.group.position.y = Math.abs(Math.sin(now / 300)) * .03;
 
   /* arms: guard, or thrown */
