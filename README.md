@@ -12,8 +12,10 @@ falls in, then reads it three ways:
 - **Layer II — the pair.** Any two saved people read together: elemental and
   quality currents, four relationship domains, and a two-card spread. All 1,176
   combinations of the 48 periods resolve.
-- **Layer III — the path.** A life-path reading derived from the period, number
-  and card.
+- **Layer III — the path.** A birthday read as a direction rather than a
+  description: the starting position it begins from, the destination it moves
+  toward, the core lesson, the goal, the pitfall, what to release and what
+  arrives in return, and a first step.
 
 Each reading also carries a **state of mind**, a **body and wellbeing** note
 (the region each sign traditionally rules, plus the period's own tendency), and
