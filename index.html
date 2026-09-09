@@ -222,6 +222,29 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 
 .layer.two.stub .layer-body{padding:18px 20px}
 .layer.two.stub p{margin-bottom:12px; color:var(--dim); font-size:15px}
+
+.game{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:26px 22px}
+.game h2{font-family:var(--serif); font-weight:500; font-size:27px; margin:0 0 8px}
+.game .qbar{display:flex; justify-content:space-between; align-items:center; font-size:12px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--dimmer); margin-bottom:14px}
+.game .qbar b{color:var(--gold); font-weight:600}
+.track{height:3px; background:rgba(255,255,255,.08); border-radius:3px; overflow:hidden; margin-bottom:22px}
+.track i{display:block; height:100%; background:var(--gold); transition:width .3s}
+.q{font-family:var(--serif); font-size:22px; line-height:1.45; margin:0 0 20px}
+.opts{display:grid; gap:10px}
+.opt{display:block; width:100%; text-align:left; font-family:var(--sans); font-size:15.5px; color:var(--ink);
+  background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:12px; padding:14px 16px;
+  cursor:pointer; transition:.14s}
+.opt:hover:not(:disabled){border-color:var(--gold); background:rgba(232,192,122,.08)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--teal); background:rgba(95,217,196,.15); color:#d3f5ec}
+.opt.wrong{border-color:var(--rose); background:rgba(240,145,159,.14); color:#ffd9de}
+.verdict{margin-top:18px; font-size:15px; line-height:1.6}
+.verdict .vt{font-weight:600; letter-spacing:.02em}
+.verdict.ok .vt{color:var(--teal)} .verdict.no .vt{color:var(--rose)}
+.verdict .note{color:var(--dim); font-size:14px; margin-top:4px}
+.score{font-family:var(--serif); font-size:56px; line-height:1; color:var(--gold); margin:10px 0 4px}
+.game .sub2{color:var(--dim); font-size:14.5px; margin-bottom:20px}
 .journey{display:grid; grid-template-columns:1fr auto 1fr; gap:14px; align-items:stretch; margin:6px 0 4px}
 @media(max-width:640px){.journey{grid-template-columns:1fr; gap:8px}}
 .journey > div{background:rgba(0,0,0,.26); border:1px solid var(--line2); border-radius:12px; padding:15px}
@@ -260,6 +283,7 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
   <button role="tab" id="tab-people" aria-selected="false" data-panel="panel-people">People <span id="count"></span></button>
   <button role="tab" id="tab-pair"   aria-selected="false" data-panel="panel-pair">Pair</button>
   <button role="tab" id="tab-matrix" aria-selected="false" data-panel="panel-matrix">Matrix</button>
+  <button role="tab" id="tab-game"   aria-selected="false" data-panel="panel-game">Game</button>
   <button role="tab" id="tab-wheel"  aria-selected="false" data-panel="panel-wheel">The 48</button>
 </nav>
 
@@ -330,6 +354,11 @@ Emeka Nwosu&#9;Oct 21, 1975"></textarea>
 <section class="panel" id="panel-matrix" role="tabpanel" hidden>
   <div class="note">Every saved person read against every other, computed automatically. Each cell is the elemental relation between their two periods &mdash; click one to open the full pair reading.</div>
   <div id="matrix-box"></div>
+</section>
+
+<!-- GAME -->
+<section class="panel" id="panel-game" role="tabpanel" hidden>
+  <div id="game-box"></div>
 </section>
 
 <!-- WHEEL -->
@@ -1434,6 +1463,135 @@ const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const lower = s => s.charAt(0).toLowerCase() + s.slice(1);
 
 /* ============================================================
+   QUIZ — questions generated from the same data the readings use.
+   Pure: every generator takes a random source, so tests can seed it.
+   ============================================================ */
+function pick(arr, rand){ return arr[Math.floor(rand() * arr.length)]; }
+
+/* n wrong options, all distinct, none equal to the answer. */
+function distractors(pool, answer, n, rand){
+  const out = [];
+  const bag = pool.filter(x=>x !== answer);
+  while(out.length < n && bag.length){
+    const i = Math.floor(rand() * bag.length);
+    out.push(bag.splice(i, 1)[0]);
+  }
+  return out;
+}
+function shuffled(arr, rand){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function assemble(prompt, answer, wrong, note, kind){
+  const options = shuffled([answer, ...wrong], ()=>Math.random());
+  return {kind, prompt, options, answer, answerIndex:options.indexOf(answer), note};
+}
+
+const PERIOD_NAMES = () => PERIODS.map(p=>p.n);
+const SIGN_NAMES = () => Object.keys(SIGNS);
+
+const QUIZ_KINDS = {
+  date(rand){
+    const p = pick(PERIODS, rand);
+    const day = p.sd, month = MONTHS[p.sm - 1];
+    return assemble(`Which period covers <strong>${day} ${month}</strong>?`,
+      p.n, distractors(PERIOD_NAMES(), p.n, 3, rand),
+      `${p.n} runs ${p.r} — ${p.t}.`, 'date');
+  },
+  title(rand){
+    const p = pick(PERIODS, rand);
+    return assemble(`Which period is known as <strong>${p.t}</strong>?`,
+      p.n, distractors(PERIOD_NAMES(), p.n, 3, rand),
+      `${p.n}, ${p.r}.`, 'title');
+  },
+  range(rand){
+    const p = pick(PERIODS, rand);
+    return assemble(`When does <strong>${p.n}</strong> run?`,
+      p.r, distractors(PERIODS.map(x=>x.r), p.r, 3, rand),
+      `${p.n} is ${p.t}.`, 'range');
+  },
+  tarot(rand){
+    const day = 1 + Math.floor(rand() * 31);
+    const card = tarotFor(day);
+    return assemble(`Someone born on the <strong>${day}${ordinal(day)}</strong> draws which card?`,
+      card.n, distractors(Object.values(TAROT).map(t=>t.n), card.n, 3, rand),
+      day > 22 ? `${day} sums to ${tarotIndex(day)}, giving ${card.r} ${card.n}.`
+               : `The ${day}${ordinal(day)} maps straight to ${card.r} ${card.n}.`, 'tarot');
+  },
+  planet(rand){
+    const n = 1 + Math.floor(rand() * 9);
+    const answer = NUMBERS[n].planet;
+    return assemble(`A day-number of <strong>${n}</strong> is ruled by which planet?`,
+      answer, distractors(Object.values(NUMBERS).map(x=>x.planet), answer, 3, rand),
+      `${n} is ${NUMBERS[n].key} — ruled by ${answer}.`, 'planet');
+  },
+  element(rand){
+    const s = pick(SIGN_NAMES(), rand);
+    return assemble(`Which element is <strong>${s}</strong>?`,
+      SIGNS[s].e, distractors(['Fire','Earth','Air','Water'], SIGNS[s].e, 3, rand),
+      `${s} is ${SIGNS[s].e} and ${SIGNS[s].q}.`, 'element');
+  },
+  quality(rand){
+    const s = pick(SIGN_NAMES(), rand);
+    return assemble(`Which quality is <strong>${s}</strong>?`,
+      SIGNS[s].q, distractors(['Cardinal','Fixed','Mutable'], SIGNS[s].q, 2, rand),
+      `${s} is ${SIGNS[s].q} — it ${QUALITIES[SIGNS[s].q].verb} things.`, 'quality');
+  },
+  stone(rand){
+    const m = Math.floor(rand() * 12);
+    return assemble(`Which birthstone belongs to <strong>${MONTHS[m]}</strong>?`,
+      BIRTHSTONE[m], distractors(BIRTHSTONE, BIRTHSTONE[m], 3, rand),
+      `${MONTHS[m]} is ${BIRTHSTONE[m]}.`, 'stone');
+  },
+  body(rand){
+    const s = pick(SIGN_NAMES(), rand);
+    const answer = SIGN_BODY[s].zone;
+    return assemble(`Which region does <strong>${s}</strong> traditionally rule?`,
+      answer, distractors(Object.values(SIGN_BODY).map(b=>b.zone), answer, 3, rand),
+      `${s} rules the ${answer}.`, 'body');
+  }
+};
+
+/* Only usable once enough saved people sit in distinct periods. */
+function peopleQuestion(people, rand){
+  const byPeriod = {};
+  people.forEach(p=>{
+    const per = findPeriod(p.month, p.day).n;
+    (byPeriod[per] = byPeriod[per] || []).push(p);
+  });
+  const unique = Object.keys(byPeriod).filter(k=>byPeriod[k].length === 1);
+  if(unique.length < 3) return null;
+  const per = pick(unique, rand);
+  const answer = byPeriod[per][0].name;
+  const others = people.map(p=>p.name).filter(nm=>nm !== answer);
+  const wrong = distractors([...new Set(others)], answer, Math.min(3, unique.length - 1), rand);
+  if(!wrong.length) return null;
+  return assemble(`Which of your people was born in <strong>${per}</strong>?`,
+    answer, wrong, `${answer} — ${per}, ${PERIODS.find(x=>x.n === per).t}.`, 'people');
+}
+
+function makeQuiz(people, count, rand){
+  rand = rand || Math.random;
+  const kinds = Object.keys(QUIZ_KINDS);
+  const out = [];
+  let guard = 0;
+  while(out.length < count && guard++ < count * 40){
+    let q;
+    if(people && people.length >= 3 && rand() < 0.25) q = peopleQuestion(people, rand);
+    if(!q) q = QUIZ_KINDS[pick(kinds, rand)](rand);
+    if(!q || q.options.length < 3) continue;
+    if(new Set(q.options).size !== q.options.length) continue;   // no repeated option
+    if(out.some(o=>o.prompt === q.prompt)) continue;             // no repeated question
+    out.push(q);
+  }
+  return out;
+}
+
+/* ============================================================
    LAYER II — the pair. Every one of the 1,176 combinations of
    48 periods resolves through this engine.
    ============================================================ */
@@ -1580,6 +1738,7 @@ function showTab(id){
   });
   if(id === 'tab-people') renderPeople();
   if(id === 'tab-pair') fillPairSelects();
+  if(id === 'tab-game') renderGame();
   if(id === 'tab-matrix') renderMatrix();
   if(id === 'tab-wheel') renderWheel();
 }
@@ -1865,6 +2024,85 @@ $('file-contacts').addEventListener('change', e=>{
   };
   reader.readAsText(file);
   e.target.value = '';
+});
+
+/* ============================================================
+   GAME
+   ============================================================ */
+const BEST_KEY = 'personology.best.v1';
+const QUIZ_LENGTH = 10;
+let GAME = null;
+
+function bestScore(){
+  try{ return parseInt(localStorage.getItem(BEST_KEY), 10) || 0; }catch(e){ return 0; }
+}
+function setBest(n){ try{ localStorage.setItem(BEST_KEY, String(n)); }catch(e){} }
+
+function renderGame(){
+  const box = $('game-box');
+  if(!GAME){
+    const best = bestScore();
+    box.innerHTML = `<div class="game">
+      <h2>Guess the period</h2>
+      <p class="sub2">${QUIZ_LENGTH} questions drawn from the same data as the readings — periods, dates,
+      tarot cards, elements, stones${PEOPLE.length >= 3 ? ', and the people you have saved' : ''}.</p>
+      ${best ? `<p class="note" style="margin-bottom:18px">Your best so far: <strong>${best}/${QUIZ_LENGTH}</strong></p>` : ''}
+      <button class="btn primary" id="g-start">Start</button>
+    </div>`;
+    return;
+  }
+  if(GAME.i >= GAME.qs.length){
+    const best = bestScore();
+    if(GAME.score > best) setBest(GAME.score);
+    const msg = GAME.score === QUIZ_LENGTH ? 'Perfect.'
+              : GAME.score >= 8 ? 'Very good.'
+              : GAME.score >= 5 ? 'Not bad.' : 'The wheel takes a while to learn.';
+    box.innerHTML = `<div class="game" style="text-align:center">
+      <div class="score">${GAME.score}<span style="font-size:24px;color:var(--dim)">/${GAME.qs.length}</span></div>
+      <p class="sub2">${msg}${GAME.score > best ? ' A new best.' : best ? ` Your best is ${Math.max(best, GAME.score)}.` : ''}</p>
+      <button class="btn primary" id="g-again">Play again</button>
+      <button class="btn ghost" id="g-quit">Done</button>
+    </div>`;
+    return;
+  }
+  const q = GAME.qs[GAME.i];
+  const picked = GAME.picked;
+  box.innerHTML = `<div class="game">
+    <div class="qbar"><span>Question <b>${GAME.i + 1}</b> of ${GAME.qs.length}</span><span>Score <b>${GAME.score}</b></span></div>
+    <div class="track"><i style="width:${(GAME.i / GAME.qs.length) * 100}%"></i></div>
+    <p class="q">${q.prompt}</p>
+    <div class="opts">
+      ${q.options.map((o, i)=>{
+        let cls = '';
+        if(picked != null){
+          if(i === q.answerIndex) cls = ' right';
+          else if(i === picked) cls = ' wrong';
+        }
+        return `<button class="opt${cls}" data-i="${i}"${picked != null ? ' disabled' : ''}>${o}</button>`;
+      }).join('')}
+    </div>
+    ${picked != null ? `<div class="verdict ${picked === q.answerIndex ? 'ok' : 'no'}">
+      <div class="vt">${picked === q.answerIndex ? 'Correct.' : 'Not quite — ' + esc(q.answer) + '.'}</div>
+      <div class="note">${q.note}</div>
+    </div>
+    <div class="actions"><button class="btn primary" id="g-next">${GAME.i + 1 === GAME.qs.length ? 'Finish' : 'Next'}</button></div>` : ''}
+  </div>`;
+}
+
+$('game-box').addEventListener('click', e=>{
+  const t = e.target;
+  if(t.id === 'g-start' || t.id === 'g-again'){
+    GAME = {qs:makeQuiz(PEOPLE, QUIZ_LENGTH), i:0, score:0, picked:null};
+    return renderGame();
+  }
+  if(t.id === 'g-quit'){ GAME = null; return renderGame(); }
+  if(t.id === 'g-next'){ GAME.i++; GAME.picked = null; return renderGame(); }
+  const opt = t.closest('.opt');
+  if(opt && GAME && GAME.picked == null){
+    GAME.picked = +opt.dataset.i;
+    if(GAME.picked === GAME.qs[GAME.i].answerIndex) GAME.score++;
+    renderGame();
+  }
 });
 
 /* ============================================================
