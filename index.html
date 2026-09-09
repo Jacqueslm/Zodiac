@@ -224,6 +224,15 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 .layer.two.stub p{margin-bottom:12px; color:var(--dim); font-size:15px}
 
 
+/* ---------- the deep layer ---------- */
+.layer.deep .layer-body{padding-bottom:22px}
+.dp{margin:0 0 14px; padding:13px 16px; background:rgba(255,255,255,.028);
+  border:1px solid var(--line); border-left:2px solid var(--gold); border-radius:0 var(--r) var(--r) 0}
+.dt{font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); margin-bottom:5px}
+.db{font-size:15.5px; line-height:1.72; color:var(--ink)}
+.stages .dp{border-left-color:var(--dimmer)}
+@media(min-width:720px){ .stages{display:grid; grid-template-columns:1fr 1fr; gap:0 14px} }
+
 /* ---------- the fight briefing ---------- */
 .brief{margin:18px 0 4px; padding:14px 16px; background:rgba(255,255,255,.03);
   border:1px solid var(--line); border-left-width:3px; border-radius:0 var(--r) var(--r) 0}
@@ -1381,6 +1390,55 @@ function renderCrest(P){
   </div>`;
 }
 
+/* The deep layer renders only for periods that have been written, so the
+   app stays honest about what is finished rather than padding the rest. */
+function renderDepth(P){
+  const D = DEPTH[P.per.n];
+  if(!D) return '';
+  const n = esc(firstName(P.person.name));
+  const box = (t, b) => `<div class="dp"><div class="dt">${t}</div><div class="db">${b}</div></div>`;
+  return `
+  <div class="layer deep">
+    <h3>The whole person <small>the two sides, health three ways, family, closeness, and the stages</small></h3>
+    <div class="layer-body">
+      <h4>Where to start</h4>
+      ${box('One thing to do', D.action)}
+      ${box('One thing to sit with', D.reflect)}
+
+      <h4>The two sides</h4>
+      ${box('At your best', D.strong)}
+      ${box('At your worst', D.hard)}
+
+      <h4>Health, three ways</h4>
+      ${box('Mind', D.mind)}
+      ${box('Body', D.body)}
+      ${box('Spirit', D.spirit)}
+      <p class="disclaim">Written as a reading of temperament &mdash; not medical advice, and not a diagnosis.
+      If something here is going on for ${n}, it is worth saying to a person, not an app.</p>
+
+      <h4>Family</h4>
+      ${box('The family you came from', D.raised)}
+      ${box('The family you make', D.making)}
+
+      <h4>How close people get</h4>
+      <p>${D.close}</p>
+
+      <h4>The direction</h4>
+      <div class="pull">${D.direction}</div>
+
+      <h4>The stages</h4>
+      <div class="stages">
+        ${box('Early', D.stages.young)}
+        ${box('Building', D.stages.rising)}
+        ${box('The middle', D.stages.middle)}
+        ${box('Later', D.stages.later)}
+      </div>
+      <p class="disclaim">Stages describe how this temperament tends to move through a life, not a schedule
+      and not a prediction. Ages are rough and plenty of people run early or late.</p>
+    </div>
+  </div>`;
+}
+
 function renderReading(P){
   const n = esc(firstName(P.person.name));
   const L = P.lore;
@@ -1406,11 +1464,11 @@ function renderReading(P){
       <p>The ${P.person.day}${ordinal(P.person.day)} of the month${P.person.day > 22 ? ` reduces to ${P.card}, and` : ''} draws <strong>${P.tarot.n}</strong>. ${P.tarot.line}</p>
       <h4>Where it converges</h4>
       <div class="pull">${converge}</div>
-      <div class="gsl">
+      ${DEPTH[P.per.n] ? '' : `<div class="gsl">
         <div><div class="t">The gift</div><div class="b">${L.g}</div></div>
         <div><div class="t">The cost</div><div class="b">${L.s}</div></div>
         <div><div class="t">The practice</div><div class="b">${L.p}</div></div>
-      </div>
+      </div>`}
 
       <h4>State of mind</h4>
       <p>${P.well.m} ${NUMBERS[P.num].key.charAt(0).toUpperCase() + NUMBERS[P.num].key.slice(1)} is the register it keeps returning to, under ${P.planet}.</p>
@@ -1509,6 +1567,95 @@ function renderPath(P){
 }
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const lower = s => s.charAt(0).toLowerCase() + s.slice(1);
+
+/* ============================================================
+   THE WHOLE PERSON — the deep layer. Original writing, one entry
+   per period, in the voice of the lessons in Some Day / Day One:
+   second person, says the thing plainly, names the fear in the
+   reader's own words, never shames and never tells anyone they
+   are finished. No medical claims — no mechanisms, no research,
+   only what people describe.
+
+   Every field must say something the others do not. The test
+   measures content-word overlap between them and fails the build
+   if any two sections start restating each other, which is what
+   went wrong the first time.
+   ============================================================ */
+const DEPTH = {
+
+"Aries I":{
+ action:"Pick the conversation you keep replaying and go finish it out loud, this week, with the person who was there.",
+ reflect:"When you say the true thing fast, who is it for?",
+ strong:"At your best you are the one who says the thing everybody in the room already knew and nobody would start. That is not bluntness, it is nerve, and it is rarer than you think. People bring you problems they have been circling for weeks because they know you will not spend the first twenty minutes being careful. You give them back a whole afternoon.",
+ hard:"At your worst the sentence is out before you have decided what you actually want from it. You are not trying to wound and you are often genuinely surprised at the damage, which is its own problem — it means you get to feel innocent while somebody else does the repairing. The pattern to watch is speed, not honesty. Honesty was never the part that cost anyone anything.",
+ mind:"What flattens you is the aftermath, not the moment. You go home replaying a conversation, aware that something landed harder than you meant, and the room has long since moved on. That loop can run for days and it does not look like anything from outside — you seem fine, because the outside of you is fine. The relief is not becoming careful. It is going back and saying the second sentence: what you actually meant. Most people are waiting for it.",
+ body:"You run hot and you run out. Energy arrives in a surge and you spend all of it, then wonder why the next day is flat. Sleep is usually the first thing to go and the last thing you will admit to. Watch for the injuries that come from starting before warming up — literally and otherwise. Head and jaw hold your tension. Nothing fancy is needed here, only stopping before empty rather than at it.",
+ spirit:"You are reaching for something worth going first for. Without it the drive spins and picks fights with whatever is nearest. Anything that gives you a beginning you can repeat suits you — a morning practice, a walk you take at the same hour, a room you sit in and say nothing. Starting fresh is the thing you are naturally best at. Day one, again, is a spiritual practice and it happens to be your native one.",
+ raised:"You were probably the one who said what everyone was thinking, and got in trouble for it in a family that already knew it was true. That teaches a strange lesson: that honesty is both your value and your fault. Some part of you is still braced for the reaction rather than interested in the answer.",
+ making:"Your household is loud, honest and safe — people know where they stand, and children raised near you tend to grow up unafraid of conflict. The work is the repair afterwards. Saying sorry quickly is worth more to the people who live with you than never having raised your voice, and it is the thing you skip because the moment has passed for you long before it has passed for them.",
+ close:"You are easy to meet and hard to stay angry at, which means you get further into people's lives than most in the first month. Depth arrives when you let someone see you unsure. You are practised at strong and unpractised at asking, and the people closest to you often say they wish you needed them more visibly. They are not asking you to be weaker. They are asking to be let in.",
+ direction:"From saying it first toward saying it on purpose. The aim was never to soften you. It is the half second between the thought and the mouth, and what you choose to do with it.",
+ stages:{
+  young:"Early on you are the child adults call a handful and other children follow anyway. You learn that you can move a room, before you learn what for.",
+  rising:"Through your twenties the directness opens doors fast, and shuts a few just as fast. You start things well. Finishing them is the argument of this decade, usually with yourself.",
+  middle:"Somewhere in the forties you notice you have begun things you never went back to, and that some of them mattered. This is the stretch where you either learn to stay or keep starting. Returning to one unfinished thing does more here than starting three new ones.",
+  later:"Later the nerve reads as steadiness. Younger people come to you for exactly the quality that used to get you in trouble, and you find you can give it without the heat behind it."}},
+
+"Taurus II":{
+ action:"Ask one person what they want from you, before you decide what they need.",
+ reflect:"Who in your life knows what you are like when you are not being useful?",
+ strong:"At your best you are the person who will explain it a third time without a flicker of impatience, and that is a genuinely uncommon kind of generosity. You make people feel capable rather than slow. Whatever you have built — a skill, a home, a way of doing something — has depth in it, because you stayed long enough to reach the part most people leave before.",
+ hard:"At your worst you are teaching people who did not ask to be taught. It comes out as help and lands as correction, and the closer somebody is to you the more of it they get, because you care more about them getting it right. They hear that you think they are not managing. That is not what you mean, and it is reliably what arrives.",
+ mind:"What weighs on you is being needed and not wanted. You will notice, usually late at night, that you are the useful one in most of your relationships and not sure you are the enjoyed one. It can settle into a low, heavy stretch that you will keep working straight through, because working is what you do with feeling. The question that actually helps is not what else can I do for them. It is: who here knows what I am like when I am not being useful?",
+ body:"You hold on. Weight, tension, the same ache in the same shoulder for eleven months — you have a very high tolerance for a low-grade problem, and you will tolerate it right up to the point where it becomes a real one. The throat and neck are where yours tends to sit. You do not need a dramatic overhaul; you need the appointment you have been meaning to make since spring, and one thing you do for your body that is pleasure rather than maintenance.",
+ spirit:"You are steadied by things that do not need explaining. Growing something, cooking properly, working with your hands, sitting in a building older than you — anywhere the sense of meaning comes through the body rather than the argument. Faith for you is unlikely to be a debate you win. It is a practice you keep, and keeping it is the part you were built for.",
+ raised:"You were likely the reliable one, the one who could be left in charge. That gets rewarded and it also gets used, and nobody thinks to ask whether the reliable one is alright, because the reliable one is always alright. You may still be waiting for somebody to ask.",
+ making:"You make a home people want to be in, and you are the reason it works — the standing arrangements, the food, the repairs, the remembering. The trap is doing it all and quietly counting. Nobody in your house knows the ledger exists. Say what you want out loud, plainly, before it turns into resentment nobody had the chance to prevent.",
+ close:"You go deep slowly and you stay. Very few of your relationships are recent. What blocks the last layer is that you arrive already competent — you would rather help with somebody's problem than hand over one of yours. Somebody has to be allowed to carry something of yours before it is actually mutual, and that swap is the whole distance for you.",
+ direction:"From holding it together toward being held. Not less capable. Available to be looked after by the people who have wanted to for years.",
+ stages:{
+  young:"Early on you are steady in a way adults find restful and other children find slightly boring. You are already the one who finishes things.",
+  rising:"Your twenties and thirties build the base — the work, the home, the standing. This is where your patience compounds and where you can also quietly disappear into being useful.",
+  middle:"The forties bring the question of whether what you built is what you wanted, and it usually arrives as tiredness rather than doubt. Changing one thing on purpose here is worth more than enduring another decade well.",
+  later:"Later you are the fixed point in a lot of people's lives. Your value stops needing to be demonstrated, which is the rest you have been owed since you were about nine."}},
+
+"Gemini II":{
+ action:"Say the plain version first this week, and let it sit there without improving it.",
+ reflect:"What would you have to feel if you stopped narrating it?",
+ strong:"At your best you cut through a stalled argument in one line and everybody breathes out. You are fast without being cruel, which is a much rarer pairing than fast. Friends bring you tangled situations because half an hour near you leaves them holding something they can act on instead of something they have to keep hauling around.",
+ hard:"At your worst the phrase becomes the point. You reach for the version that lands rather than the version that is accurate, and you can feel the difference in your mouth as you say it. Used on someone you are close to, that skill stops being description and starts being a weapon with a very good aim. You will win and you will not feel better.",
+ mind:"The exhausting part is the running commentary. You narrate your own life while living it, which means you are rarely all the way inside anything, and the noise gets loudest when you are alone and unoccupied. That is often when the drinking or scrolling or whatever the reach is happens — not out of misery, out of the need to turn the volume down. Anything that puts you in your body and out of the description helps more than another attempt to think your way quiet.",
+ body:"You forget you have one. Meals get skipped because you were mid-thought, sleep goes late because the mind is still going, and you can run on nervous energy for a surprisingly long time before it falls over. Yours tends to sit in the breath and the hands — shallow breathing, restlessness. The single most useful physical habit for you is the dull one: eating at roughly the same times, in a chair, without a screen.",
+ spirit:"Silence is your practice and your least favourite thing, which is usually how you know. You reach for meaning through language and there is a point past which language will not go. Anything wordless — breath, walking, music you do not analyse, prayer where you stop talking — takes you where the next clever formulation cannot. Expect to be bad at it for a while. Being bad at it is not a sign you are doing it wrong.",
+ raised:"You were probably the one who could talk their way out, and the family got used to that being how things resolved. Somewhere in there you learned that being quick was safer than being upset. That is a good trick for a child in a difficult room and a poor one for an adult who needs to be understood.",
+ making:"Your family gets a house full of ideas, jokes and things named accurately, which is a genuinely good place to grow up. The thing to watch is winning arguments with people you live with. Your partner and your children are not going to out-phrase you, and if the fight is about being right you will always take it and always lose something. Ask what they meant before you tell them what they said.",
+ close:"People feel understood by you early and known by you slowly. You can describe someone with uncanny accuracy and still not have let them near — the description is a way of holding the thing at a workable distance. Being close to you means being allowed to see you without a formulation ready. The people who last are the ones who wait through your silence rather than accepting your summary.",
+ direction:"From naming it toward meaning it. Same talent, aimed at the plainest true version instead of the best one.",
+ stages:{
+  young:"Early on you are the quick one, and quickness gets you approval before anybody checks whether you are alright. You learn the trick young.",
+  rising:"Through your twenties and thirties the words carry you — work, friendships, rooms you should not have been in. It is also the decade where people closest to you start saying they cannot reach you.",
+  middle:"The forties tend to bring a stretch where nothing you say sounds like the truth to you, and that is not decline. It is the point where description has run out and something plainer is required.",
+  later:"Later you get short. The sentences come down to the size of the thing, and people find you clearer than you have ever been. What you say now tends to be the thing they keep."}},
+
+"Scorpio III":{
+ action:"Let somebody see you tired or unsure this week without covering it in the same breath.",
+ reflect:"Who has seen you on a day you were not worth watching?",
+ strong:"At your best you are the reason a room relaxes. You notice who has not spoken and bring them in, you read what a person needs and hand it over before they have had to ask for it. That is a real skill and not everyone has it. The attention people remember from you was genuine, even when it was also deliberate — both of those can be true.",
+ hard:"At your worst you run the room instead of being in it. The warmth goes automatic and you lose track of the line between liking someone and handling them. Under strain it hardens into something specific: charming and unreachable at once, so the people who love you find themselves talking to something very pleasant that is not you, and cannot say what is wrong.",
+ mind:"What wears you down is not being disliked. It is being liked for a version of yourself that took effort to produce. You can leave a night where everybody was glad you came and feel empty in the car, and that gap is usually where the low stretches begin — after the good nights rather than the bad ones, which makes them confusing and easy to hide. The answer is not less charm. It is one person who gets the unedited version regularly, on the days you do not feel like it especially.",
+ body:"You maintain how you come across more carefully than how you actually feel. Tiredness gets covered rather than rested and you will turn up looking fine on a day you should have stayed home. The signals you tend to override are the slow ones — sleep sliding later, appetite going strange, tension you have stopped noticing. Because nothing dramatic happens, nothing gets dealt with. Book the appointment you keep meaning to book.",
+ spirit:"What you are actually after is being known without effort. Anything with no audience does you good — walking without your phone, praying, sitting still, work with your hands, any place where there is nobody to read and no impression to run. That may be the hardest twenty minutes of your week. The difficulty is the point, not a sign you have picked the wrong thing.",
+ raised:"You likely learned early that reading the room kept it calm. There was a mood somewhere behind you that everybody tracked, and you got good at tracking it first — heading it off, smoothing it over, being the easy one. That is heavy work for a child, and it usually goes unthanked because it looks like good behaviour.",
+ making:"You are warm and very present with your own family, and you still manage more than you let on. The risk is running the household's weather instead of living inside it — deciding what people can handle and giving them the edited version. The people you live with would rather have you worried out loud than protected quietly.",
+ close:"You have a lot of people who would call you a close friend and few you would call at three in the morning. What blocks it is not coldness, it is competence: you are so good at the first three levels that neither of you notices you never went to the fourth. It usually takes somebody stubborn — who stays while you are not being charming — before you find out that the version you were sure would disappoint people is the one that keeps them.",
+ direction:"From admired toward known. Not away from the charm, which is real. Toward using it to open the door and then actually walking through it.",
+ stages:{
+  young:"Early on the charm arrives before you know what it is for. You are popular and adaptable and quietly lonely inside that, without the words for why. Adults call you mature, which often just means convenient.",
+  rising:"Through your twenties and thirties it works — socially, at work, romantically. This is the stretch where the skill pays, and therefore the stretch where it goes unexamined. Relationships that end here often end with somebody saying they never quite reached you.",
+  middle:"Somewhere in the forties the returns thin. Being liked stops being enough and there is often a flat patch nobody around you can see, because from outside your life looks good. That is the real turn, and it usually announces itself as boredom rather than crisis.",
+  later:"Later you get to be warm without needing anything back, which is when people find you easiest to be near. The ones who stayed through the middle stretch are the ones who know you, and by then you have stopped auditioning."}}
+
+};
 
 /* ============================================================
    THE FIGHT — each period taunts with its strength; the right
@@ -1958,7 +2105,7 @@ function doRead(){
   const r = currentInput();
   if(r.err){ $('err').textContent = r.err; $('result').innerHTML = ''; return null; }
   const P = profileOf(r.person);
-  $('result').innerHTML = renderCrest(P) + renderReading(P) + renderPairStub(P) + renderPath(P);
+  $('result').innerHTML = renderCrest(P) + renderReading(P) + renderDepth(P) + renderPairStub(P) + renderPath(P);
   writeHash(r.person);
   $('result').scrollIntoView({behavior:'smooth', block:'start'});
   return P;

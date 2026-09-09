@@ -23,7 +23,7 @@ const NAMES = ['PERIODS','LORE','NUMBERS','TAROT','EL_REL','Q_REL','SIGNS','ELEM
                'isLeap','parseBirthday','parseBulkLine','renderCrest','renderReading','renderPath','renderPair',
                'parseCSV','parseContactsCSV','parseVCF','parseContacts','parseContactDate',
                'WELLBEING','SIGN_BODY','SIGN_SWATCH','PLANET_LORE','BIRTHSTONE','DESTINY',
-               'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT',
+               'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT','DEPTH','renderDepth',
                'TAUNTS','STYLE','RING_ELEMENT','elementFactor',
                'PLACE_OF','PLACE_NAME','BODY_OF','periodSlug','fightURL','fightBrief'];
 const ctx = vm.createContext({console, URLSearchParams});
@@ -36,7 +36,7 @@ const {PERIODS, LORE, NUMBERS, TAROT, EL_REL, Q_REL, SIGNS, ELEMENTS, QUALITIES,
        parseBirthday, parseBulkLine, renderCrest, renderReading, renderPath, renderPair,
        parseCSV, parseContactsCSV, parseVCF, parseContacts, parseContactDate,
        WELLBEING, SIGN_BODY, SIGN_SWATCH, PLANET_LORE, BIRTHSTONE, DESTINY,
-       makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT,
+       makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT, DEPTH, renderDepth,
        TAUNTS, STYLE, RING_ELEMENT, elementFactor,
        PLACE_OF, PLACE_NAME, BODY_OF, periodSlug, fightURL, fightBrief} = api;
 
@@ -228,17 +228,25 @@ is(new Set(PERIODS.map(p=>PORTRAIT[p.n])).size, 48, 'all 48 portraits are distin
    design), the correspondences data panel, and the section headings. */
 const strip = h => h.replace(/<[^>]+>/g, ' ').replace(/&mdash;/g, '-').replace(/\s+/g, ' ').trim();
 function periodProse(p){
-  let h = renderReading(profileOf({name:'X', month:p.sm, day:p.sd, year:1990}));
+  const prof = profileOf({name:'X', month:p.sm, day:p.sd, year:1990});
+  let h = renderReading(prof);
   const a = h.indexOf('<h4>The number'), b = h.indexOf('<h4>Where it converges');
   if(a > -1 && b > a) h = h.slice(0, a) + h.slice(b);
   const c = h.indexOf('<h4>Correspondences');
   if(c > -1) h = h.slice(0, c);
+  /* The deep layer is part of what the reader sees, so it belongs in the
+     comparison — appended after the correspondence table is trimmed off. */
+  h += renderDepth(prof);
   return strip(h.replace(/<h4>[\s\S]*?<\/h4>/g, ' '));
 }
 const proses = PERIODS.map(periodProse);
 const share = PERIODS.map((p, i)=>{
+  const D = DEPTH[p.n];
   const own = [PORTRAIT[p.n], LORE[p.n].k, LORE[p.n].g, LORE[p.n].s, LORE[p.n].p,
-               WELLBEING[p.n].h, WELLBEING[p.n].m].join(' ').length;
+               WELLBEING[p.n].h, WELLBEING[p.n].m,
+               D ? [D.action, D.reflect, D.strong, D.hard, D.mind, D.body, D.spirit,
+                    D.raised, D.making, D.close, D.direction,
+                    ...Object.values(D.stages)].join(' ') : ''].join(' ').length;
   return own / proses[i].length * 100;
 });
 const minShare = Math.min(...share), avgShare = share.reduce((a,b)=>a + b, 0) / share.length;
@@ -447,6 +455,122 @@ left.length ? bad('the rebuilt ring is not shipped alongside the real one', 'sti
 /(r3-canvas|new THREE\.WebGLRenderer|function playClip)/.test(html)
   ? bad('index.html no longer draws a ring of its own')
   : ok('index.html no longer draws a ring of its own');
+
+/* ---------------------------------------------------------- */
+group('The deep layer — depth, and no repeating itself');
+
+/* The first version of the readings passed a test that only checked whether
+   two fields were IDENTICAL, so it happily allowed the same idea rewritten
+   eight ways. This measures shared content words instead, which is what a
+   reader actually notices. */
+const STOPW = new Set(('a an the and or but of to in on at for with from as is are was were be been being it its this that '+
+'these those you your yours i me my we our they them their he she his her not no nor so than then there here what which '+
+'who whom how when where why all any both each few more most other some such only own same too very can could would should '+
+'did does do doing done have has had having if because while about against between into through during before after above '+
+'below up down out off over under again further once by way thing things one two something someone anything nothing get '+
+'got go goes going come comes came make makes made take takes took give gives gave say says said know knows knew think '+
+'thinks thought like just still even also than there they will can').split(' '));
+const cwords = t => String(t||'').toLowerCase().replace(/[^a-z\s]/g,' ').split(/\s+/)
+  .filter(w=>w.length>3 && !STOPW.has(w)).map(w=>w.replace(/(ing|edly|ed|es|s|ly|ness|ment)$/,''));
+
+function overlapPairs(sections, limit){
+  const keys = Object.keys(sections).filter(k=>sections[k]);
+  const sets = {}; keys.forEach(k=>sets[k] = new Set(cwords(sections[k])));
+  const hits = [];
+  for(let i=0;i<keys.length;i++) for(let j=i+1;j<keys.length;j++){
+    const A = sets[keys[i]], B = sets[keys[j]];
+    if(A.size < 3 || B.size < 3) continue;
+    const shared = [...A].filter(w=>B.has(w));
+    const ov = shared.length / Math.min(A.size, B.size);
+    if(ov >= limit) hits.push(`${keys[i]}/${keys[j]} ${Math.round(ov*100)}% (${shared.join(' ')})`);
+  }
+  return hits;
+}
+
+/* The deep layer rolls out period by period and the renderer shows it only
+   where it exists, so partial coverage is a state, not a fault. What must
+   never happen is a HALF-written entry reaching the screen. */
+const written = Object.keys(DEPTH).length;
+ok(`deep readings written: ${written} of ${PERIODS.length}`);
+Object.keys(DEPTH).every(n=>PERIODS.some(p=>p.n === n))
+  ? ok('every deep reading names a real period')
+  : bad('every deep reading names a real period',
+        Object.keys(DEPTH).filter(n=>!PERIODS.some(p=>p.n === n)).join(', '));
+
+/* Each field must carry its own weight, not a phrase. */
+const FIELDS = ['strong','hard','mind','body','spirit','raised','making','close','direction','action','reflect'];
+const thin = [];
+Object.entries(DEPTH).forEach(([n,D])=>{
+  FIELDS.forEach(f=>{
+    if(!D[f]) return thin.push(`${n}: no ${f}`);
+    if(!['direction','action','reflect'].includes(f) && D[f].split(/[.!?]/).filter(x=>x.trim().length>12).length < 3)
+      thin.push(`${n}: ${f} is under three sentences`);
+  });
+  ['young','rising','middle','later'].forEach(st=>{
+    if(!D.stages || !D.stages[st]) thin.push(`${n}: no ${st} stage`);
+  });
+});
+thin.length ? bad('every section of the deep reading is substantial', thin.slice(0,5).join('\n      '))
+            : ok(`all ${Object.keys(DEPTH).length} deep readings are complete — nine sections and four stages, each of real length`);
+
+/* The actual complaint: sections that restate each other. */
+const repeats = [];
+Object.entries(DEPTH).forEach(([n,D])=>{
+  const sec = {}; FIELDS.forEach(f=>sec[f] = D[f]);
+  Object.entries(D.stages).forEach(([k,v])=>sec['stage:'+k] = v);
+  /* The gift/cost/practice box is hidden once a period has a deep reading, so
+     only the portrait is still on screen beside these sections. */
+  sec.portrait = PORTRAIT[n];
+  overlapPairs(sec, 0.34).forEach(h=>repeats.push(`${n}: ${h}`));
+});
+repeats.length ? bad('no two sections of a reading restate each other', repeats.slice(0,6).join('\n      '))
+               : ok('no two sections of any deep reading share a third of their content words');
+
+/* And it has to be about THIS period, not personology in general. */
+const generic = [];
+Object.entries(DEPTH).forEach(([n,D])=>{
+  const mine = new Set(FIELDS.map(f=>cwords(D[f])).flat());
+  const others = Object.entries(DEPTH).filter(([m])=>m !== n)
+    .map(([,O])=>new Set(FIELDS.map(f=>cwords(O[f])).flat()));
+  if(!others.length) return;
+  const avgShared = others.reduce((a,S)=>a + [...mine].filter(w=>S.has(w)).length/mine.size, 0)/others.length;
+  if(avgShared > 0.30) generic.push(`${n} shares ${Math.round(avgShared*100)}% of its words with the average other reading`);
+});
+generic.length ? bad('each period reads as its own person', generic.slice(0,4).join('\n      '))
+               : ok('each deep reading is its own person — none overlaps the average of the others by a third');
+
+/* Jacques' standing rule on his own app: no mechanisms, no research claims. */
+const CLAIM = /\b(research shows|studies show|scientificall|clinicall|dopamine|serotonin|neuroplastic|brain chemistry|cortisol|diagnos|disorder|cure[sd]?\b|treat(s|ed|ment)\b)/i;
+const claims = [];
+Object.entries(DEPTH).forEach(([n,D])=>{
+  FIELDS.concat(['stages']).forEach(f=>{
+    const t = f === 'stages' ? Object.values(D.stages).join(' ') : D[f];
+    const m = CLAIM.exec(t); if(m) claims.push(`${n}.${f}: "${m[0]}"`);
+  });
+});
+claims.length ? bad('no medical or mechanistic claims anywhere in the deep readings', claims.slice(0,4).join('\n      '))
+              : ok('no medical claims, no mechanisms, no research assertions — only what people describe');
+
+/* It can never tell somebody they are finished. */
+const FINISHED = /\b(you will never|you'll never|too late for you|no way back|beyond help|hopeless|doomed|damaged goods|always be this way)\b/i;
+const finished = [];
+Object.entries(DEPTH).forEach(([n,D])=>{
+  const all = FIELDS.map(f=>D[f]).concat(Object.values(D.stages)).join(' ');
+  const m = FINISHED.exec(all); if(m) finished.push(`${n}: "${m[0]}"`);
+});
+finished.length ? bad('nothing tells a reader they are finished', finished.join('\n      '))
+                : ok('nothing in any reading tells a reader they are finished');
+
+/* The renderer must actually show every section, or writing it was pointless. */
+const deepShown = ['D.action','D.reflect','D.strong','D.hard','D.mind','D.body','D.spirit','D.raised','D.making','D.close',
+               'D.direction','D.stages.young','D.stages.rising','D.stages.middle','D.stages.later'];
+const unshown = deepShown.filter(f=>!new RegExp('\\b' + f.replace('.','\\.') + '\\b').test(html));
+unshown.length ? bad('every written section reaches the screen', 'not rendered: ' + unshown.join(', '))
+               : ok(`all ${deepShown.length} sections of the deep reading are rendered`);
+html.includes('not medical advice, and not a diagnosis')
+  ? ok('the health sections carry their disclaimer') : bad('the health sections carry their disclaimer');
+html.includes('not a schedule')
+  ? ok('the stages say plainly they are not a prediction') : bad('the stages say plainly they are not a prediction');
 
 /* ---------------------------------------------------------- */
 group('The quiz');
