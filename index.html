@@ -366,6 +366,8 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 <canvas id="stars"></canvas>
 <!-- Three.js r128 (MIT), vendored so the fight works offline and ships exactly as tested. -->
 <script src="three.min.js"></script>
+<script src="GLTFLoader.js"></script>
+<script src="SkeletonUtils.js"></script>
 <div class="wrap">
 
 <header class="top">
@@ -1012,24 +1014,6 @@ const LORE = {
   pur:"to bring at least one vision all the way down to the ground where people can stand on it"}
 };
 
-/* Its line, and three replies — only one names this opponent's weakness.
-   The wrong two are other periods' counters, so the reply has to be
-   recognised rather than guessed. */
-function tauntRound(them, pool, rand){
-  const right = them.taunt.c;
-  const wrongs = [];
-  const others = pool.filter(n=>TAUNTS[n] && TAUNTS[n].c !== right);
-  while(wrongs.length < 2 && others.length){
-    const c = TAUNTS[others.splice(Math.floor(rand() * others.length), 1)[0]].c;
-    if(!wrongs.includes(c)) wrongs.push(c);
-  }
-  const options = [right, ...wrongs];
-  for(let i = options.length - 1; i > 0; i--){
-    const j = Math.floor(rand() * (i + 1));
-    [options[i], options[j]] = [options[j], options[i]];
-  }
-  return {line:them.taunt.t, options, answerIndex:options.indexOf(right), answer:right};
-}
 
 /* ============================================================
    PORTRAITS — the substance of a reading. One per period, written
@@ -2451,9 +2435,14 @@ function buildRing(elementColour){
   S.rim = new T.SpotLight(col, 3.2, 20, .7, .6); S.rim.position.set(0, 4.4, -2.6);
   S.scene.add(S.rim); S.scene.add(S.rim.target);
 
-  S.you = makeBoxer(0x2f5fd6, false, col);
-  S.them = makeBoxer(0x07060c, true, col);
-  S.you.group.position.set(-0.78, 0, 1.78);
+  if(GLB){
+    S.you = makeRiggedBoxer(false, col, 0xb8865f);
+    S.them = makeRiggedBoxer(true, col, 0x06050c);
+  } else {
+    S.you = makeBoxer(0x9c7355, false, col, 0x2f5fd6);
+    S.them = makeBoxer(0x07060c, true, col, 0x0a0812);
+  }
+  S.you.group.position.set(-0.30, 0, 2.30);
   S.them.group.position.set(0, 0, -1.55);
   S.them.group.rotation.y = Math.PI;
   S.scene.add(S.you.group); S.scene.add(S.them.group);
@@ -2461,55 +2450,245 @@ function buildRing(elementColour){
   return S;
 }
 
-/* A boxer from shapes. The opponent is near-black with an emissive rim so it
-   reads as a silhouette lit from behind, the way the shadow bosses do. */
-function makeBoxer(bodyColour, isShadow, glow){
+/* The fighters are the rigged model from The Fight of Your Life —
+   fighter.glb, a Mixamo body with boxing clips baked in. Same asset, so they
+   move like boxers instead of like shapes. If it will not load, the ring falls
+   back to the primitive boxer below rather than failing. */
+const CLIP = {
+  idle:'boxing_idle', jab:'lead_jab', combo:'jab_cross', hook:'hook', upper:'uppercut',
+  jabR:'right_jab', hookR:'right_hook', upperR:'right_uppercut',
+  blockL:'left_block', blockR:'right_block', block:'center_block',
+  dodgeL:'dodging', dodgeR:'dodging_right',
+  hitHead:'head_hit', hitBig:'big_head_hit', hitBody:'stomach_hit', stunned:'stunned',
+  down:'knocked_out', up:'getting_up', win:'victory', lose:'defeat'
+};
+let GLB = null;
+
+function b64buf(b64){
+  const bin = atob(b64), n = bin.length, u = new Uint8Array(n);
+  for(let i = 0; i < n; i++) u[i] = bin.charCodeAt(i);
+  return u.buffer;
+}
+/* Loads fighter.glb from beside the page, or from FIGHTER_B64 when the whole
+   app has been built into a single file. */
+function loadFighterAsset(){
+  return new Promise(resolve=>{
+    if(GLB) return resolve(GLB);
+    if(!window.THREE || !THREE.GLTFLoader) return resolve(null);
+    const loader = new THREE.GLTFLoader();
+    const done = g=>{ GLB = {scene:g.scene, clips:g.animations}; resolve(GLB); };
+    if(window.FIGHTER_B64){
+      try{ loader.parse(b64buf(window.FIGHTER_B64), '', done, ()=>resolve(null)); }
+      catch(e){ resolve(null); }
+      return;
+    }
+    loader.load('fighter.glb', done, undefined, ()=>resolve(null));
+  });
+}
+
+/* The export ships two skinned meshes bound to two copies of the same rig —
+   the body to one, the joints to the other. Only one set of bones carries the
+   clips, so the other mesh hangs in its T-pose. Point every mesh at one
+   skeleton, matching bones by name once the loader's numeric suffix is off. */
+function unifySkeletons(root){
+  const T = window.THREE;
+  const canon = new Map();
+  root.traverse(o=>{
+    if(!o.isBone) return;
+    const base = o.name.replace(/_\d+$/, '');
+    if(!canon.has(base) || !/_\d+$/.test(o.name)) canon.set(base, o);
+  });
+  root.traverse(o=>{
+    if(!o.isSkinnedMesh) return;
+    const bones = o.skeleton.bones.map(b=>canon.get(b.name.replace(/_\d+$/, '')) || b);
+    o.skeleton = new T.Skeleton(bones, o.skeleton.boneInverses);
+    o.bind(o.skeleton, o.bindMatrix);
+  });
+}
+
+/* The export carries two skeletons, so GLTFLoader suffixes the second set of
+   bones and the clips no longer resolve — the body stands in its T-pose. The
+   fix is the one The Fight of Your Life uses: rename every bone, then rewrite
+   each track onto the renamed bone, dropping the loader's numeric suffix. */
+function retargetClips(clips, root){
+  const T = window.THREE;
+  const bones = new Set();
+  let hips = '';
+  root.traverse(o=>{
+    if(!o.isSkinnedMesh) return;
+    o.skeleton.bones.forEach(b=>{
+      if(!b.userData.zb){ b.userData.zb = true; b.name = b.name + '_b'; }
+      bones.add(b.name);
+      if(/Hips_b$/.test(b.name) && !hips) hips = b.name;
+    });
+  });
+  const prefix = hips.replace(/Hips_b$/, '');
+  return clips.map(c=>{
+    const tracks = c.tracks.map(t=>{
+      const i = t.name.lastIndexOf('.');
+      const bone = t.name.slice(0, i), prop = t.name.slice(i + 1);
+      const nb = bone.replace(/_\d+$/, '').replace(/^mixamorig\d*/, prefix) + '_b';
+      return bones.has(nb) ? new t.constructor(nb + '.' + prop, t.times, t.values) : null;
+    }).filter(Boolean);
+    return new T.AnimationClip(c.name, c.duration, tracks);
+  });
+}
+
+/* A skinned body cannot be grounded off its rest-pose box — that measures the
+   T-pose, not the stance. Sample the foot bones across a turn of the idle. */
+function groundFeet(B){
+  const T = window.THREE;
+  const feet = [];
+  B.root.traverse(o=>{ if(o.isBone && /Toe|Foot($|_)/i.test(o.name)) feet.push(o); });
+  if(!feet.length) return;
+  B.root.position.y = 0;
+  let lo = 1e9;
+  const v = new T.Vector3();
+  for(let i = 0; i <= 14; i++){
+    B.mixer.update(i ? 0.07 : 0.001);
+    B.root.updateMatrixWorld(true);
+    feet.forEach(f=>{ v.setFromMatrixPosition(f.matrixWorld); if(v.y < lo) lo = v.y; });
+  }
+  B.root.position.y = -lo;
+  B.root.updateMatrixWorld(true);
+}
+
+function makeRiggedBoxer(isShadow, glow, colour){
+  const T = window.THREE;
+  const root = (T.SkeletonUtils && T.SkeletonUtils.clone) ? T.SkeletonUtils.clone(GLB.scene) : GLB.scene.clone(true);
+  root.traverse(o=>{
+    if(!o.isMesh) return;
+    o.frustumCulled = false;          /* a skinned box is the rest pose, so it culls wrongly */
+    /* r128 needs this flag or the shader ignores the bones and draws the bind
+       pose — the T-pose. Newer three does it automatically; this one does not. */
+    o.material = new T.MeshStandardMaterial({
+      skinning: !!o.isSkinnedMesh,
+      color: isShadow ? 0x040309 : colour,
+      roughness: isShadow ? .95 : .45,
+      metalness: isShadow ? .02 : .18,
+      emissive: isShadow ? new T.Color(glow) : new T.Color(0x000000),
+      emissiveIntensity: isShadow ? .13 : 0
+    });
+  });
+  unifySkeletons(root);
+  root.updateMatrixWorld(true);
+  const h = new T.Box3().setFromObject(root).getSize(new T.Vector3()).y;
+  if(h > 0.2) root.scale.multiplyScalar(1.82 / h);
+
+  const holder = new T.Group(); holder.add(root);
+  const mixer = new T.AnimationMixer(root);
+  const actions = {};
+  retargetClips(GLB.clips, root).forEach(c=>{ actions[c.name] = mixer.clipAction(c); });
+  const B = {group:holder, root, mixer, actions, currentName:null, rigged:true};
+  playClip(B, CLIP.idle, {loop:true});
+  groundFeet(B);
+  return B;
+}
+
+/* Cross-fade to a clip. One-shots hold, then hand back to the idle. */
+function playClip(B, name, opts){
+  if(!B || !B.rigged) return;
+  const o = opts || {};
+  const act = B.actions[name] || B.actions[CLIP.idle];
+  if(!act) return;
+  if(B.currentName === name && o.loop) return;
+  const prev = B.currentName && B.actions[B.currentName];
+  act.reset();
+  act.setLoop(o.loop ? THREE.LoopRepeat : THREE.LoopOnce, o.loop ? Infinity : 1);
+  act.clampWhenFinished = !o.loop;
+  act.timeScale = o.speed || 1;
+  act.enabled = true; act.setEffectiveWeight(1);
+  if(prev && prev !== act) act.crossFadeFrom(prev, o.fade == null ? .16 : o.fade, false);
+  act.play();
+  B.currentName = name;
+  if(!o.loop){
+    clearTimeout(B._back);
+    const dur = (act.getClip().duration / (o.speed || 1)) * 1000;
+    B._back = setTimeout(()=>{ if(B.currentName === name) playClip(B, o.then || CLIP.idle, {loop:true, fade:.2}); },
+                         Math.max(150, dur * (o.hold == null ? .78 : o.hold)));
+  }
+}
+
+/* A boxer built from shapes: jointed arms so the guard sits by the chin and a
+   punch straightens at the elbow, legs with knees, boots, and a bladed stance.
+   The opponent is near-black with an emissive rim so it reads as a silhouette
+   lit from behind, the way the shadow bosses do. */
+const GUARD = {sh:0.25, el:1.90};      /* gloves up by the chin */
+const EXTEND = {sh:1.50, el:0.15};     /* arm straightened, glove out front */
+
+function makeBoxer(bodyColour, isShadow, glow, trunkColour){
   const T = window.THREE;
   const g = new T.Group();
-  const mat = isShadow
-    ? new T.MeshStandardMaterial({color:0x05040a, roughness:1, metalness:0, emissive:glow, emissiveIntensity:.16})
-    : new T.MeshStandardMaterial({color:bodyColour, roughness:.7, metalness:.05});
-  const skin = isShadow ? mat : new T.MeshStandardMaterial({color:0x8a6b52, roughness:.85});
-  const gloveMat = new T.MeshStandardMaterial({color:isShadow ? 0x140a0e : 0xc8262a, roughness:.55,
-    emissive:isShadow ? glow : 0x000000, emissiveIntensity:isShadow ? .3 : 0});
+  const skinTone = isShadow ? 0x08070e : 0x9c7355;
+  const body = isShadow
+    ? new T.MeshStandardMaterial({color:0x05040a, roughness:1, metalness:0, emissive:glow, emissiveIntensity:.18})
+    : new T.MeshStandardMaterial({color:skinTone, roughness:.82, metalness:.02});
+  const trunk = new T.MeshStandardMaterial({color:isShadow ? 0x0a0812 : (trunkColour || 0x2f5fd6),
+    roughness:.7, emissive:isShadow ? glow : 0x000000, emissiveIntensity:isShadow ? .10 : 0});
+  const glove = new T.MeshStandardMaterial({color:isShadow ? 0x160a10 : 0xc8262a, roughness:.5,
+    emissive:isShadow ? glow : 0x000000, emissiveIntensity:isShadow ? .34 : 0});
+  const boot = new T.MeshStandardMaterial({color:isShadow ? 0x0a0810 : 0xf2f0f5, roughness:.65});
 
-  const torso = new T.Mesh(new T.CylinderGeometry(.30, .38, .84, 12), mat);
-  torso.position.y = 1.16; g.add(torso);
-  const hips = new T.Mesh(new T.CylinderGeometry(.30, .26, .34, 12), mat);
-  hips.position.y = .60; g.add(hips);
-  const head = new T.Mesh(new T.SphereGeometry(.185, 14, 12), skin);
-  head.position.y = 1.78; g.add(head);
-  const neck = new T.Mesh(new T.CylinderGeometry(.09, .11, .14, 8), skin);
-  neck.position.y = 1.63; g.add(neck);
+  const cyl = (rt, rb, h, mat, seg) => new T.Mesh(new T.CylinderGeometry(rt, rb, h, seg || 12), mat);
+  const ball = (r, mat) => new T.Mesh(new T.SphereGeometry(r, 14, 12), mat);
 
-  const limb = (x, y, z, w, h) => {
-    const m = new T.Mesh(new T.CylinderGeometry(w, w * .9, h, 8), mat);
-    m.position.set(x, y, z); return m;
-  };
-  const legL = limb(-.16, .28, 0, .115, .62), legR = limb(.16, .28, 0, .115, .62);
-  g.add(legL); g.add(legR);
+  /* torso: broad chest tapering to the waist, with real shoulders */
+  const chest = cyl(.30, .235, .52, body); chest.position.y = 1.31; g.add(chest);
+  const lats  = ball(.30, body); lats.scale.set(1, .62, .78); lats.position.y = 1.50; g.add(lats);
+  const waist = cyl(.235, .245, .30, body); waist.position.y = .92; g.add(waist);
+  const shorts = cyl(.255, .285, .34, trunk); shorts.position.y = .70; g.add(shorts);
+  const band = cyl(.258, .258, .07, glove); band.position.y = .855; g.add(band);
 
-  const armL = new T.Group(), armR = new T.Group();
-  armL.position.set(-.34, 1.42, 0); armR.position.set(.34, 1.42, 0);
-  const upperL = limb(0, -.20, 0, .095, .42), upperR = limb(0, -.20, 0, .095, .42);
-  armL.add(upperL); armR.add(upperR);
-  const gl = new T.Mesh(new T.SphereGeometry(.145, 12, 10), gloveMat);
-  const gr = new T.Mesh(new T.SphereGeometry(.145, 12, 10), gloveMat);
-  gl.position.set(0, -.46, 0); gr.position.set(0, -.46, 0);
-  armL.add(gl); armR.add(gr);
-  g.add(armL); g.add(armR);
+  /* head and neck */
+  const neck = cyl(.085, .105, .13, body); neck.position.y = 1.62; g.add(neck);
+  const head = ball(.165, body); head.scale.set(1, 1.12, 1.02); head.position.y = 1.79; g.add(head);
+  const jaw  = ball(.115, body); jaw.scale.set(1, .72, 1); jaw.position.set(0, 1.71, -.055); g.add(jaw);
 
-  /* guard up */
-  armL.rotation.set(-1.15, 0, .32); armR.rotation.set(-1.15, 0, -.32);
-  return {group:g, armL, armR, head, torso, gloveL:gl, gloveR:gr, mat, gloveMat};
+  /* arms: shoulder -> upper -> elbow -> forearm -> glove */
+  function arm(side){
+    const sh = new T.Group();
+    sh.position.set(side * .295, 1.50, 0);
+    sh.add(ball(.115, body));
+    const upper = cyl(.088, .078, .30, body); upper.position.y = -.17; sh.add(upper);
+    const el = new T.Group(); el.position.y = -.32;
+    el.add(ball(.082, body));
+    const fore = cyl(.075, .068, .27, body); fore.position.y = -.15; el.add(fore);
+    const gv = ball(.135, glove); gv.scale.set(1, 1.15, 1.05); gv.position.y = -.31; el.add(gv);
+    const cuff = cyl(.083, .095, .07, glove); cuff.position.y = -.20; el.add(cuff);
+    sh.add(el);
+    g.add(sh);
+    return {sh, el, glove:gv};
+  }
+  const aL = arm(-1), aR = arm(1);
+
+  /* legs: hip -> thigh -> knee -> shin -> boot, one foot forward */
+  function leg(side, fwd){
+    const hip = new T.Group(); hip.position.set(side * .135, .70, fwd);
+    const thigh = cyl(.115, .095, .42, body); thigh.position.y = -.23; hip.add(thigh);
+    hip.add(ball(.088, body));
+    const kn = new T.Group(); kn.position.y = -.44; kn.add(ball(.082, body));
+    const shin = cyl(.082, .068, .38, body); shin.position.y = -.21; kn.add(shin);
+    const bt = new T.Mesh(new T.BoxGeometry(.155, .11, .28), boot);
+    bt.position.set(0, -.40, -.045); kn.add(bt);
+    hip.add(kn); g.add(hip);
+    return hip;
+  }
+  leg(-1, -.10); leg(1, .13);
+
+  /* guard up, bladed slightly so it reads as a stance rather than a statue */
+  [aL, aR].forEach(a=>{ a.sh.rotation.x = GUARD.sh; a.el.rotation.x = GUARD.el; });
+  aL.sh.rotation.z = .20; aR.sh.rotation.z = -.20;
+  g.rotation.y = 0.13;
+
+  return {group:g, armL:aL, armR:aR, head, torso:chest, gloveL:aL.glove, gloveR:aR.glove, mat:body};
 }
 
 /* Camera shots, the way the spec lists them. */
 /* Over-the-shoulder is the working shot: the whole defence is reading which
    way it leans, and a side-on view makes left and right ambiguous. */
 const SHOT = {
-  tv:      {p:[0.18, 2.10, 3.85], l:[0.10, 1.20, -1.55]},
-  shoulder:{p:[0.10, 1.98, 3.45], l:[0.10, 1.24, -1.55]},
+  tv:      {p:[0.04, 2.02, 4.15], l:[0.06, 1.24, -1.55]},
+  shoulder:{p:[0.02, 1.92, 3.95], l:[0.06, 1.22, -1.55]},
   low:     {p:[1.35, 0.70, 1.05], l:[0.05, 1.20, -1.60]},
   house:   {p:[4.20, 2.90, 5.40], l:[0, 1.05, -0.60]}
 };
@@ -2589,14 +2768,16 @@ function fightHTML(){
   </div>`;
 }
 
-function openFight(youProfile, themProfile){
+async function openFight(youProfile, themProfile){
   document.body.insertAdjacentHTML('beforeend', fightHTML());
+  await loadFighterAsset();
   const you = fighterFrom(youProfile), them = fighterFrom(themProfile);
   F = {
+    youP:youProfile, themP:themProfile,
     you, them, round:1, rounds:3, clock:90, phase:'walkin',
     meter:{you:0, them:0}, stars:{you:0, them:0}, downs:{you:0, them:0},
     busyUntil:0, theirNext:0, swing:null, guard:null, over:null,
-    lastTaunt:0, replyOpen:false, camShot:'house', shake:0, slow:1, drag:null
+    lastTaunt:0, camShot:'house', shake:0, slow:1, drag:null
   };
   $('h-you').textContent = you.name === you.period ? you.period : you.name;
   $('h-them').textContent = them.period;
@@ -2675,6 +2856,7 @@ function youPunch(kind){
   F.busyUntil = now + P.wind + P.recover;
   F.youSwingUntil = now + P.wind + 120;
   F.youArm = kind === 'jab' ? 'L' : 'R';
+  if(R3.ok) playClip(R3.S.you, CLIP[kind] || CLIP.jab, {speed:1.25});
 
   setTimeout(()=>{
     if(!F || F.over) return;
@@ -2682,10 +2864,13 @@ function youPunch(kind){
     const blocked = Math.random() < F.them.style.block;
     const factor = elementFactor(F.you.elements, F.them.elements);
     let dmg = Math.max(2, Math.round(F.you.power * P.dmg * factor / 3));
-    if(blocked){ dmg = Math.max(1, Math.round(dmg * .35)); call('Blocked'); blip('whoosh'); }
+    if(blocked){ dmg = Math.max(1, Math.round(dmg * .35)); call('Blocked'); blip('whoosh');
+      if(R3.ok) playClip(R3.S.them, CLIP.block, {speed:1.3}); }
     else {
       F.meter.you = Math.min(100, F.meter.you + P.meter);
       flash(); blip('thud'); shake(kind === 'upper' ? 16 : kind === 'hook' ? 11 : 6);
+      if(R3.ok) playClip(R3.S.them, kind === 'hook' || kind === 'upper' ? CLIP.hitBig
+                                   : kind === 'combo' ? CLIP.hitBody : CLIP.hitHead, {speed:1.15});
       if(kind === 'upper' || kind === 'hook') slam(P.name.toUpperCase() + '!');
       if(Math.random() < .35) call(kind === 'jab' ? 'Sharp jab.' : kind === 'combo' ? 'One-two!' : 'Big ' + P.name.toLowerCase() + '!');
       chant('R', F.you.period.split(' ')[0].toUpperCase() + '!');
@@ -2711,6 +2896,7 @@ function fireSuper(){
 }
 
 /* ---------- its turn ---------- */
+const now = () => performance.now();
 function theirWindup(){
   const tier = F.round <= 1 ? 1 : F.round <= 2 ? 2 : 3;
   const tell = [1150, 880, 700][tier - 1] * F.them.style.tellScale;
@@ -2720,8 +2906,14 @@ function theirWindup(){
              at:performance.now() + tell, taken:false};
   F.guard = null;
   blip('whoosh');
+  if(R3.ok){
+    const c = tier === 1 ? (lean === 'left' ? CLIP.hook : CLIP.hookR)
+            : (Math.random() < .5 ? (lean === 'left' ? CLIP.jab : CLIP.jabR)
+                                  : (lean === 'left' ? CLIP.upper : CLIP.upperR));
+    playClip(R3.S.them, c, {speed:Math.max(.55, 900 / tell)});
+  }
   cue(lean);
-  if(Math.random() < .5) voice(F.them.period, F.them.taunt.t);
+  if(now() - (F.lastTaunt || 0) > 5200){ F.lastTaunt = now(); voice(F.them.period, F.them.taunt.t); }
 }
 
 function cue(side){
@@ -2737,15 +2929,21 @@ function resolveTheirSwing(){
   const g = F.guard;
   const factor = elementFactor(F.them.elements, F.you.elements);
   const raw = Math.max(3, Math.round(F.them.power * factor / 2.4) - Math.round(F.you.guard / 3));
+  if(R3.ok) playClip(R3.S.you, g === 'block' ? CLIP.block
+                             : g === 'left' ? CLIP.dodgeL
+                             : g === 'right' ? CLIP.dodgeR : CLIP.idle, {speed:1.3});
   if(g === safe){
     F.stars.you = Math.min(3, F.stars.you + 1);
     F.meter.you = Math.min(100, F.meter.you + 9);
     call(sw.feint ? 'Read the feint!' : 'Slipped it!'); blip('ding');
     chant('R', 'SLIP!');
+    /* You slipped what it is proud of, so you get to name what it is not. */
+    voice(F.you.period, F.them.taunt.c);
   } else if(g === 'block'){
     F.you.hp -= Math.max(1, Math.round(raw * .4)); call('Blocked it'); blip('whoosh'); shake(4);
   } else {
     F.you.hp -= raw; flash(); blip('thud'); shake(12);
+    if(R3.ok) playClip(R3.S.you, F.you.hp / F.you.maxHp < .35 ? CLIP.stunned : CLIP.hitHead, {speed:1.1});
     F.meter.them = Math.min(100, F.meter.them + 14);
     if(F.you.hp / F.you.maxHp < .35) slam('HURT!');
     chant('L', F.them.period.split(' ')[0].toUpperCase() + '!');
@@ -2753,33 +2951,6 @@ function resolveTheirSwing(){
   hurt(Math.max(0, .55 - F.you.hp / F.you.maxHp * .55));
   hud();
   if(!checkDown()) F.theirNext = performance.now() + (700 + Math.random() * 900);
-}
-
-/* Its taunt, with replies — one names its weakness. */
-function openReply(){
-  F.replyOpen = true; F.lastTaunt = performance.now();
-  const r = tauntRound(F.them, PERIODS.map(p=>p.n), Math.random);
-  F.reply = r;
-  voice(F.them.period, r.line);
-  $('r3-replies').innerHTML = r.options.map((o, i)=>
-    `<button data-reply="${i}">${esc(o)}</button>`).join('');
-  $('r3-replies').classList.add('on');
-}
-function answerReply(i){
-  if(!F.replyOpen) return;
-  F.replyOpen = false;
-  $('r3-replies').classList.remove('on'); $('r3-replies').innerHTML = '';
-  if(i === F.reply.answerIndex){
-    const factor = elementFactor(F.you.elements, F.them.elements);
-    const dmg = Math.max(4, Math.round(F.you.power * .8 * factor / 2));
-    F.them.hp -= dmg; F.meter.you = Math.min(100, F.meter.you + 18);
-    slam('NAMED IT!'); flash(); blip('ding'); shake(10);
-    call('Straight through the guard.'); chant('R', 'YES!');
-  } else {
-    F.you.hp -= Math.max(3, Math.round(F.them.power * .6));
-    call('Wrong read — ' + F.reply.answer, 2400); blip('thud'); shake(7);
-  }
-  hud(); checkDown();
 }
 
 /* ---------- knockdowns and the end ---------- */
@@ -2793,8 +2964,11 @@ function checkDown(){
   F.phase = 'down'; F.downWho = who; F.count = 0;
   setShot('low'); F.slow = .4; speedlines(true);
   slam('DOWN!'); blip('down');
-  if(who === 'them') R3.ok && (R3.S.them.group.rotation.x = -1.2);
-  else R3.ok && (R3.S.you.group.rotation.x = 1.2);
+  if(R3.ok){
+    const B = who === 'them' ? R3.S.them : R3.S.you;
+    if(B.rigged) playClip(B, CLIP.down, {hold:.98});
+    else B.group.rotation.x = who === 'them' ? -1.2 : 1.2;
+  }
   countOn();
   return true;
 }
@@ -2813,7 +2987,11 @@ function countOn(){
 function riseUp(who){
   clearTimeout(F.countTimer);
   F[who].hp = Math.round(F[who].maxHp / 3);
-  if(R3.ok){ R3.S[who === 'them' ? 'them' : 'you'].group.rotation.x = 0; }
+  if(R3.ok){
+    const B = R3.S[who === 'them' ? 'them' : 'you'];
+    if(B.rigged) playClip(B, CLIP.up, {then:CLIP.idle});
+    else B.group.rotation.x = 0;
+  }
   F.phase = 'live'; F.slow = 1; speedlines(false); hurt(0);
   $('r3-count').textContent = '';
   call(who === 'you' ? 'Up at ' + F.count + '!' : 'It beats the count.');
@@ -2830,6 +3008,10 @@ function endFight(winner, how){
   voice(winner === 'you' ? 'Corner' : F.them.period,
         winner === 'you' ? 'That is how it is done.' : 'Same time tomorrow.');
   blip(winner === 'you' ? 'ding' : 'down');
+  if(R3.ok){
+    playClip(R3.S.you,  winner === 'you' ? CLIP.win : CLIP.lose, {hold:.95});
+    playClip(R3.S.them, winner === 'you' ? CLIP.lose : CLIP.win, {hold:.95});
+  }
   $('r3-replies').classList.remove('on');
   $('r3-replies').innerHTML = `<button data-again="1">Again</button><button data-quit="1">Leave</button>`;
   $('r3-replies').classList.add('on');
@@ -2871,10 +3053,7 @@ function loop(t){
     if(F.clock <= 0){ F.clock = 0; hud(); return endRound(); }
     const now = performance.now();
     if(F.swing && !F.swing.taken && now >= F.swing.at){ F.swing.taken = true; resolveTheirSwing(); }
-    else if(!F.swing && !F.replyOpen && now >= F.theirNext){
-      if(now - F.lastTaunt > 14000 && Math.random() < .5) openReply();
-      else theirWindup();
-    }
+    else if(!F.swing && now >= F.theirNext) theirWindup();
     if(Math.floor(F.clock) % 30 === 0 && Math.random() < .01) chant('L', F.them.period.split(' ')[0].toUpperCase() + '!');
   }
   hud();
@@ -2904,20 +3083,26 @@ function drawRing(dt){
   /* the opponent's lean on its tell, and both fighters' idle sway */
   const sway = Math.sin(now / 420) * .045;
   S.them.group.position.x = (F && F.swing ? (F.swing.lean === 'left' ? -.46 : .46) : 0) + sway;
-  S.you.group.position.x = -0.78 - sway;
+  S.you.group.position.x = -0.30 - sway;
   S.them.group.position.y = Math.abs(Math.sin(now / 300)) * .03;
 
   /* arms: guard, or thrown */
-  const throwing = F && F.youSwingUntil && now < F.youSwingUntil;
-  const arm = F && F.youArm === 'L' ? S.you.armL : S.you.armR;
-  [S.you.armL, S.you.armR].forEach(a=>{ a.rotation.x += ((-1.15) - a.rotation.x) * .2; });
-  if(throwing) arm.rotation.x += ((-2.55) - arm.rotation.x) * .55;
-  const theyThrow = F && F.swing && now > F.swing.at - 130;
-  [S.them.armL, S.them.armR].forEach(a=>{ a.rotation.x += ((-1.15) - a.rotation.x) * .2; });
-  if(theyThrow){ const ta = F.swing.hits === 'left' ? S.them.armR : S.them.armL; ta.rotation.x += ((-2.5) - ta.rotation.x) * .5; }
+  if(!S.you.rigged){
+    const ease = (a, sh, el, k) => { a.sh.rotation.x += (sh - a.sh.rotation.x) * k; a.el.rotation.x += (el - a.el.rotation.x) * k; };
+    const throwing = F && F.youSwingUntil && now < F.youSwingUntil;
+    const yourArm = F && F.youArm === 'L' ? S.you.armL : S.you.armR;
+    [S.you.armL, S.you.armR].forEach(a=>ease(a, GUARD.sh, GUARD.el, .2));
+    if(throwing) ease(yourArm, EXTEND.sh, EXTEND.el, .55);
+    const theyThrow = F && F.swing && now > F.swing.at - 130;
+    [S.them.armL, S.them.armR].forEach(a=>ease(a, GUARD.sh, GUARD.el, .2));
+    if(theyThrow) ease(F.swing.hits === 'left' ? S.them.armR : S.them.armL, EXTEND.sh, EXTEND.el, .5);
+  }
 
   /* the backlight pulses when it is winding up */
   if(S.back) S.back.intensity = 6.4 + (F && F.swing ? 3.4 * Math.max(0, 1 - (F.swing.at - now) / 900) : Math.sin(now/700) * .5);
+  const step = dt * (F ? F.slow : 1);
+  if(S.you.mixer) S.you.mixer.update(step);
+  if(S.them.mixer) S.them.mixer.update(step);
   S.crowd.rotation.y += dt * .012;
   S.renderer.render(S.scene, S.camera);
 }
@@ -2933,7 +3118,6 @@ function wireFight(){
     if(t.dataset.p) return youPunch(t.dataset.p);
     if(t.dataset.d) return setGuard(t.dataset.d);
     if(t.dataset.c) return cornerChoice(t.dataset.c);
-    if(t.dataset.reply !== undefined) return answerReply(+t.dataset.reply);
   });
   /* drag to swing the camera */
   let down = null;
@@ -2970,8 +3154,9 @@ function fightSetupHTML(){
     .map(p=>`<option value="${p.id}">${esc(p.name)} — ${findPeriod(p.month,p.day).n}</option>`).join('');
   return `<div class="game">
     <h2>The fight</h2>
-    <p class="sub2">Three rounds. You throw the punches; it winds up with a lean before it swings, so slip the other way.
-    It taunts you with what its period is good at — one reply names what it is bad at.</p>
+    <p class="sub2">Three rounds, no questions. You throw the punches; it winds up with a lean before it
+    swings, so slip the other way. It talks the whole time about what its period is good at — slip it clean
+    and you get to say what it is bad at.</p>
     <div class="form-grid" style="grid-template-columns:1fr 1fr">
       <div><label for="fy">You</label><select id="fy"><option value="">Random period</option>${opts}</select></div>
       <div><label for="ft">Opponent</label><select id="ft"><option value="">Random period</option>${opts}</select></div>
@@ -2991,8 +3176,7 @@ $('game-box').addEventListener('click', e=>{
   if(t.id === 'f-back'){ return renderGame(); }
   if(t.id === 'f-bell'){
     const byId = id => { const p = PEOPLE.find(x=>x.id === id); return p ? profileOf(p) : randomPeriodProfile(); };
-    const y = byId($('fy').value), m = byId($('ft').value);
-    openFight(y, m); F.youP = y; F.themP = m;
+    openFight(byId($('fy').value), byId($('ft').value));
   }
 });
 
