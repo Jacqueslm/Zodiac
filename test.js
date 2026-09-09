@@ -22,7 +22,8 @@ const NAMES = ['PERIODS','LORE','NUMBERS','TAROT','EL_REL','Q_REL','SIGNS','ELEM
                'DIM','MONTHS','profileOf','reduceNum','digitSum','tarotFor','tarotIndex','relKey',
                'isLeap','parseBirthday','parseBulkLine','renderCrest','renderReading','renderPath','renderPair',
                'parseCSV','parseContactsCSV','parseVCF','parseContacts','parseContactDate',
-               'WELLBEING','SIGN_BODY','SIGN_SWATCH','PLANET_LORE','BIRTHSTONE','DESTINY'];
+               'WELLBEING','SIGN_BODY','SIGN_SWATCH','PLANET_LORE','BIRTHSTONE','DESTINY',
+               'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT'];
 const ctx = vm.createContext({console});
 vm.runInContext(engine + `\n;globalThis.__api = {${NAMES.join(',')}};`, ctx, {filename:'index.html:engine'});
 const api = ctx.__api;
@@ -32,7 +33,8 @@ const {PERIODS, LORE, NUMBERS, TAROT, EL_REL, Q_REL, SIGNS, ELEMENTS, QUALITIES,
        profileOf, reduceNum, digitSum, tarotFor, tarotIndex, relKey, isLeap,
        parseBirthday, parseBulkLine, renderCrest, renderReading, renderPath, renderPair,
        parseCSV, parseContactsCSV, parseVCF, parseContacts, parseContactDate,
-       WELLBEING, SIGN_BODY, SIGN_SWATCH, PLANET_LORE, BIRTHSTONE, DESTINY} = api;
+       WELLBEING, SIGN_BODY, SIGN_SWATCH, PLANET_LORE, BIRTHSTONE, DESTINY,
+       makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT} = api;
 
 let failures = 0, checks = 0;
 function ok(label){ checks++; console.log('  ✓ ' + label); }
@@ -199,6 +201,173 @@ lineFails.length ? bad('bulk lines split name from date', lineFails.join('\n    
 is(parseBulkLine('   '), null, 'blank lines are ignored');
 is(parseBulkLine('# a comment'), null, 'comment lines are ignored');
 ok('unreadable lines report an error instead of throwing: ' + JSON.stringify(parseBulkLine('Just A Name').error));
+
+/* ---------------------------------------------------------- */
+group('Readings are specific, not boilerplate');
+
+const portraitGaps = [];
+PERIODS.forEach(p=>{
+  const t = PORTRAIT[p.n];
+  if(!t) return portraitGaps.push(`no portrait for ${p.n}`);
+  if(t.length < 300) portraitGaps.push(`${p.n}: portrait only ${t.length} chars`);
+  if(t.split(/(?<=[.!?])\s/).filter(x=>x.trim()).length < 3) portraitGaps.push(`${p.n}: fewer than 3 sentences`);
+});
+Object.keys(PORTRAIT).forEach(k=>{ if(!PERIODS.some(p=>p.n === k)) portraitGaps.push(`orphan portrait "${k}"`); });
+portraitGaps.length ? bad('every period has a substantial portrait', portraitGaps.join('\n      '))
+                    : ok('all 48 periods have a portrait of 3+ sentences');
+is(new Set(PERIODS.map(p=>PORTRAIT[p.n])).size, 48, 'all 48 portraits are distinct');
+
+/* The point of the portraits: the part of a reading driven by the PERIOD
+   must be mostly specific to it. Before portraits existed it was 11%.
+   Excluded from the denominator: the number and card sections (driven by
+   the day of the month — everyone born on the 19th shares them by
+   design), the correspondences data panel, and the section headings. */
+const strip = h => h.replace(/<[^>]+>/g, ' ').replace(/&mdash;/g, '-').replace(/\s+/g, ' ').trim();
+function periodProse(p){
+  let h = renderReading(profileOf({name:'X', month:p.sm, day:p.sd, year:1990}));
+  const a = h.indexOf('<h4>The number'), b = h.indexOf('<h4>Where it converges');
+  if(a > -1 && b > a) h = h.slice(0, a) + h.slice(b);
+  const c = h.indexOf('<h4>Correspondences');
+  if(c > -1) h = h.slice(0, c);
+  return strip(h.replace(/<h4>[\s\S]*?<\/h4>/g, ' '));
+}
+const proses = PERIODS.map(periodProse);
+const share = PERIODS.map((p, i)=>{
+  const own = [PORTRAIT[p.n], LORE[p.n].k, LORE[p.n].g, LORE[p.n].s, LORE[p.n].p,
+               WELLBEING[p.n].h, WELLBEING[p.n].m].join(' ').length;
+  return own / proses[i].length * 100;
+});
+const minShare = Math.min(...share), avgShare = share.reduce((a,b)=>a + b, 0) / share.length;
+/* 40% is a regression guard, not a target: the figure was 11% before the
+   portraits and sits in the mid-forties now. */
+minShare >= 40 ? ok(`period-driven prose is ${minShare.toFixed(0)}-${Math.max(...share).toFixed(0)}% specific to its own period (avg ${avgShare.toFixed(0)}%, was 11% before portraits)`)
+               : bad('a reading is mostly about its own period', `the thinnest is only ${minShare.toFixed(0)}% specific`);
+
+/* Two readings may still share correspondence lines — a body zone with the
+   same sign, an element/quality line, a number's register. That is the
+   system working. What must not happen is two readings looking alike, so
+   cap how much of a reading any other reading can duplicate. */
+const sentencesOf = r => r.split(/(?<=[.!?])\s/).map(x=>x.trim()).filter(x=>x.length > 30);
+const sents = proses.map(sentencesOf);
+let worstPair = {pct:0};
+for(let i = 0; i < sents.length; i++){
+  const setI = new Set(sents[i]);
+  for(let j = i + 1; j < sents.length; j++){
+    const dupChars = sents[j].filter(x=>setI.has(x)).join(' ').length;
+    const pct = dupChars / Math.min(proses[i].length, proses[j].length) * 100;
+    if(pct > worstPair.pct) worstPair = {pct, a:PERIODS[i].n, b:PERIODS[j].n};
+  }
+}
+worstPair.pct <= 20
+  ? ok(`the most alike pair of readings duplicates only ${worstPair.pct.toFixed(0)}% of each other (${worstPair.a} / ${worstPair.b})`)
+  : bad('no two readings look alike', `${worstPair.a} and ${worstPair.b} duplicate ${worstPair.pct.toFixed(0)}%`);
+
+/* Portraits themselves must never be shared. */
+const portraitSents = PERIODS.map(p=>sentencesOf(PORTRAIT[p.n]));
+const dupPortrait = new Set();
+for(let i = 0; i < portraitSents.length; i++){
+  const setI = new Set(portraitSents[i]);
+  for(let j = i + 1; j < portraitSents.length; j++)
+    portraitSents[j].forEach(x=>{ if(setI.has(x)) dupPortrait.add(x); });
+}
+dupPortrait.size === 0 ? ok('no sentence is reused between any two portraits')
+                       : bad('no sentence is reused between any two portraits', [...dupPortrait].slice(0,3).join(' | '));
+
+/* The portrait must actually reach the page. */
+const shown = PERIODS.filter(p=>!renderReading(profileOf({name:'X', month:p.sm, day:p.sd, year:1990})).includes(PORTRAIT[p.n]));
+shown.length ? bad('every portrait is rendered into its reading', shown.map(p=>p.n).join(', '))
+             : ok('every portrait is rendered into its reading');
+
+/* ---------------------------------------------------------- */
+group('The quiz');
+
+/* Seeded, so a failure is reproducible. */
+function seeded(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+const quizFails = [];
+let generated = 0;
+for(let seed = 1; seed <= 200; seed++){
+  const qs = makeQuiz([], 10, seeded(seed));
+  if(qs.length !== 10){ quizFails.push(`seed ${seed}: got ${qs.length} questions`); continue; }
+  qs.forEach((q, i)=>{
+    generated++;
+    if(!q.prompt || q.prompt.length < 10) quizFails.push(`seed ${seed} q${i}: empty prompt`);
+    if(q.options.length < 3) quizFails.push(`seed ${seed} q${i}: only ${q.options.length} options`);
+    if(new Set(q.options).size !== q.options.length) quizFails.push(`seed ${seed} q${i}: duplicate options`);
+    if(q.answerIndex < 0 || q.answerIndex >= q.options.length) quizFails.push(`seed ${seed} q${i}: answerIndex out of range`);
+    if(q.options[q.answerIndex] !== q.answer) quizFails.push(`seed ${seed} q${i}: answerIndex points at the wrong option`);
+    if(q.options.filter(o=>o === q.answer).length !== 1) quizFails.push(`seed ${seed} q${i}: answer appears ${q.options.filter(o=>o === q.answer).length} times`);
+    if(/undefined|NaN|\[object Object\]/.test(q.prompt + q.note + q.options.join(''))) quizFails.push(`seed ${seed} q${i}: placeholder leaked`);
+    if(!q.note) quizFails.push(`seed ${seed} q${i}: no explanation`);
+  });
+  const prompts = qs.map(q=>q.prompt);
+  if(new Set(prompts).size !== prompts.length) quizFails.push(`seed ${seed}: a question repeated within one round`);
+}
+quizFails.length ? bad(`200 seeded rounds all produce valid questions`, quizFails.slice(0,5).join('\n      '))
+                 : ok(`200 seeded rounds produce ${generated} valid questions, one correct answer each`);
+
+/* Every generator must be exercised and must be answerable from the app's own data. */
+const kindsSeen = new Set();
+for(let seed = 1; seed <= 400; seed++) makeQuiz([], 6, seeded(seed)).forEach(q=>kindsSeen.add(q.kind));
+const missingKinds = Object.keys(QUIZ_KINDS).filter(k=>!kindsSeen.has(k));
+missingKinds.length ? bad('every question type gets generated', missingKinds.join(', '))
+                    : ok(`every question type gets generated (${kindsSeen.size} types)`);
+
+/* Correctness of the answers themselves, not just their shape. */
+const factFails = [];
+for(let seed = 1; seed <= 300; seed++){
+  makeQuiz([], 8, seeded(seed)).forEach(q=>{
+    if(q.kind === 'title'){
+      const p = PERIODS.find(x=>x.n === q.answer);
+      const asked = q.prompt.match(/<strong>(.+?)<\/strong>/)[1];
+      if(p.t !== asked) factFails.push(`title: "${asked}" answered as ${q.answer} (${p.t})`);
+    }
+    if(q.kind === 'element'){
+      const sign = q.prompt.match(/<strong>(.+?)<\/strong>/)[1];
+      if(SIGNS[sign].e !== q.answer) factFails.push(`element: ${sign} answered as ${q.answer}`);
+    }
+    if(q.kind === 'stone'){
+      const month = q.prompt.match(/<strong>(.+?)<\/strong>/)[1];
+      if(BIRTHSTONE[MONTHS.indexOf(month)] !== q.answer) factFails.push(`stone: ${month} answered as ${q.answer}`);
+    }
+  });
+}
+factFails.length ? bad('sampled answers are factually right', factFails.slice(0,5).join('\n      '))
+                 : ok('sampled answers check out against the source tables');
+
+/* People questions: only when at least three sit in distinct periods, and never ambiguous. */
+const threePeople = [{name:'Ada', month:11, day:29}, {name:'Bo', month:4, day:7}, {name:'Cy', month:2, day:29}];
+let peopleQs = 0, peopleBad = [];
+for(let seed = 1; seed <= 300; seed++){
+  makeQuiz(threePeople, 8, seeded(seed)).forEach(q=>{
+    if(q.kind !== 'people') return;
+    peopleQs++;
+    const per = q.prompt.match(/<strong>(.+?)<\/strong>/)[1];
+    const matches = threePeople.filter(p=>findPeriod(p.month, p.day).n === per);
+    if(matches.length !== 1) peopleBad.push(`"${per}" matches ${matches.length} people`);
+    else if(matches[0].name !== q.answer) peopleBad.push(`"${per}" answered as ${q.answer}, should be ${matches[0].name}`);
+    q.options.forEach(o=>{ if(!threePeople.some(p=>p.name === o)) peopleBad.push(`option "${o}" is not a saved person`); });
+  });
+}
+peopleQs > 0 ? ok(`people questions appear when there are enough saved (${peopleQs} generated)`)
+             : bad('people questions appear when there are enough saved', 'none generated in 300 rounds');
+peopleBad.length ? bad('people questions are never ambiguous', peopleBad.slice(0,5).join('\n      '))
+                 : ok('people questions name exactly one saved person');
+
+/* Too few people, or none: the quiz must still fill a full round. */
+is(makeQuiz([], 10, seeded(7)).length, 10, 'a full round with nobody saved');
+is(makeQuiz([{name:'Solo', month:1, day:1}], 10, seeded(7)).length, 10, 'a full round with one person saved');
+is(makeQuiz(null, 10, seeded(7)).length, 10, 'a full round when the people list is missing entirely');
+const soloRounds = [];
+for(let seed = 1; seed <= 100; seed++) makeQuiz([{name:'Solo', month:1, day:1}], 8, seeded(seed)).forEach(q=>{ if(q.kind === 'people') soloRounds.push(seed); });
+is(soloRounds.length, 0, 'no people questions when only one person is saved');
 
 /* ---------------------------------------------------------- */
 group('The path layer (Destiny)');
