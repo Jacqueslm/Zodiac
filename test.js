@@ -24,8 +24,9 @@ const NAMES = ['PERIODS','LORE','NUMBERS','TAROT','EL_REL','Q_REL','SIGNS','ELEM
                'parseCSV','parseContactsCSV','parseVCF','parseContacts','parseContactDate',
                'WELLBEING','SIGN_BODY','SIGN_SWATCH','PLANET_LORE','BIRTHSTONE','DESTINY',
                'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT',
-               'TAUNTS','STYLE','RING_ELEMENT','elementFactor','fighterFrom'];
-const ctx = vm.createContext({console});
+               'TAUNTS','STYLE','RING_ELEMENT','elementFactor',
+               'PLACE_OF','PLACE_NAME','BODY_OF','periodSlug','fightURL','fightBrief'];
+const ctx = vm.createContext({console, URLSearchParams});
 vm.runInContext(engine + `\n;globalThis.__api = {${NAMES.join(',')}};`, ctx, {filename:'index.html:engine'});
 const api = ctx.__api;
 const missing = NAMES.filter(n=>api[n] === undefined);
@@ -36,7 +37,8 @@ const {PERIODS, LORE, NUMBERS, TAROT, EL_REL, Q_REL, SIGNS, ELEMENTS, QUALITIES,
        parseCSV, parseContactsCSV, parseVCF, parseContacts, parseContactDate,
        WELLBEING, SIGN_BODY, SIGN_SWATCH, PLANET_LORE, BIRTHSTONE, DESTINY,
        makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT,
-       TAUNTS, STYLE, RING_ELEMENT, elementFactor, fighterFrom} = api;
+       TAUNTS, STYLE, RING_ELEMENT, elementFactor,
+       PLACE_OF, PLACE_NAME, BODY_OF, periodSlug, fightURL, fightBrief} = api;
 
 let failures = 0, checks = 0;
 function ok(label){ checks++; console.log('  ✓ ' + label); }
@@ -300,8 +302,7 @@ PERIODS.forEach(p=>{
   if(!T.t || T.t.length < 10) tauntGaps.push(`${p.n}: taunt too short`);
   if(!T.c || T.c.length < 10) tauntGaps.push(`${p.n}: counter too short`);
 });
-Object.keys(TAUNTS).forEach(k=>{ if(!PERIODS.some(p=>p.n === k)) tauntGaps.push(`orphan taunt "${k}"`); });
-tauntGaps.length ? bad('every period has a taunt and a counter', tauntGaps.join('\n      '))
+tauntGaps.length ? bad('all 48 periods have a taunt and a counter', tauntGaps.slice(0,4).join('\n      '))
                  : ok('all 48 periods have a taunt and a counter');
 is(new Set(PERIODS.map(p=>TAUNTS[p.n].t)).size, 48, 'all 48 taunts are distinct');
 is(new Set(PERIODS.map(p=>TAUNTS[p.n].c)).size, 48, 'all 48 counters are distinct — the right reply is never ambiguous');
@@ -319,142 +320,133 @@ wheel.forEach(a=>{
 wheelBad.length ? bad('the elemental wheel is a clean cycle', wheelBad.join(', '))
                 : ok('the elemental wheel is a clean cycle — each beats one, loses to one, neutral twice');
 
-/* Every period must make a usable fighter, built from its own data. */
-const statBad = [];
-PERIODS.forEach(p=>{
-  const f = fighterFrom(profileOf({name:'S', month:p.sm, day:p.sd, year:null}));
-  if(!(f.maxHp > 0 && f.hp === f.maxHp)) statBad.push(`${p.n}: bad health`);
-  if(!(f.power > 0 && f.guard > 0)) statBad.push(`${p.n}: bad power or guard`);
-  if(!f.ring || !f.ring.colour || !/^#[0-9a-f]{6}$/i.test(f.ring.colour)) statBad.push(`${p.n}: no ring colour`);
-  if(!f.taunt || !f.taunt.t || !f.taunt.c) statBad.push(`${p.n}: no taunt on the fighter`);
-  if(f.style !== STYLE[f.quality]) statBad.push(`${p.n}: style does not follow its quality`);
-  if(f.ring !== RING_ELEMENT[f.elements[0]]) statBad.push(`${p.n}: ring does not follow its element`);
-});
-statBad.length ? bad('every period makes a usable fighter', statBad.slice(0,4).join('\n      '))
-               : ok('all 48 periods make a fighter — style from quality, ring from element, taunt from the period');
-
-const fixedF = fighterFrom(profileOf({name:'F', month:8, day:1, year:null}));    // Leo I, Fixed
-const cardF  = fighterFrom(profileOf({name:'C', month:3, day:28, year:null}));   // Aries I, Cardinal
-(fixedF.guard > cardF.guard && cardF.power > fixedF.power)
-  ? ok('Fixed guards harder, Cardinal hits harder')
-  : bad('Fixed guards harder, Cardinal hits harder', `guard ${fixedF.guard}/${cardF.guard}, power ${cardF.power}/${fixedF.power}`);
-(STYLE.Mutable.feint > STYLE.Cardinal.feint && STYLE.Fixed.block > STYLE.Mutable.block)
-  ? ok('Mutable feints most, Fixed blocks most')
-  : bad('Mutable feints most, Fixed blocks most');
-
-/* Each element has its own ring colour, so no two look the same. */
+/* Each element has its own ring colour, so no two rooms look the same. */
 is(new Set(Object.values(RING_ELEMENT).map(r=>r.colour)).size, 4, 'each element lights the ring a different colour');
 
-/* There are no questions any more — it talks while it winds up, and a clean
-   slip is what earns the line naming its weakness. Both halves must be used. */
-html.includes('voice(F.them.period, F.them.taunt.t)')
-  ? ok('it says what its period is good at while winding up')
-  : bad('it says what its period is good at while winding up');
-html.includes('voice(F.you.period, F.them.taunt.c)')
-  ? ok('slipping clean is what names its weakness')
-  : bad('slipping clean is what names its weakness');
-/[^a-zA-Z]data-reply/.test(html)
-  ? bad('no multiple-choice questions remain', 'a reply button is still rendered')
-  : ok('no multiple-choice questions remain');
+/* ---- the address the app hands the game ---- */
 
-/* The rigged fighters, and the clips that drive them. */
-const NEEDED_CLIPS = ['boxing_idle','lead_jab','jab_cross','hook','uppercut',
-                      'head_hit','big_head_hit','stomach_hit','knocked_out','getting_up','victory','defeat'];
-const missingClip = NEEDED_CLIPS.filter(c=>!html.includes("'" + c + "'"));
-missingClip.length ? bad('every boxing clip the fight needs is referenced', missingClip.join(', '))
-                   : ok(`all ${NEEDED_CLIPS.length} boxing clips are referenced by name`);
-/* The real characters: one clean skeleton each, their own texture, and the
-   full clip set. The untextured dummy they replaced is gone. */
-['fighter1.glb','fighter4.glb'].forEach(f=>{
-  fs.existsSync(path.join(ROOT, f)) ? ok(f + ' is vendored beside index.html')
-                                    : bad(f + ' is vendored beside index.html');
+/* Slugs are the join between index.html and fight.html. If two periods
+   collided, one of them could never be fought. */
+const slugs = PERIODS.map(p=>periodSlug(p.n));
+is(new Set(slugs).size, 48, 'all 48 periods slug to a distinct key');
+slugs.every(s=>/^[a-z0-9]+(-[a-z0-9]+)*$/.test(s))
+  ? ok('every slug is safe in a query string')
+  : bad('every slug is safe in a query string', slugs.filter(s=>!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(s)).join(', '));
+
+is(new Set(Object.values(BODY_OF)).size, 4, 'each element walks out as a different one of the five fighters');
+Object.values(BODY_OF).every(n=>n >= 1 && n <= 5)
+  ? ok('every body is one the game actually has (1–5)')
+  : bad('every body is one the game actually has (1–5)');
+is(new Set(Object.values(PLACE_OF)).size, 4, 'each element brings its own room');
+Object.values(PLACE_OF).every(p=>PLACE_NAME[p])
+  ? ok('every room has a name to show') : bad('every room has a name to show');
+
+/* The address must carry the whole matchup, and the rules must be the
+   thirty-second six-rounder the real game is played at. */
+const urlBad = [];
+PERIODS.forEach(p=>{
+  const them = profileOf({name:'T', month:p.sm, day:p.sd, year:null});
+  const you  = profileOf({name:'Y', month:3, day:28, year:null});   // Aries I, Fire
+  const q = new URLSearchParams(fightURL(you, them, 6).split('?')[1]);
+  if(q.get('boss') !== periodSlug(p.n)) urlBad.push(`${p.n}: wrong boss`);
+  if(q.get('place') !== PLACE_OF[them.elements[0]]) urlBad.push(`${p.n}: room does not follow its element`);
+  if(q.get('secs') !== '30') urlBad.push(`${p.n}: rounds are not thirty seconds`);
+  if(q.get('rest') !== '14') urlBad.push(`${p.n}: rest is not fourteen seconds`);
+  if(q.get('fighter') !== '1') urlBad.push(`${p.n}: your body does not follow your element`);
 });
-fs.existsSync(path.join(ROOT, 'fighter.glb'))
-  ? bad('the untextured dummy model is no longer shipped', 'fighter.glb is still there')
-  : ok('the untextured dummy model is no longer shipped');
-(html.includes("you:'fighter1.glb'") && html.includes("them:'fighter4.glb'"))
-  ? ok('the two fighters are different characters')
-  : bad('the two fighters are different characters');
-html.includes("ring:'ring.glb'") ? ok('the ring model is loaded alongside them')
-                                 : bad('the ring model is loaded alongside them');
-/* The real audio, including the referee's count. */
-const AUD = ['bell','crowd','cheer','winner','ref-1','ref-10','round-1','round-6','boss-down','getup'];
-const audGaps = AUD.filter(n=>!fs.existsSync(path.join(ROOT, 'audio', n + '.mp3')));
-audGaps.length ? bad('the app\'s audio is vendored', audGaps.join(', '))
-               : ok(`the app's audio is vendored (${fs.readdirSync(path.join(ROOT,'audio')).length} files)`);
-html.includes("snd('ref-' + n)") ? ok('the referee counts out loud over a knockdown')
-                                 : bad('the referee counts out loud over a knockdown');
-html.includes('.clone()') && html.includes('m.skinning = !!o.isSkinnedMesh')
-  ? ok("each character keeps its own texture; only the lighting response changes")
-  : bad("each character keeps its own texture; only the lighting response changes");
-['GLTFLoader.js','SkeletonUtils.js'].forEach(f=>{
-  fs.existsSync(path.join(ROOT, f)) && html.includes('src="' + f + '"')
-    ? ok(f + ' is vendored and loaded')
-    : bad(f + ' is vendored and loaded');
+urlBad.length ? bad('the address carries the whole matchup', urlBad.slice(0,4).join('\n      '))
+              : ok('all 48 periods make a complete address — opponent, room, body, six rounds of thirty seconds');
+fightURL(profileOf({name:'Y', month:3, day:28, year:null}),
+         profileOf({name:'T', month:8, day:1, year:null}), 3).includes('rounds=3')
+  ? ok('a three-round fight asks the game for three rounds')
+  : bad('a three-round fight asks the game for three rounds');
+
+/* The briefing is the reading. The counter must be the line that reaches the
+   ring, because build-fight.js puts it in the corner's mouth. */
+const briefBad = [];
+PERIODS.forEach(p=>{
+  const them = profileOf({name:'T', month:p.sm, day:p.sd, year:null});
+  const you  = profileOf({name:'Y', month:6, day:20, year:null});
+  const b = fightBrief(you, them);
+  if(b.answer !== TAUNTS[p.n].c) briefBad.push(`${p.n}: corner does not answer its taunt`);
+  if(b.says !== TAUNTS[p.n].t) briefBad.push(`${p.n}: briefing quotes the wrong taunt`);
+  if(!b.room || !b.weather || !b.holds || !b.reading) briefBad.push(`${p.n}: briefing has a hole in it`);
+  if(!/^#[0-9a-f]{6}$/i.test(b.colour)) briefBad.push(`${p.n}: no colour for the room`);
 });
-/* The three fixes that made the model actually move must stay in place. */
-html.includes('m.skinning = !!o.isSkinnedMesh') ? ok('skinned materials set r128\'s skinning flag')
-                                              : bad('skinned materials set r128\'s skinning flag');
-html.includes('function unifySkeletons') ? ok('both skinned meshes are bound to one skeleton')
-                                         : bad('both skinned meshes are bound to one skeleton');
-html.includes('function retargetClips') ? ok('clip tracks are retargeted onto the renamed bones')
-                                        : bad('clip tracks are retargeted onto the renamed bones');
-html.includes('function groundFeet') ? ok('feet are grounded off the foot bones, not the rest pose')
-                                     : bad('feet are grounded off the foot bones, not the rest pose');
+briefBad.length ? bad('every period briefs completely', briefBad.slice(0,4).join('\n      '))
+                : ok('all 48 periods brief completely — room, taunt, the answer to it, and how it holds');
+new Set(PERIODS.map(p=>fightBrief(profileOf({name:'Y', month:3, day:28, year:null}),
+        profileOf({name:'T', month:p.sm, day:p.sd, year:null})).holds)).size === 3
+  ? ok('the three qualities give three different ways of holding')
+  : bad('the three qualities give three different ways of holding');
 
-/* The rules, taken from the real game rather than guessed. */
-const RULE = [
-  ['const ROUNDS = 6', 'six rounds'],
-  ['ROUND_SECS = 30', 'thirty seconds a round'],
-  ['REST_SECS = 14', 'fourteen seconds in the corner'],
-  ['HIT = {jab:9, combo:[7, 10], hook:12, upper:16}', 'the real damage numbers'],
-  ['1900 - 1000 * levelT()', 'the tell running 1900ms down to 900ms'],
-  ['10 + 16 * levelT()', 'its punch running 10 up to 26'],
-  ['F.dodge === side', 'dodging the side the arrow shows'],
-  ['Math.random() < .42', 'a counter opening just under half the time'],
-  ['F.downsFight[who] >= 4', 'four knockdowns is a knockout'],
-  ['F.downs[who] >= 3', 'three in a round is a stoppage'],
-  ['F.youHP = Math.min(100, F.youHP + 25)', 'recovering 25 in the corner'],
-  ['F.themHP = 100;', 'both back to 100 each round']
-];
-const ruleGaps = RULE.filter(([frag])=>!html.includes(frag));
-ruleGaps.length ? bad('the fight follows the real rules', ruleGaps.map(r=>'missing: ' + r[1]).join('\n      '))
-                : ok(`the fight follows all ${RULE.length} rules taken from the real game`);
+/* ---- fight.html: the real game, with the periods added ---- */
 
-/* Ten-point must: more landed takes the round, a knockdown costs a point. */
-(html.includes('let sy = 10, st = 10;') && html.includes('sy -= F.downs.you; st -= F.downs.them;'))
-  ? ok('rounds are scored ten-point-must on the cards')
-  : bad('rounds are scored ten-point-must on the cards');
-html.includes("'★'.repeat(F.roundsWon.you)")
-  ? ok('the stars show rounds won, not a dodge currency')
-  : bad('the stars show rounds won, not a dodge currency');
-/* The guard must not be cleared on a timer, or pressing early stops counting. */
-/F\._guardT = setTimeout\([^]*?F\.dodge = null/.test(html)
-  ? bad('the guard is not cleared on a timer', 'a timer still clears F.dodge')
-  : ok('the guard is cleared by the next wind-up, not a timer');
-html.includes('function cue(side)') ? ok('the direction arrow is drawn') : bad('the direction arrow is drawn');
+const FIGHT = path.join(ROOT, 'fight.html');
+if(!fs.existsSync(FIGHT)){
+  bad('fight.html is built', 'run: node build-fight.js <path to ring3d.html>');
+}else{
+  const fight = fs.readFileSync(FIGHT, 'utf8');
+  ok(`fight.html is built (${(fight.length / 1024 / 1024).toFixed(1)}MB)`);
 
-/* Facing. Mixamo bodies face +Z, the primitive fallback faces -Z, so the flip
-   has to depend on which one is in the ring. Getting this wrong put the
-   fighters back to back, twice. */
-html.includes('const flip = GLB ? 0 : Math.PI;')
-  ? ok('only the primitive fallback needs a facing flip; atan2 aims the rigged bodies')
-  : bad('only the primitive fallback needs a facing flip');
-(html.includes('Math.atan2(b.x - y.x, b.z - y.z)') && html.includes('Math.atan2(y.x - b.x, y.z - b.z)'))
-  ? ok('facing is computed from where they stand, as faceOff() does')
-  : bad('facing is computed from where they stand');
-html.includes('MARK = {you:new THREE.Vector3(-0.25, 0, 0.30), them:new THREE.Vector3(0, 0, -0.55)}')
-  ? ok('the fighters stand on the marks the app uses')
-  : bad('the fighters stand on the marks the app uses');
+  /* It has to still be the real game, not something regenerated. These are
+     the game's own, and nothing in this repository writes them. */
+  const OWN = [
+    ["function faceOff()", "the game's own facing"],
+    ["const PLACES={temple:", "the game's own rooms"],
+    ["function tellMs()", "the game's own tell"],
+    ["function temptLine()", "the game's own talking"],
+    ["const ADDICTIONS=", "the game's own table of opponents"],
+    ["ROUND_SECS=+Q.get('secs')||30", "the game's own thirty-second round"]
+  ];
+  const ownGaps = OWN.filter(([f])=>!fight.includes(f));
+  ownGaps.length ? bad('fight.html is The Fight of Your Life itself', ownGaps.map(g=>'missing ' + g[1]).join('\n      '))
+                 : ok(`fight.html is the real game — all ${OWN.length} of its own parts are still in it`);
 
-/* The page must actually ship Three.js and reference it. */
-const hasVendor = fs.existsSync(path.join(ROOT, 'three.min.js'));
-hasVendor ? ok('three.min.js is vendored beside index.html') : bad('three.min.js is vendored beside index.html');
-html.includes('src="three.min.js"') ? ok('index.html loads the vendored Three.js, not a CDN')
-                                    : bad('index.html loads the vendored Three.js, not a CDN');
-/^\/\*\*\s*\n \* @license/.test(fs.readFileSync(path.join(ROOT, 'three.min.js'), 'utf8').slice(0, 40))
-  ? ok('the vendored Three.js keeps its MIT licence header')
-  : bad('the vendored Three.js keeps its MIT licence header');
+  /* Nothing loads from outside: it has to work from a file, offline. */
+  /<script[^>]+\bsrc=/.test(fight) ? bad('fight.html pulls nothing in from outside', 'it has a script src')
+                                   : ok('fight.html pulls nothing in from outside — one file, opens offline');
+
+  /* The only change: the 48 periods are opponents. */
+  const at = fight.indexOf('const ZODIAC = ');
+  if(at < 0){ bad('the 48 periods are added as opponents', 'no ZODIAC table'); }
+  else{
+    const table = JSON.parse(fight.slice(at + 15, fight.indexOf(';\n(function()', at)));
+    is(Object.keys(table).length, 48, 'all 48 periods are in fight.html as opponents');
+    const zBad = [];
+    PERIODS.forEach(p=>{
+      const z = table[periodSlug(p.n)];
+      if(!z) return zBad.push(`${p.n} is not in the ring`);
+      if(z.n !== p.n) zBad.push(`${p.n}: wrong name on the card`);
+      if(z.lines[0] !== TAUNTS[p.n].t) zBad.push(`${p.n}: does not open with its own taunt`);
+      if(z.c !== TAUNTS[p.n].c) zBad.push(`${p.n}: the corner does not have its counter`);
+      const want = parseInt(RING_ELEMENT[SIGNS[p.signs[0]].e].colour.slice(1), 16);
+      if(z.g !== want) zBad.push(`${p.n}: glows the wrong element`);
+    });
+    zBad.length ? bad('every period arrives in the ring intact', zBad.slice(0,4).join('\n      '))
+                : ok('every period arrives with its own name, taunt, counter and element colour');
+  }
+  fight.includes('Object.assign(LINES, window.__ZLINES')
+    ? ok("the period's lines are merged into the game's own")
+    : bad("the period's lines are merged into the game's own");
+  fight.includes('SUPPORT.push(window.__ZCOUNTER')
+    ? ok('your corner shouts the line that answers the period')
+    : bad('your corner shouts the line that answers the period');
+
+  /* The app must open it, and open it with a real address. */
+  html.includes("'fight.html?' + q.toString()")
+    ? ok('the app opens the real ring') : bad('the app opens the real ring');
+}
+
+/* The rebuilt ring and everything it needed is gone: the real game carries
+   its own models, audio and Three.js inside the one file. */
+const GONE = ['three.min.js','GLTFLoader.js','SkeletonUtils.js','fighter1.glb','fighter4.glb','ring.glb','audio'];
+const left = GONE.filter(f=>fs.existsSync(path.join(ROOT, f)));
+left.length ? bad('the rebuilt ring is not shipped alongside the real one', 'still here: ' + left.join(', '))
+            : ok('the rebuilt ring and its assets are gone — the real game carries its own');
+/(r3-canvas|new THREE\.WebGLRenderer|function playClip)/.test(html)
+  ? bad('index.html no longer draws a ring of its own')
+  : ok('index.html no longer draws a ring of its own');
 
 /* ---------------------------------------------------------- */
 group('The quiz');

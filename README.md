@@ -27,14 +27,35 @@ saved person against every other automatically, and **The 48** tab browses the
 whole year.
 
 The **Game** tab holds two things. A ten-question quiz drawn from the same
-tables as the readings, and **the fight** — two periods in a ring. The opponent
-taunts you with what its period is good at, and only one of three replies names
-what it is bad at. Then it winds up: it leans and glows to one side, and you
-slip the other way or block for half. A clean slip opens a counter. Elements
-run on a wheel (Fire beats Air beats Earth beats Water beats Fire), the quality
-sets the fighting style — Cardinal leads, Fixed holds, Mutable feints — and the
-day-number sets punching power. Six rounds, a knockdown you tap to rise from,
-and a ZODIAC meter that fills on clean work and spends itself on a flurry.
+tables as the readings, and **the fight**.
+
+### The fight
+
+The ring is not a rebuild. `fight.html` is *The Fight of Your Life* — the boxing
+game from the Some Day / Day One recovery app — with its own ring, referee,
+crowd, cameras, walk-ins, animation and sound untouched. `build-fight.js` makes
+it from that game's `ring3d.html` by adding the 48 periods to its table of
+opponents. Nothing else in the file changes:
+
+```
+node build-fight.js path/to/ring3d.html
+```
+
+What the periods supply is who you fight and what is said:
+
+- the **opponent** is a period, announced by name in the red corner
+- what it says between exchanges is its **taunt** — the thing its period is
+  good at
+- your corner answers with the **counter** — the thing it is bad at
+- its **element** picks the room: Fire → the Temple, Earth → the Monastery,
+  Air → the Rooftop, Water → the Tomb, and lights it in that element's colour
+- your own element picks which of the game's five fighters walks out as you
+
+Six rounds of thirty seconds, fourteen in the corner. Before the bell the app
+shows a briefing on the period you picked — the room, its taunt, the answer to
+it, and how its quality holds under pressure. That briefing is a reading of the
+period, not a rule of the ring: the fight itself plays by the game's own rules,
+which are the same whoever is in there.
 
 ## Entering people
 
