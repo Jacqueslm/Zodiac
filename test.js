@@ -363,16 +363,29 @@ const NEEDED_CLIPS = ['boxing_idle','lead_jab','jab_cross','hook','uppercut',
 const missingClip = NEEDED_CLIPS.filter(c=>!html.includes("'" + c + "'"));
 missingClip.length ? bad('every boxing clip the fight needs is referenced', missingClip.join(', '))
                    : ok(`all ${NEEDED_CLIPS.length} boxing clips are referenced by name`);
-fs.existsSync(path.join(ROOT, 'fighter.glb')) ? ok('fighter.glb is vendored beside index.html')
-                                              : bad('fighter.glb is vendored beside index.html');
+/* The real characters: one clean skeleton each, their own texture, and the
+   full clip set. The untextured dummy they replaced is gone. */
+['fighter1.glb','fighter4.glb'].forEach(f=>{
+  fs.existsSync(path.join(ROOT, f)) ? ok(f + ' is vendored beside index.html')
+                                    : bad(f + ' is vendored beside index.html');
+});
+fs.existsSync(path.join(ROOT, 'fighter.glb'))
+  ? bad('the untextured dummy model is no longer shipped', 'fighter.glb is still there')
+  : ok('the untextured dummy model is no longer shipped');
+html.includes("FIGHTER_FILES = {you:'fighter1.glb', them:'fighter4.glb'}")
+  ? ok('the two fighters are different characters')
+  : bad('the two fighters are different characters');
+html.includes('.clone()') && html.includes('m.skinning = !!o.isSkinnedMesh')
+  ? ok("each character keeps its own texture; only the lighting response changes")
+  : bad("each character keeps its own texture; only the lighting response changes");
 ['GLTFLoader.js','SkeletonUtils.js'].forEach(f=>{
   fs.existsSync(path.join(ROOT, f)) && html.includes('src="' + f + '"')
     ? ok(f + ' is vendored and loaded')
     : bad(f + ' is vendored and loaded');
 });
 /* The three fixes that made the model actually move must stay in place. */
-html.includes('skinning: !!o.isSkinnedMesh') ? ok('skinned materials set r128\'s skinning flag')
-                                             : bad('skinned materials set r128\'s skinning flag');
+html.includes('m.skinning = !!o.isSkinnedMesh') ? ok('skinned materials set r128\'s skinning flag')
+                                              : bad('skinned materials set r128\'s skinning flag');
 html.includes('function unifySkeletons') ? ok('both skinned meshes are bound to one skeleton')
                                          : bad('both skinned meshes are bound to one skeleton');
 html.includes('function retargetClips') ? ok('clip tracks are retargeted onto the renamed bones')

@@ -2436,8 +2436,8 @@ function buildRing(elementColour){
   S.scene.add(S.rim); S.scene.add(S.rim.target);
 
   if(GLB){
-    S.you = makeRiggedBoxer(false, col, 0xb8865f);
-    S.them = makeRiggedBoxer(true, col, 0x06050c);
+    S.you = makeRiggedBoxer('you', false, col);
+    S.them = makeRiggedBoxer('them', true, col);
   } else {
     S.you = makeBoxer(0x9c7355, false, col, 0x2f5fd6);
     S.them = makeBoxer(0x07060c, true, col, 0x0a0812);
@@ -2446,7 +2446,7 @@ function buildRing(elementColour){
      from it (-Z) toward the opponent; the opponent faces back down +Z at you.
      The primitive fallback is modelled facing -Z, so it takes the opposite. */
   const faceFlip = GLB ? Math.PI : 0;
-  S.you.group.position.set(-0.50, 0, 2.55);
+  S.you.group.position.set(-1.18, 0, 1.85);
   S.them.group.position.set(0, 0, -1.55);
   S.you.group.rotation.y  = faceFlip;
   S.them.group.rotation.y = Math.PI - faceFlip;
@@ -2467,27 +2467,38 @@ const CLIP = {
   hitHead:'head_hit', hitBig:'big_head_hit', hitBody:'stomach_hit', stunned:'stunned',
   down:'knocked_out', up:'getting_up', win:'victory', lose:'defeat'
 };
-let GLB = null;
+const FIGHTER_FILES = {you:'fighter1.glb', them:'fighter4.glb'};
+let GLB = null;                       /* {you:{scene,clips}, them:{scene,clips}} */
 
 function b64buf(b64){
   const bin = atob(b64), n = bin.length, u = new Uint8Array(n);
   for(let i = 0; i < n; i++) u[i] = bin.charCodeAt(i);
   return u.buffer;
 }
-/* Loads fighter.glb from beside the page, or from FIGHTER_B64 when the whole
-   app has been built into a single file. */
+/* Loads the two character models from beside the page, or from FIGHTER_B64
+   when the whole app has been built into one file. Each carries its own
+   texture and the full set of boxing clips. */
+function loadOne(loader, which){
+  return new Promise(resolve=>{
+    const done = g=>resolve({scene:g.scene, clips:g.animations});
+    const b64 = window.FIGHTER_B64 && window.FIGHTER_B64[which];
+    if(b64){
+      try{ loader.parse(b64buf(b64), '', done, ()=>resolve(null)); }
+      catch(e){ resolve(null); }
+      return;
+    }
+    loader.load(FIGHTER_FILES[which], done, undefined, ()=>resolve(null));
+  });
+}
 function loadFighterAsset(){
   return new Promise(resolve=>{
     if(GLB) return resolve(GLB);
     if(!window.THREE || !THREE.GLTFLoader) return resolve(null);
     const loader = new THREE.GLTFLoader();
-    const done = g=>{ GLB = {scene:g.scene, clips:g.animations}; resolve(GLB); };
-    if(window.FIGHTER_B64){
-      try{ loader.parse(b64buf(window.FIGHTER_B64), '', done, ()=>resolve(null)); }
-      catch(e){ resolve(null); }
-      return;
-    }
-    loader.load('fighter.glb', done, undefined, ()=>resolve(null));
+    Promise.all([loadOne(loader, 'you'), loadOne(loader, 'them')]).then(([you, them])=>{
+      GLB = (you && them) ? {you, them} : null;
+      resolve(GLB);
+    });
   });
 }
 
@@ -2558,22 +2569,27 @@ function groundFeet(B){
   B.root.updateMatrixWorld(true);
 }
 
-function makeRiggedBoxer(isShadow, glow, colour){
+function makeRiggedBoxer(which, isShadow, glow){
   const T = window.THREE;
-  const root = (T.SkeletonUtils && T.SkeletonUtils.clone) ? T.SkeletonUtils.clone(GLB.scene) : GLB.scene.clone(true);
+  const src = GLB[which];
+  const root = (T.SkeletonUtils && T.SkeletonUtils.clone) ? T.SkeletonUtils.clone(src.scene) : src.scene.clone(true);
   root.traverse(o=>{
     if(!o.isMesh) return;
     o.frustumCulled = false;          /* a skinned box is the rest pose, so it culls wrongly */
-    /* r128 needs this flag or the shader ignores the bones and draws the bind
-       pose — the T-pose. Newer three does it automatically; this one does not. */
-    o.material = new T.MeshStandardMaterial({
-      skinning: !!o.isSkinnedMesh,
-      color: isShadow ? 0x040309 : colour,
-      roughness: isShadow ? .95 : .45,
-      metalness: isShadow ? .02 : .18,
-      emissive: isShadow ? new T.Color(glow) : new T.Color(0x000000),
-      emissiveIntensity: isShadow ? .13 : 0
-    });
+    /* Keep the model's own texture — that is what makes it look like a fighter
+       rather than a mannequin. Only the lighting response is changed, and the
+       opponent picks up a rim of its element's colour.
+       r128 needs the skinning flag or the shader ignores the bones entirely
+       and draws the bind pose. Newer three does it automatically. */
+    const m = (Array.isArray(o.material) ? o.material[0] : o.material).clone();
+    m.skinning = !!o.isSkinnedMesh;
+    m.roughness = .72; m.metalness = .04;
+    if(isShadow){
+      m.emissive = new T.Color(glow); m.emissiveIntensity = .15;
+      if(m.color) m.color.multiplyScalar(.72);
+    }
+    m.needsUpdate = true;
+    o.material = m;
   });
   unifySkeletons(root);
   root.updateMatrixWorld(true);
@@ -2583,7 +2599,7 @@ function makeRiggedBoxer(isShadow, glow, colour){
   const holder = new T.Group(); holder.add(root);
   const mixer = new T.AnimationMixer(root);
   const actions = {};
-  retargetClips(GLB.clips, root).forEach(c=>{ actions[c.name] = mixer.clipAction(c); });
+  retargetClips(src.clips, root).forEach(c=>{ actions[c.name] = mixer.clipAction(c); });
   const B = {group:holder, root, mixer, actions, currentName:null, rigged:true};
   playClip(B, CLIP.idle, {loop:true});
   groundFeet(B);
@@ -2692,8 +2708,8 @@ function makeBoxer(bodyColour, isShadow, glow, trunkColour){
 /* Over-the-shoulder is the working shot: the whole defence is reading which
    way it leans, and a side-on view makes left and right ambiguous. */
 const SHOT = {
-  tv:      {p:[0.04, 2.02, 4.15], l:[0.06, 1.24, -1.55]},
-  shoulder:{p:[0.02, 1.92, 3.95], l:[0.06, 1.22, -1.55]},
+  tv:      {p:[0.10, 2.08, 4.55], l:[0.04, 1.24, -1.55]},
+  shoulder:{p:[0.08, 1.98, 4.30], l:[0.04, 1.22, -1.55]},
   low:     {p:[1.35, 0.70, 1.05], l:[0.05, 1.20, -1.60]},
   house:   {p:[4.20, 2.90, 5.40], l:[0, 1.05, -0.60]}
 };
@@ -3088,7 +3104,7 @@ function drawRing(dt){
   /* the opponent's lean on its tell, and both fighters' idle sway */
   const sway = Math.sin(now / 420) * .045;
   S.them.group.position.x = (F && F.swing ? (F.swing.lean === 'left' ? -.46 : .46) : 0) + sway;
-  S.you.group.position.x = -0.50 - sway;
+  S.you.group.position.x = -1.18 - sway;
   S.them.group.position.y = Math.abs(Math.sin(now / 300)) * .03;
 
   /* arms: guard, or thrown */
