@@ -263,6 +263,8 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
   <div class="toolbar">
     <button class="btn ghost tiny" id="btn-bulk-toggle">Add many at once</button>
     <button class="btn ghost tiny" id="btn-export">Export JSON</button>
+    <button class="btn ghost tiny" id="btn-contacts">Import contacts</button>
+    <input type="file" id="file-contacts" accept=".csv,.vcf,.vcard,text/csv,text/vcard" hidden>
     <button class="btn ghost tiny" id="btn-import">Import JSON</button>
     <input type="file" id="file-import" accept="application/json,.json" hidden>
     <div class="spacer"></div>
@@ -962,6 +964,111 @@ function parseBulkLine(line){
 }
 
 /* ============================================================
+   CONTACT FILES — Google/Outlook CSV exports and vCard (.vcf)
+   ============================================================ */
+
+/* Contact exports write birthdays as 1988-11-29, 19881129, --11-29 or --1129.
+   Apple writes 1604 as the year when the year is deliberately unknown. */
+function contactDate(mo, d, y){
+  if(!(mo >= 1 && mo <= 12)) return null;
+  if(!(d >= 1 && d <= DIM[mo-1])) return null;
+  if(y != null && (y === 1604 || y < 1000 || y > 3000)) y = null;
+  if(mo === 2 && d === 29 && y != null && !isLeap(y)) y = null;  // keep the day, drop the bad year
+  return {month:mo, day:d, year:y};
+}
+function parseContactDate(raw){
+  const v = String(raw == null ? '' : raw).trim();
+  if(!v) return null;
+  let m;
+  if((m = v.match(/^(\d{4})-?(\d{2})-?(\d{2})$/))) return contactDate(+m[2], +m[3], +m[1]);
+  if((m = v.match(/^--(\d{2})-?(\d{2})$/)))        return contactDate(+m[1], +m[2], null);
+  const fallback = parseBirthday(v);               // "29 Nov 1988", "3/14/1990", ...
+  return fallback.error ? null : fallback;
+}
+
+/* RFC 4180: quoted fields may contain commas, newlines and doubled quotes. */
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = '', quoted = false;
+  for(let i = 0; i < text.length; i++){
+    const c = text[i];
+    if(quoted){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field += '"'; i++; } else quoted = false;
+      } else field += c;
+    } else if(c === '"'){ quoted = true; }
+    else if(c === ','){ row.push(field); field = ''; }
+    else if(c === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+    else if(c !== '\r'){ field += c; }
+  }
+  if(field !== '' || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r=>r.some(x=>x.trim() !== ''));
+}
+
+const CSV_NAME  = ['name','display name','full name'];
+const CSV_FIRST = ['first name','given name'];
+const CSV_MID   = ['middle name','additional name'];
+const CSV_LAST  = ['last name','family name','surname'];
+const CSV_BDAY  = ['birthday','birth date','birthdate','date of birth','bday'];
+
+function parseContactsCSV(text){
+  const rows = parseCSV(text);
+  if(!rows.length) return {people:[], noBirthday:[], error:'that file is empty'};
+  const head = rows[0].map(h=>h.trim().toLowerCase().replace(/^﻿/, ''));
+  const find = keys=>{ for(const k of keys){ const i = head.indexOf(k); if(i >= 0) return i; } return -1; };
+  const iName = find(CSV_NAME), iFirst = find(CSV_FIRST), iMid = find(CSV_MID),
+        iLast = find(CSV_LAST), iBday = find(CSV_BDAY);
+  if(iBday < 0) return {people:[], noBirthday:[], error:'no birthday column in that file'};
+  if(iName < 0 && iFirst < 0 && iLast < 0) return {people:[], noBirthday:[], error:'no name column in that file'};
+
+  const people = [], noBirthday = [];
+  rows.slice(1).forEach(r=>{
+    const cell = i => (i >= 0 && r[i] != null) ? String(r[i]).trim() : '';
+    const name = cell(iName) || [cell(iFirst), cell(iMid), cell(iLast)].filter(Boolean).join(' ');
+    if(!name) return;
+    const dt = parseContactDate(cell(iBday));
+    dt ? people.push({name, ...dt}) : noBirthday.push(name);
+  });
+  return {people, noBirthday};
+}
+
+function parseVCF(text){
+  /* Unfold continuation lines first — vCard wraps long values onto lines
+     beginning with a space or tab. */
+  const unfolded = text.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '');
+  const cards = unfolded.split(/BEGIN:VCARD/i).slice(1);
+  const people = [], noBirthday = [];
+  cards.forEach(card=>{
+    let fn = '', n = '', bday = '', omitYear = false;
+    card.split(/\r?\n/).forEach(line=>{
+      const c = line.indexOf(':');
+      if(c < 0) return;
+      const key = line.slice(0, c), val = line.slice(c + 1);
+      const base = key.replace(/^item\d+\./i, '').split(';')[0].toUpperCase();
+      if(base === 'FN' && !fn) fn = val;
+      else if(base === 'N' && !n){
+        const p = val.split(';');
+        n = [p[1], p[0]].filter(Boolean).join(' ');
+      } else if(base === 'BDAY' && !bday){
+        bday = val;
+        if(/OMIT-YEAR/i.test(key)) omitYear = true;
+      }
+    });
+    const name = (fn || n).replace(/\\([,;\\])/g, '$1').trim();
+    if(!name) return;
+    const dt = bday ? parseContactDate(bday) : null;
+    if(!dt){ noBirthday.push(name); return; }
+    people.push({name, month:dt.month, day:dt.day, year:omitYear ? null : dt.year});
+  });
+  return {people, noBirthday};
+}
+
+function parseContacts(text, filename){
+  const looksVcf = /\.(vcf|vcard)$/i.test(filename || '') || /BEGIN:VCARD/i.test(text.slice(0, 4000));
+  return looksVcf ? parseVCF(text) : parseContactsCSV(text);
+}
+
+/* ============================================================
    LAYER I — the individual reading
    ============================================================ */
 const LEADS = [
@@ -1463,6 +1570,42 @@ $('btn-wipe').addEventListener('click', ()=>{
   updateCount(); renderPeople(); fillPairSelects();
   $('bulk-report').innerHTML = ''; $('pair-result').innerHTML = '';
   toast('Removed everyone');
+});
+
+/* Contacts exported from Google, Outlook, iPhone or iCloud. */
+$('btn-contacts').addEventListener('click', ()=>$('file-contacts').click());
+$('file-contacts').addEventListener('change', e=>{
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    showTab('tab-people');
+    $('bulk-box').hidden = false;
+    let result;
+    try{ result = parseContacts(String(reader.result), file.name); }
+    catch(err){ $('bulk-report').innerHTML = '<div class="no">That file could not be read.</div>'; return; }
+    if(result.error){ $('bulk-report').innerHTML = `<div class="no">${esc(result.error)}</div>`; return; }
+
+    const added = [], skipped = [];
+    result.people.forEach(p=>{
+      if(isDuplicate(p)){ skipped.push(p.name); return; }
+      const person = {id:newId(), name:p.name, month:p.month, day:p.day, year:p.year};
+      PEOPLE.push(person); added.push(person);
+    });
+    if(added.length) savePeople(PEOPLE);
+    updateCount(); renderPeople(); fillPairSelects();
+
+    const none = result.noBirthday.length;
+    const parts = [];
+    if(added.length) parts.push(`<div class="ok">Added ${added.length} from ${esc(file.name)}: ${added.map(p=>esc(p.name)).join(', ')}</div>`);
+    if(skipped.length) parts.push(`<div class="skip">Already saved, skipped ${skipped.length}: ${skipped.map(esc).join(', ')}</div>`);
+    if(none) parts.push(`<div class="skip">${none} contact${none === 1 ? '' : 's'} had no birthday saved, so ${none === 1 ? 'it was' : 'they were'} left out.</div>`);
+    if(!added.length && !skipped.length && !none) parts.push('<div class="no">No contacts found in that file.</div>');
+    $('bulk-report').innerHTML = parts.join('');
+    if(added.length) toast(`Added ${added.length} from contacts`);
+  };
+  reader.readAsText(file);
+  e.target.value = '';
 });
 
 /* ============================================================

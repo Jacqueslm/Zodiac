@@ -20,7 +20,8 @@ const engine = script.slice(0, cut);
 /* Top-level `const` stays in the script's own scope, so hand the bindings out explicitly. */
 const NAMES = ['PERIODS','LORE','NUMBERS','TAROT','EL_REL','Q_REL','SIGNS','ELEMENTS','QUALITIES',
                'DIM','MONTHS','profileOf','reduceNum','digitSum','tarotFor','tarotIndex','relKey',
-               'isLeap','parseBirthday','parseBulkLine','renderCrest','renderReading','renderPath','renderPair'];
+               'isLeap','parseBirthday','parseBulkLine','renderCrest','renderReading','renderPath','renderPair',
+               'parseCSV','parseContactsCSV','parseVCF','parseContacts','parseContactDate'];
 const ctx = vm.createContext({console});
 vm.runInContext(engine + `\n;globalThis.__api = {${NAMES.join(',')}};`, ctx, {filename:'index.html:engine'});
 const api = ctx.__api;
@@ -28,7 +29,8 @@ const missing = NAMES.filter(n=>api[n] === undefined);
 if(missing.length){ console.error('engine did not export: ' + missing.join(', ')); process.exit(1); }
 const {PERIODS, LORE, NUMBERS, TAROT, EL_REL, Q_REL, SIGNS, ELEMENTS, QUALITIES, DIM, MONTHS,
        profileOf, reduceNum, digitSum, tarotFor, tarotIndex, relKey, isLeap,
-       parseBirthday, parseBulkLine, renderCrest, renderReading, renderPath, renderPair} = api;
+       parseBirthday, parseBulkLine, renderCrest, renderReading, renderPath, renderPair,
+       parseCSV, parseContactsCSV, parseVCF, parseContacts, parseContactDate} = api;
 
 let failures = 0, checks = 0;
 function ok(label){ checks++; console.log('  ✓ ' + label); }
@@ -195,6 +197,72 @@ lineFails.length ? bad('bulk lines split name from date', lineFails.join('\n    
 is(parseBulkLine('   '), null, 'blank lines are ignored');
 is(parseBulkLine('# a comment'), null, 'comment lines are ignored');
 ok('unreadable lines report an error instead of throwing: ' + JSON.stringify(parseBulkLine('Just A Name').error));
+
+/* ---------------------------------------------------------- */
+group('Contact files (Google/Outlook CSV, vCard)');
+
+const googleCsv = [
+  'Name,Given Name,Family Name,Birthday,E-mail 1 - Value',
+  'Ada Marchetti,Ada,Marchetti,1988-11-29,ada@example.com',
+  'Bo Tran,Bo,Tran,--04-07,bo@example.com',
+  '"Okonkwo, Cy",Cy,Okonkwo,1996-02-29,cy@example.com',
+  'No Birthday Person,No,Person,,nb@example.com',
+  ',,,1990-01-05,ghost@example.com'
+].join('\n');
+const gc = parseContactsCSV(googleCsv);
+is(gc.people.length, 3, 'Google CSV: three contacts with birthdays');
+is(gc.noBirthday.length, 1, 'Google CSV: the one without a birthday is reported, not dropped silently');
+is(gc.people[0].year, 1988, 'Google CSV: full date keeps its year');
+is(gc.people[1].year, null, 'Google CSV: --04-07 parses with no year');
+is(gc.people[1].month, 4, 'Google CSV: --04-07 gives April');
+is(gc.people[2].name, 'Okonkwo, Cy', 'Google CSV: a quoted name containing a comma survives');
+is(gc.people[2].day, 29, 'Google CSV: 29 February 1996 is kept');
+
+const outlookCsv = 'First Name,Last Name,Birthday\nDara,Whitlock,3/14/1990\n';
+const oc = parseContactsCSV(outlookCsv);
+is(oc.people.length, 1, 'Outlook CSV: first/last name columns are combined');
+is(oc.people[0].name, 'Dara Whitlock', 'Outlook CSV: name is joined correctly');
+is(oc.people[0].month, 3, 'Outlook CSV: slash dates fall back to the bulk parser');
+
+is(parseContactsCSV('Name,Email\nAda,a@b.c\n').error, 'no birthday column in that file', 'CSV with no birthday column says so');
+
+const vcf = [
+  'BEGIN:VCARD','VERSION:3.0','N:Marchetti;Ada;;;','FN:Ada Marchetti','BDAY:1988-11-29','END:VCARD',
+  'BEGIN:VCARD','VERSION:3.0','FN:Bo Tran','BDAY:19910407','END:VCARD',
+  'BEGIN:VCARD','VERSION:3.0','FN:Emeka Nwosu','BDAY;X-APPLE-OMIT-YEAR=1604:1604-10-21','END:VCARD',
+  'BEGIN:VCARD','VERSION:3.0','FN:June Carter','item1.BDAY:--0617','END:VCARD',
+  'BEGIN:VCARD','VERSION:3.0','N:Bare;Nobirthday;;;','FN:Nobirthday Bare','END:VCARD',
+  /* A real RFC 6350 fold: CRLF + one space is inserted mid-value, and
+     unfolding removes both, rejoining the halves exactly. */
+  'BEGIN:VCARD','VERSION:3.0','FN:Folded Na',' me Here','BDAY:1975-05-01','END:VCARD'
+].join('\r\n');
+const vc = parseVCF(vcf);
+is(vc.people.length, 5, 'vCard: five cards with birthdays');
+is(vc.noBirthday.length, 1, 'vCard: the card without a BDAY is reported');
+is(vc.people[0].name, 'Ada Marchetti', 'vCard: FN is used for the name');
+is(vc.people[1].month, 4, 'vCard: compact 19910407 parses');
+is(vc.people[2].year, null, 'vCard: Apple X-APPLE-OMIT-YEAR drops the 1604 sentinel year');
+is(vc.people[2].day, 21, 'vCard: the omit-year date itself is kept');
+is(vc.people[3].month, 6, 'vCard: item1. prefix and --0617 parse');
+is(vc.people[3].year, null, 'vCard: --0617 has no year');
+is(vc.people[4].name, 'Folded Name Here', 'vCard: folded continuation lines are unfolded');
+
+const noFn = parseVCF('BEGIN:VCARD\nN:Solo;Ada;;;\nBDAY:1988-11-29\nEND:VCARD');
+is(noFn.people[0].name, 'Ada Solo', 'vCard: falls back to N when FN is absent');
+
+is(parseContacts(vcf, 'contacts.vcf').people.length, 5, 'dispatcher routes .vcf to the vCard parser');
+is(parseContacts(googleCsv, 'contacts.csv').people.length, 3, 'dispatcher routes .csv to the CSV parser');
+is(parseContacts(vcf, 'mystery.txt').people.length, 5, 'dispatcher sniffs BEGIN:VCARD when the name is unhelpful');
+
+/* 29 February against a non-leap year: keep the day, drop the impossible year. */
+const badLeap = parseContactsCSV('Name,Birthday\nWrong Year,1995-02-29\n');
+is(badLeap.people.length, 1, 'a 29 Feb birthday in a non-leap year is still imported');
+is(badLeap.people[0].year, null, 'the impossible year is dropped rather than the person');
+is(badLeap.people[0].month, 2, 'the 29 February date itself is kept');
+
+/* Imported contacts must produce a real reading. */
+const importedProfile = profileOf({name:gc.people[1].name, month:gc.people[1].month, day:gc.people[1].day, year:gc.people[1].year});
+is(importedProfile.per.n, 'Aries II', 'a year-less imported birthday still resolves to a period');
 
 /* ---------------------------------------------------------- */
 console.log('\n' + '-'.repeat(58));
