@@ -2346,25 +2346,56 @@ $('game-box').addEventListener('click', e=>{
   }
 });
 
-/* Thud, whoosh, bell and ding, synthesised — no audio files to ship. */
+/* Real sound from the app: the bell, the crowd, the referee counting, the
+   round calls and the winner. Files sit in audio/ ; the one-file build swaps
+   in data URIs through AUDIO_B64. */
+const SND = {};
+const SND_NAMES = ['bell','bell3','crowd','cheer','down','getup','saved','winner','boss-down',
+  'boss-hit-1','boss-hit-2','boss-hit-3','boss-hit-4','you-m-hit-1','you-m-hit-2','you-m-hit-3','you-m-down',
+  'ref-1','ref-2','ref-3','ref-4','ref-5','ref-6','ref-7','ref-8','ref-9','ref-10',
+  'round-1','round-2','round-3','round-4','round-5','round-6'];
+let crowdLoop = null;
+
+function sndSrc(name){
+  return (window.AUDIO_B64 && window.AUDIO_B64[name]) || ('audio/' + name + '.mp3');
+}
+function primeSound(){
+  SND_NAMES.forEach(n=>{
+    if(SND[n]) return;
+    try{ const a = new Audio(sndSrc(n)); a.preload = 'auto'; a.volume = .85; SND[n] = a; }catch(e){}
+  });
+}
+function snd(name, vol){
+  const a = SND[name];
+  if(!a) return;
+  try{ const c = a.cloneNode(); c.volume = vol == null ? .85 : vol; c.play().catch(()=>{}); }catch(e){}
+}
+function crowdOn(vol){
+  try{
+    if(!crowdLoop){ crowdLoop = new Audio(sndSrc('crowd')); crowdLoop.loop = true; }
+    crowdLoop.volume = Math.max(0, Math.min(1, vol));
+    if(vol > 0) crowdLoop.play().catch(()=>{}); else crowdLoop.pause();
+  }catch(e){}
+}
+function crowdOff(){ try{ if(crowdLoop){ crowdLoop.pause(); crowdLoop.currentTime = 0; } }catch(e){} }
+
+/* Punch impacts and the wind-up whoosh stay synthesised — there is no single
+   file for them and WebAudio is cheaper than shipping more. */
 let AC = null;
 function blip(type){
+  if(type === 'bell'){ return snd('bell'); }
+  if(type === 'down'){ return snd('down'); }
+  if(type === 'ding'){ return snd('boss-hit-2', .7); }
+  if(type === 'thud'){ return snd('boss-hit-' + (1 + Math.floor(Math.random() * 4)), .8); }
   try{
     AC = AC || new (window.AudioContext || window.webkitAudioContext)();
     const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
     o.connect(g); g.connect(AC.destination);
-    const set = (wave, f0, f1, vol, dur)=>{
-      o.type = wave; o.frequency.setValueAtTime(f0, t);
-      if(f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
-      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
-      o.start(t); o.stop(t + dur + .01);
-    };
-    if(type === 'thud')        set('sine', 150, 48, .34, .18);
-    else if(type === 'whoosh') set('triangle', 680, 180, .10, .22);
-    else if(type === 'bell')   set('square', 880, 0, .16, .65);
-    else if(type === 'ding')   set('sine', 1250, 0, .16, .30);
-    else                       set('sawtooth', 90, 0, .12, .40);
-  }catch(e){ /* muted or blocked — the fight carries on silently */ }
+    o.type = 'triangle'; o.frequency.setValueAtTime(680, t);
+    o.frequency.exponentialRampToValueAtTime(180, t + .22);
+    g.gain.setValueAtTime(.09, t); g.gain.exponentialRampToValueAtTime(.001, t + .24);
+    o.start(t); o.stop(t + .25);
+  }catch(e){}
 }
 
 /* ============================================================
@@ -2398,41 +2429,60 @@ function buildRing(elementColour){
   paint.rotation.x = -Math.PI / 2; paint.position.y = 0.01;
   S.scene.add(paint);
 
-  /* posts and three ropes */
-  const postMat = new T.MeshStandardMaterial({color:0x2a2636, roughness:.6, metalness:.3});
-  const ropeMat = new T.MeshStandardMaterial({color:0x6b6478, roughness:.7, emissive:col, emissiveIntensity:.06});
-  const P = 4.1;
-  [[-P,-P],[P,-P],[-P,P],[P,P]].forEach(([x,z])=>{
-    const post = new T.Mesh(new T.CylinderGeometry(.11,.13,2.05,10), postMat);
-    post.position.set(x, 1.02, z); S.scene.add(post);
-  });
-  [0.55, 1.05, 1.55].forEach(y=>{
-    [[0,-P],[0,P]].forEach(([,z])=>{
-      const r = new T.Mesh(new T.BoxGeometry(P*2, .045, .045), ropeMat);
-      r.position.set(0, y, z); S.scene.add(r);
+  /* The ring itself is the model from the app. Its own posts, ropes, apron and
+     canvas, so it reads as a ring rather than as boxes. */
+  if(GLB && GLB.ring){
+    /* The app adds this model at its own scale and position — it is already
+       built for the ring. Scaling or grounding it swallows the scene. */
+    const ring = GLB.ring.scene.clone(true);
+    ring.traverse(o=>{
+      if(!o.isMesh) return;
+      o.frustumCulled = false;
+      const ms = Array.isArray(o.material) ? o.material : [o.material];
+      ms.forEach(m=>{ if(m && /canvas/i.test(m.name || '')){ m.emissive && m.emissive.set(0x0d2033); m.emissiveIntensity = .55; } });
     });
-    [[-P,0],[P,0]].forEach(([x])=>{
-      const r = new T.Mesh(new T.BoxGeometry(.045, .045, P*2), ropeMat);
-      r.position.set(x, y, 0); S.scene.add(r);
+    S.scene.add(ring);
+    S.ring = ring;
+    floor.visible = false; paint.visible = false;
+  } else {
+    const postMat = new T.MeshStandardMaterial({color:0x2a2636, roughness:.6, metalness:.3});
+    const ropeMat = new T.MeshStandardMaterial({color:0x6b6478, roughness:.7, emissive:col, emissiveIntensity:.06});
+    const P = 4.1;
+    [[-P,-P],[P,-P],[-P,P],[P,P]].forEach(([x,z])=>{
+      const post = new T.Mesh(new T.CylinderGeometry(.11,.13,2.05,10), postMat);
+      post.position.set(x, 1.02, z); S.scene.add(post);
     });
-  });
+    [0.55, 1.05, 1.55].forEach(y=>{
+      [[0,-P],[0,P]].forEach(([,z])=>{
+        const r = new T.Mesh(new T.BoxGeometry(P*2, .045, .045), ropeMat);
+        r.position.set(0, y, z); S.scene.add(r);
+      });
+      [[-P,0],[P,0]].forEach(([x])=>{
+        const r = new T.Mesh(new T.BoxGeometry(.045, .045, P*2), ropeMat);
+        r.position.set(x, y, 0); S.scene.add(r);
+      });
+    });
+  }
 
   /* the dark house, and rows of faces suggested by dots */
   const crowd = new T.Group();
   for(let i = 0; i < 260; i++){
-    const a = Math.random() * Math.PI * 2, rr = 8.5 + Math.random() * 8;
+    const a = Math.random() * Math.PI * 2, rr = 6.0 + Math.random() * 7;
     const d = new T.Mesh(new T.SphereGeometry(.10, 5, 4),
       new T.MeshBasicMaterial({color:new T.Color().setHSL(.09, .25, .18 + Math.random() * .3)}));
-    d.position.set(Math.cos(a) * rr, .5 + Math.random() * 2.6, Math.sin(a) * rr);
+    d.position.set(Math.cos(a) * rr, 1.2 + Math.random() * 2.4, Math.sin(a) * rr);
     crowd.add(d);
   }
   S.crowd = crowd; S.scene.add(crowd);
 
   /* lights: cold key on you, the element burning behind them */
-  S.scene.add(new T.AmbientLight(0x1a2338, .40));
-  const key = new T.DirectionalLight(0xdfe6ff, .42); key.position.set(3, 6, 5); S.scene.add(key);
-  S.back = new T.PointLight(col, 7.5, 20); S.back.position.set(0, 2.2, -4.6); S.scene.add(S.back);
-  S.rim = new T.SpotLight(col, 3.2, 20, .7, .6); S.rim.position.set(0, 4.4, -2.6);
+  S.scene.add(new T.AmbientLight(0x223055, .55));
+  /* The app runs three r170, where intensity is in candela. In r128 the same
+     number is a floodlight, so the ratios are kept and the values scaled. */
+  const key = new T.SpotLight(0xfff1d6, 2.0, 14, .55, .45); key.position.set(0, 5.2, 0.2);
+  S.scene.add(key); S.scene.add(key.target);
+  S.back = new T.PointLight(col, 1.9, 9); S.back.position.set(0, 1.7, -2.2); S.scene.add(S.back);
+  S.rim = new T.SpotLight(col, 1.7, 9, .6, .7); S.rim.position.set(0, 2.6, -1.9);
   S.scene.add(S.rim); S.scene.add(S.rim.target);
 
   if(GLB){
@@ -2445,11 +2495,11 @@ function buildRing(elementColour){
   /* Mixamo bodies face +Z. You stand nearer the camera and must face away
      from it (-Z) toward the opponent; the opponent faces back down +Z at you.
      The primitive fallback is modelled facing -Z, so it takes the opposite. */
-  const faceFlip = GLB ? Math.PI : 0;
-  S.you.group.position.set(-1.18, 0, 1.85);
-  S.them.group.position.set(0, 0, -1.55);
-  S.you.group.rotation.y  = faceFlip;
-  S.them.group.rotation.y = Math.PI - faceFlip;
+  /* The marks the app uses. They stand under a metre apart — a ring, not a
+     duel — and facing is computed from where they actually stand. */
+  S.you.group.position.copy(MARK.you);
+  S.them.group.position.copy(MARK.them);
+  faceOff(S);
   S.scene.add(S.you.group); S.scene.add(S.them.group);
   S.rim.target.position.copy(S.them.group.position);
   return S;
@@ -2467,7 +2517,7 @@ const CLIP = {
   hitHead:'head_hit', hitBig:'big_head_hit', hitBody:'stomach_hit', stunned:'stunned',
   down:'knocked_out', up:'getting_up', win:'victory', lose:'defeat'
 };
-const FIGHTER_FILES = {you:'fighter1.glb', them:'fighter4.glb'};
+const FIGHTER_FILES = {you:'fighter1.glb', them:'fighter4.glb', ring:'ring.glb'};
 let GLB = null;                       /* {you:{scene,clips}, them:{scene,clips}} */
 
 function b64buf(b64){
@@ -2495,10 +2545,11 @@ function loadFighterAsset(){
     if(GLB) return resolve(GLB);
     if(!window.THREE || !THREE.GLTFLoader) return resolve(null);
     const loader = new THREE.GLTFLoader();
-    Promise.all([loadOne(loader, 'you'), loadOne(loader, 'them')]).then(([you, them])=>{
-      GLB = (you && them) ? {you, them} : null;
-      resolve(GLB);
-    });
+    Promise.all([loadOne(loader, 'you'), loadOne(loader, 'them'), loadOne(loader, 'ring')])
+      .then(([you, them, ring])=>{
+        GLB = (you && them) ? {you, them, ring} : null;
+        resolve(GLB);
+      });
   });
 }
 
@@ -2707,11 +2758,23 @@ function makeBoxer(bodyColour, isShadow, glow, trunkColour){
 /* Camera shots, the way the spec lists them. */
 /* Over-the-shoulder is the working shot: the whole defence is reading which
    way it leans, and a side-on view makes left and right ambiguous. */
+const MARK = {you:new THREE.Vector3(-0.25, 0, 0.30), them:new THREE.Vector3(0, 0, -0.55)};
+
+/* Turn each fighter toward the other, from where they actually stand. */
+function faceOff(S){
+  const y = S.you.group.position, b = S.them.group.position;
+  /* atan2 already aims a +Z-facing body at its target, so the rigged models
+     need no flip. Only the primitive fallback, modelled facing -Z, does. */
+  const flip = GLB ? 0 : Math.PI;
+  S.you.group.rotation.y  = Math.atan2(b.x - y.x, b.z - y.z) + flip;
+  S.them.group.rotation.y = Math.atan2(y.x - b.x, y.z - b.z) + flip;
+}
+
 const SHOT = {
-  tv:      {p:[0.10, 2.08, 4.55], l:[0.04, 1.24, -1.55]},
-  shoulder:{p:[0.08, 1.98, 4.30], l:[0.04, 1.22, -1.55]},
-  low:     {p:[1.35, 0.70, 1.05], l:[0.05, 1.20, -1.60]},
-  house:   {p:[4.20, 2.90, 5.40], l:[0, 1.05, -0.60]}
+  tv:      {p:[2.75, 1.42,  0.35], l:[-0.05, 1.02, -0.20]},
+  shoulder:{p:[-0.18, 1.72, 2.85], l:[-0.12, 1.06, -0.50]},
+  low:     {p:[-1.70, 0.50, 1.90], l:[ 0.00, 0.90, -0.55]},
+  house:   {p:[ 0.30, 2.70, 4.60], l:[-0.20, 1.00, -1.60]}
 };
 function setShot(name, instant){
   if(!R3.ok) return;
@@ -2791,6 +2854,7 @@ function fightHTML(){
 
 async function openFight(youProfile, themProfile, level){
   document.body.insertAdjacentHTML('beforeend', fightHTML());
+  primeSound();
   await loadFighterAsset();
   const you = fighterFrom(youProfile), them = fighterFrom(themProfile);
   F = {
@@ -2819,10 +2883,11 @@ async function openFight(youProfile, themProfile, level){
   wireFight();
   call('Ladies and gentlemen…');
   voice(them.period, them.taunt.t);
+  crowdOn(.25); snd('round-1');
   setTimeout(()=>{
     if(!F) return;
     F.phase = 'live'; F.theirNext = performance.now() + 1400;
-    setShot('shoulder'); call('Round one'); blip('bell');
+    setShot('shoulder'); call('Round one'); snd('bell'); crowdOn(.32);
   }, 2600);
   hud();
   loop();
@@ -2837,6 +2902,7 @@ function sizeRing(){
 }
 
 function closeFight(){
+  crowdOff();
   cancelAnimationFrame(raf); raf = null;
   removeEventListener('resize', sizeRing);
   if(R3.ok && R3.S){ try{ R3.S.renderer.dispose(); }catch(e){} }
@@ -3024,7 +3090,9 @@ async function knockdown(who){
   if(!F || F.down || F.over) return;
   F.down = true; F.busy = true;
   F.downs[who]++; F.downsFight[who]++;
-  slam('DOWN'); blip('down'); speedlines(true); F.slow = .4; setShot('low');
+  slam('DOWN'); snd(who === 'them' ? 'boss-down' : 'you-m-down'); speedlines(true);
+  crowdOn(who === 'them' ? .5 : .2); snd(who === 'them' ? 'cheer' : 'saved', .6);
+  F.slow = .4; setShot('low');
   call(who === 'them' ? 'Down it goes.' : 'You are down.', 2400);
   if(R3.ok){
     playClip(R3.S[who === 'them' ? 'them' : 'you'], CLIP.down, {hold:.98});
@@ -3038,8 +3106,8 @@ async function knockdown(who){
     F.count = n;
     $('r3-count').textContent = n;
     $('r3-count').classList.remove('go'); void $('r3-count').offsetWidth; $('r3-count').classList.add('go');
-    blip('bell');
-    await wait(700);
+    snd('ref-' + n);                     /* the referee counts out loud */
+    await wait(760);
   }
   $('r3-count').textContent = '';
   if(!F) return;
@@ -3047,6 +3115,7 @@ async function knockdown(who){
   if(stopped) return decision(who === 'them' ? 'you' : 'them', 'stopped, three down in the round');
   /* up at eight, on thirty */
   if(who === 'them') F.themHP = 30; else F.youHP = 30;
+  snd('getup');
   if(R3.ok){ playClip(R3.S[who === 'them' ? 'them' : 'you'], CLIP.up, {then:CLIP.idle}); }
   await wait(1200);
   if(!F) return;
@@ -3060,7 +3129,7 @@ async function knockdown(who){
 /* ---------- scoring ---------- */
 function endRound(){
   if(!F || F.over || F.phase !== 'live') return;
-  F.phase = 'rest'; F.rest = REST_SECS; blip('bell'); slam('BELL');
+  F.phase = 'rest'; F.rest = REST_SECS; snd('bell'); slam('BELL'); crowdOn(.14);
   /* ten-point must: more landed takes it 10-9, a knockdown costs a point */
   let sy = 10, st = 10;
   if(F.landed.you > F.landed.them) st = 9; else if(F.landed.them > F.landed.you) sy = 9;
@@ -3095,7 +3164,8 @@ function nextRound(){
   F.landed = {you:0, them:0}; F.downs = {you:0, them:0};
   F.clock = ROUND_SECS; F.phase = 'live'; F.busy = false; F.down = false;
   $('r3-corner').hidden = true;
-  hurt(0); setShot('shoulder'); blip('bell');
+  hurt(0); setShot('shoulder'); snd('bell'); snd('round-' + Math.min(6, F.round));
+  crowdOn(.32);
   call('Round ' + F.round);
   if(R3.ok){ playClip(R3.S.you, CLIP.idle, {loop:true}); playClip(R3.S.them, CLIP.idle, {loop:true}); }
   F.theirNext = now() + 1400;
@@ -3112,7 +3182,9 @@ function decision(winner, how){
   call((winner === 'you' ? F.you.period : winner === 'them' ? F.them.period : 'Even') + ' — ' + how, 7000);
   voice(winner === 'you' ? 'Corner' : F.them.period,
         winner === 'you' ? 'That is how it is done.' : 'Same time tomorrow.');
-  blip(winner === 'you' ? 'ding' : 'down');
+  snd('bell3'); crowdOn(.45);
+  if(winner === 'you') snd('winner'); else snd('saved');
+  setTimeout(()=>crowdOn(0), 9000);
   if(R3.ok){
     playClip(R3.S.you,  winner === 'you' ? CLIP.win : CLIP.lose, {hold:.95});
     playClip(R3.S.them, winner === 'you' ? CLIP.lose : CLIP.win, {hold:.95});
@@ -3165,9 +3237,9 @@ function drawRing(dt){
 
   /* the opponent's lean on its tell, and both fighters' idle sway */
   const sway = Math.sin(now / 420) * .045;
-  S.them.group.position.x = (F && F.swing ? (F.swing.side === 'left' ? -.34 : .34) : 0) + sway;
-  S.you.group.position.x = -1.18 - sway;
-  S.them.group.position.y = Math.abs(Math.sin(now / 300)) * .03;
+  S.them.group.position.x = MARK.them.x + (F && F.swing ? (F.swing.side === 'left' ? -.16 : .16) : 0) + sway * .5;
+  S.you.group.position.x = MARK.you.x - sway * .5;
+  S.them.group.position.y = Math.abs(Math.sin(now / 300)) * .02;
 
   /* arms: guard, or thrown */
   if(!S.you.rigged){
@@ -3182,7 +3254,7 @@ function drawRing(dt){
   }
 
   /* the backlight pulses when it is winding up */
-  if(S.back) S.back.intensity = F && F.swing ? 13 : 6.4 + Math.sin(now / 700) * .5;
+  if(S.back) S.back.intensity = F && F.swing ? 3.6 : 1.9 + Math.sin(now / 700) * .25;
   const step = dt * (F ? F.slow : 1);
   if(S.you.mixer) S.you.mixer.update(step);
   if(S.them.mixer) S.them.mixer.update(step);

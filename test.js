@@ -428,12 +428,15 @@ html.includes('function cue(side)') ? ok('the direction arrow is drawn') : bad('
 /* Facing. Mixamo bodies face +Z, the primitive fallback faces -Z, so the flip
    has to depend on which one is in the ring. Getting this wrong put the
    fighters back to back, twice. */
-html.includes('const faceFlip = GLB ? Math.PI : 0')
-  ? ok('the facing flip depends on whether the rigged model loaded')
-  : bad('the facing flip depends on whether the rigged model loaded');
-(html.includes('S.you.group.rotation.y  = faceFlip') && html.includes('S.them.group.rotation.y = Math.PI - faceFlip'))
-  ? ok('the two fighters are always turned to face each other')
-  : bad('the two fighters are always turned to face each other');
+html.includes('const flip = GLB ? 0 : Math.PI;')
+  ? ok('only the primitive fallback needs a facing flip; atan2 aims the rigged bodies')
+  : bad('only the primitive fallback needs a facing flip');
+(html.includes('Math.atan2(b.x - y.x, b.z - y.z)') && html.includes('Math.atan2(y.x - b.x, y.z - b.z)'))
+  ? ok('facing is computed from where they stand, as faceOff() does')
+  : bad('facing is computed from where they stand');
+html.includes('MARK = {you:new THREE.Vector3(-0.25, 0, 0.30), them:new THREE.Vector3(0, 0, -0.55)}')
+  ? ok('the fighters stand on the marks the app uses')
+  : bad('the fighters stand on the marks the app uses');
 
 /* The page must actually ship Three.js and reference it. */
 const hasVendor = fs.existsSync(path.join(ROOT, 'three.min.js'));
