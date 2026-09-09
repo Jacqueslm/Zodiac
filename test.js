@@ -24,7 +24,7 @@ const NAMES = ['PERIODS','LORE','NUMBERS','TAROT','EL_REL','Q_REL','SIGNS','ELEM
                'parseCSV','parseContactsCSV','parseVCF','parseContacts','parseContactDate',
                'WELLBEING','SIGN_BODY','SIGN_SWATCH','PLANET_LORE','BIRTHSTONE','DESTINY',
                'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT',
-               'TAUNTS','STYLE','RING_ELEMENT','elementFactor','fighterFrom','tauntRound'];
+               'TAUNTS','STYLE','RING_ELEMENT','elementFactor','fighterFrom'];
 const ctx = vm.createContext({console});
 vm.runInContext(engine + `\n;globalThis.__api = {${NAMES.join(',')}};`, ctx, {filename:'index.html:engine'});
 const api = ctx.__api;
@@ -36,7 +36,7 @@ const {PERIODS, LORE, NUMBERS, TAROT, EL_REL, Q_REL, SIGNS, ELEMENTS, QUALITIES,
        parseCSV, parseContactsCSV, parseVCF, parseContacts, parseContactDate,
        WELLBEING, SIGN_BODY, SIGN_SWATCH, PLANET_LORE, BIRTHSTONE, DESTINY,
        makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT,
-       TAUNTS, STYLE, RING_ELEMENT, elementFactor, fighterFrom, tauntRound} = api;
+       TAUNTS, STYLE, RING_ELEMENT, elementFactor, fighterFrom} = api;
 
 let failures = 0, checks = 0;
 function ok(label){ checks++; console.log('  ✓ ' + label); }
@@ -345,22 +345,40 @@ const cardF  = fighterFrom(profileOf({name:'C', month:3, day:28, year:null}));  
 /* Each element has its own ring colour, so no two look the same. */
 is(new Set(Object.values(RING_ELEMENT).map(r=>r.colour)).size, 4, 'each element lights the ring a different colour');
 
-/* The taunt round: three replies, exactly one right, always this opponent's. */
-let tauntBad = [];
-const allNames = PERIODS.map(p=>p.n);
-PERIODS.forEach((p, i)=>{
-  const f = fighterFrom(profileOf({name:'X', month:p.sm, day:p.sd, year:null}));
-  for(let sd = 1; sd <= 6; sd++){
-    const r = tauntRound(f, allNames, seeded(i * 13 + sd));
-    if(r.line !== TAUNTS[p.n].t) tauntBad.push(`${p.n}: wrong line`);
-    if(r.options.length !== 3) tauntBad.push(`${p.n}: ${r.options.length} options`);
-    if(new Set(r.options).size !== 3) tauntBad.push(`${p.n}: duplicate options`);
-    if(r.options[r.answerIndex] !== TAUNTS[p.n].c) tauntBad.push(`${p.n}: answerIndex is wrong`);
-    if(r.options.filter(o=>o === TAUNTS[p.n].c).length !== 1) tauntBad.push(`${p.n}: right answer appears twice`);
-  }
+/* There are no questions any more — it talks while it winds up, and a clean
+   slip is what earns the line naming its weakness. Both halves must be used. */
+html.includes('voice(F.them.period, F.them.taunt.t)')
+  ? ok('it says what its period is good at while winding up')
+  : bad('it says what its period is good at while winding up');
+html.includes('voice(F.you.period, F.them.taunt.c)')
+  ? ok('slipping clean is what names its weakness')
+  : bad('slipping clean is what names its weakness');
+/[^a-zA-Z]data-reply/.test(html)
+  ? bad('no multiple-choice questions remain', 'a reply button is still rendered')
+  : ok('no multiple-choice questions remain');
+
+/* The rigged fighters, and the clips that drive them. */
+const NEEDED_CLIPS = ['boxing_idle','lead_jab','jab_cross','hook','uppercut',
+                      'head_hit','big_head_hit','stomach_hit','knocked_out','getting_up','victory','defeat'];
+const missingClip = NEEDED_CLIPS.filter(c=>!html.includes("'" + c + "'"));
+missingClip.length ? bad('every boxing clip the fight needs is referenced', missingClip.join(', '))
+                   : ok(`all ${NEEDED_CLIPS.length} boxing clips are referenced by name`);
+fs.existsSync(path.join(ROOT, 'fighter.glb')) ? ok('fighter.glb is vendored beside index.html')
+                                              : bad('fighter.glb is vendored beside index.html');
+['GLTFLoader.js','SkeletonUtils.js'].forEach(f=>{
+  fs.existsSync(path.join(ROOT, f)) && html.includes('src="' + f + '"')
+    ? ok(f + ' is vendored and loaded')
+    : bad(f + ' is vendored and loaded');
 });
-tauntBad.length ? bad('every taunt round has three replies and exactly one right one', tauntBad.slice(0,4).join('\n      '))
-                : ok('288 taunt rounds: three replies, exactly one right, always this opponent\'s counter');
+/* The three fixes that made the model actually move must stay in place. */
+html.includes('skinning: !!o.isSkinnedMesh') ? ok('skinned materials set r128\'s skinning flag')
+                                             : bad('skinned materials set r128\'s skinning flag');
+html.includes('function unifySkeletons') ? ok('both skinned meshes are bound to one skeleton')
+                                         : bad('both skinned meshes are bound to one skeleton');
+html.includes('function retargetClips') ? ok('clip tracks are retargeted onto the renamed bones')
+                                        : bad('clip tracks are retargeted onto the renamed bones');
+html.includes('function groundFeet') ? ok('feet are grounded off the foot bones, not the rest pose')
+                                     : bad('feet are grounded off the foot bones, not the rest pose');
 
 /* The page must actually ship Three.js and reference it. */
 const hasVendor = fs.existsSync(path.join(ROOT, 'three.min.js'));
