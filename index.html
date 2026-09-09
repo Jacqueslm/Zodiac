@@ -1,0 +1,1255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personology Index</title>
+<style>
+:root{
+  --bg:#07060d; --bg2:#0d0b1a; --ink:#ece9f5; --dim:#a29cbb; --dimmer:#6f6890;
+  --line:rgba(255,255,255,.10); --line2:rgba(255,255,255,.06);
+  --card:rgba(255,255,255,.035); --card2:rgba(255,255,255,.055);
+  --gold:#e8c07a; --violet:#a78bfa; --teal:#5fd9c4; --rose:#f0919f;
+  --fire:#f0894f; --earth:#8fd08a; --air:#8fc4f5; --water:#8f9cf5;
+  --serif:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --r:16px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--sans);
+  font-size:16px; line-height:1.65; min-height:100vh; -webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(1100px 700px at 12% -8%, rgba(167,139,250,.16), transparent 60%),
+    radial-gradient(900px 620px at 92% 4%, rgba(95,217,196,.10), transparent 62%),
+    radial-gradient(1000px 800px at 50% 108%, rgba(232,192,122,.09), transparent 65%);
+  background-attachment:fixed;
+}
+#stars{position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.55}
+.wrap{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:28px 20px 90px}
+
+/* ---------- header ---------- */
+header.top{text-align:center; padding:22px 0 8px}
+.mark{font-family:var(--serif); font-size:12px; letter-spacing:.42em; text-transform:uppercase; color:var(--gold); opacity:.9}
+h1{font-family:var(--serif); font-weight:500; font-size:clamp(30px,6vw,46px); margin:.32em 0 .1em; letter-spacing:-.01em}
+.sub{color:var(--dim); font-size:14.5px; max-width:60ch; margin:0 auto}
+.rule{height:1px; background:linear-gradient(90deg,transparent,var(--line),transparent); margin:26px 0}
+
+/* ---------- tabs ---------- */
+nav.tabs{display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin:22px 0 26px}
+nav.tabs button{
+  font-family:var(--sans); font-size:13.5px; letter-spacing:.02em; color:var(--dim);
+  background:transparent; border:1px solid var(--line2); border-radius:999px;
+  padding:9px 17px; cursor:pointer; transition:.18s;
+}
+nav.tabs button:hover{color:var(--ink); border-color:var(--line); background:var(--card)}
+nav.tabs button[aria-selected="true"]{color:#120e05; background:var(--gold); border-color:var(--gold); font-weight:600}
+.panel[hidden]{display:none}
+
+/* ---------- form ---------- */
+.card{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:22px}
+.form-grid{display:grid; grid-template-columns:1.4fr .9fr .7fr .8fr; gap:12px; align-items:end}
+@media(max-width:720px){.form-grid{grid-template-columns:1fr 1fr}}
+label{display:block; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--dimmer); margin-bottom:7px}
+input,select{
+  width:100%; font-family:var(--sans); font-size:15px; color:var(--ink);
+  background:rgba(0,0,0,.32); border:1px solid var(--line); border-radius:10px;
+  padding:11px 12px; outline:none; transition:.16s;
+}
+input:focus,select:focus{border-color:var(--gold); box-shadow:0 0 0 3px rgba(232,192,122,.13)}
+select option{background:#14111f; color:var(--ink)}
+.actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px}
+button.btn{
+  font-family:var(--sans); font-size:14px; font-weight:600; cursor:pointer;
+  border-radius:10px; padding:11px 20px; border:1px solid transparent; transition:.16s;
+}
+.btn.primary{background:var(--gold); color:#120e05}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent; color:var(--dim); border-color:var(--line)}
+.btn.ghost:hover{color:var(--ink); border-color:var(--gold); background:var(--card)}
+.btn.tiny{font-size:12px; padding:6px 12px; font-weight:500}
+.btn:disabled{opacity:.4; cursor:not-allowed}
+
+/* ---------- result ---------- */
+.result{margin-top:30px}
+.crest{
+  text-align:center; padding:32px 22px 26px; border:1px solid var(--line);
+  border-radius:var(--r) var(--r) 0 0; border-bottom:none;
+  background:linear-gradient(180deg, rgba(232,192,122,.09), rgba(255,255,255,.02));
+}
+.crest .who{font-size:12px; letter-spacing:.3em; text-transform:uppercase; color:var(--dim)}
+.crest .glyphs{font-size:30px; color:var(--gold); letter-spacing:.14em; margin:12px 0 6px; line-height:1}
+.crest .pname{font-family:var(--serif); font-size:clamp(24px,4.6vw,34px); margin:6px 0 2px; font-weight:500}
+.crest .ptitle{font-family:var(--serif); font-style:italic; font-size:19px; color:var(--gold)}
+.crest .prange{margin-top:12px; font-size:12.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--dim)}
+
+.facts{display:grid; grid-template-columns:repeat(4,1fr); border:1px solid var(--line); border-radius:0 0 var(--r) var(--r); overflow:hidden}
+@media(max-width:720px){.facts{grid-template-columns:repeat(2,1fr)}}
+.fact{padding:17px 15px; border-right:1px solid var(--line2); border-top:1px solid var(--line2); background:rgba(255,255,255,.02)}
+.fact:last-child{border-right:none}
+@media(max-width:720px){.fact:nth-child(2n){border-right:none}}
+.fact .k{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--dimmer); margin-bottom:6px}
+.fact .v{font-family:var(--serif); font-size:18px; line-height:1.3}
+.fact .n{font-size:12px; color:var(--dim); margin-top:3px}
+.el-Fire{color:var(--fire)} .el-Earth{color:var(--earth)} .el-Air{color:var(--air)} .el-Water{color:var(--water)}
+
+/* ---------- layers ---------- */
+.layer{margin-top:26px; border:1px solid var(--line); border-radius:var(--r); overflow:hidden}
+.layer > h3{
+  margin:0; padding:14px 20px; font-family:var(--sans); font-size:11px; font-weight:600;
+  letter-spacing:.24em; text-transform:uppercase; color:var(--bg);
+  background:linear-gradient(90deg,var(--gold),#d9b071);
+}
+.layer.two > h3{background:linear-gradient(90deg,var(--violet),#8f74e8)}
+.layer.three > h3{background:linear-gradient(90deg,var(--teal),#46bda9)}
+.layer > h3 small{display:block; font-size:10px; letter-spacing:.12em; text-transform:none; font-weight:500; opacity:.72; margin-top:2px}
+.layer-body{padding:22px 20px; background:rgba(255,255,255,.022)}
+.layer-body h4{
+  font-family:var(--sans); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--gold); margin:22px 0 8px; font-weight:600;
+}
+.layer.two .layer-body h4{color:var(--violet)}
+.layer.three .layer-body h4{color:var(--teal)}
+.layer-body h4:first-child{margin-top:0}
+.layer-body p{margin:0 0 13px; color:#ddd8ee}
+.layer-body p:last-child{margin-bottom:0}
+.lead{font-family:var(--serif); font-size:18.5px; line-height:1.6; color:var(--ink)}
+.pull{
+  border-left:2px solid var(--gold); padding:4px 0 4px 16px; margin:16px 0;
+  font-family:var(--serif); font-style:italic; font-size:17px; color:#f3eddd;
+}
+.layer.three .pull{border-left-color:var(--teal)}
+.gsl{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:6px 0 4px}
+@media(max-width:720px){.gsl{grid-template-columns:1fr}}
+.gsl > div{background:rgba(0,0,0,.24); border:1px solid var(--line2); border-radius:12px; padding:14px}
+.gsl .t{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--dimmer); margin-bottom:6px}
+.gsl .b{font-size:14.5px; line-height:1.55; color:#ded9ee}
+
+/* ---------- people ---------- */
+.people{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:13px; margin-top:20px}
+.pcard{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; transition:.16s; cursor:pointer; position:relative}
+.pcard:hover{background:var(--card2); border-color:var(--gold); transform:translateY(-2px)}
+.pcard .pn{font-family:var(--serif); font-size:19px; margin-bottom:2px}
+.pcard .pd{font-size:12.5px; color:var(--dim)}
+.pcard .pp{font-size:12.5px; color:var(--gold); margin-top:8px}
+.pcard .pt{font-size:11.5px; color:var(--dimmer); font-style:italic}
+.pcard .x{position:absolute; top:9px; right:9px; background:transparent; border:none; color:var(--dimmer); font-size:17px; cursor:pointer; padding:3px 7px; border-radius:7px; line-height:1}
+.pcard .x:hover{color:var(--rose); background:rgba(240,145,159,.12)}
+.empty{text-align:center; padding:52px 20px; color:var(--dimmer); border:1px dashed var(--line); border-radius:var(--r)}
+.empty .big{font-size:34px; margin-bottom:12px; opacity:.5}
+
+/* ---------- pair ---------- */
+.pair-pick{display:grid; grid-template-columns:1fr auto 1fr; gap:14px; align-items:end}
+@media(max-width:720px){.pair-pick{grid-template-columns:1fr}}
+.amp{font-family:var(--serif); font-size:26px; color:var(--gold); padding-bottom:8px; text-align:center}
+.vs{display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--line); border-radius:var(--r); overflow:hidden; margin-top:26px}
+@media(max-width:640px){.vs{grid-template-columns:1fr}}
+.vs > div{padding:20px; background:rgba(255,255,255,.025)}
+.vs > div:first-child{border-right:1px solid var(--line)}
+@media(max-width:640px){.vs > div:first-child{border-right:none; border-bottom:1px solid var(--line)}}
+.vs .vn{font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--dim)}
+.vs .vp{font-family:var(--serif); font-size:21px; margin:6px 0 2px}
+.vs .vt{font-family:var(--serif); font-style:italic; color:var(--gold); font-size:15px}
+.vs .vmeta{margin-top:12px; font-size:12.5px; color:var(--dim); line-height:1.9}
+.vs .vmeta b{color:var(--ink); font-weight:500}
+.domains{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:4px}
+@media(max-width:720px){.domains{grid-template-columns:1fr}}
+.domain{background:rgba(0,0,0,.24); border:1px solid var(--line2); border-radius:12px; padding:15px}
+.domain .dt{font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--violet); margin-bottom:7px; font-weight:600}
+.domain .db{font-size:14.5px; line-height:1.58; color:#ded9ee}
+
+/* ---------- misc ---------- */
+.chips{display:flex; gap:7px; flex-wrap:wrap; margin-top:14px}
+.chip{font-size:11.5px; padding:5px 11px; border-radius:999px; border:1px solid var(--line); color:var(--dim); background:rgba(0,0,0,.22)}
+.note{font-size:12.5px; color:var(--dimmer); line-height:1.6}
+.toast{
+  position:fixed; left:50%; bottom:28px; transform:translate(-50%,26px); z-index:50;
+  background:var(--gold); color:#120e05; font-weight:600; font-size:14px;
+  padding:11px 22px; border-radius:999px; opacity:0; pointer-events:none; transition:.28s;
+  box-shadow:0 10px 34px rgba(0,0,0,.55);
+}
+.toast.on{opacity:1; transform:translate(-50%,0)}
+footer{margin-top:54px; padding-top:22px; border-top:1px solid var(--line2); text-align:center}
+.err{color:var(--rose); font-size:13.5px; margin-top:12px; min-height:1.2em}
+details.about{margin-top:16px}
+details.about summary{cursor:pointer; color:var(--dim); font-size:13px; list-style:none}
+details.about summary::-webkit-details-marker{display:none}
+details.about summary:before{content:"▸ "; color:var(--gold)}
+details.about[open] summary:before{content:"▾ "}
+details.about .note{margin-top:12px}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<div class="wrap">
+
+<header class="top">
+  <div class="mark">Personology</div>
+  <h1>The Birthday Index</h1>
+  <p class="sub">One birthday, read three ways — the period you were born into, the path it implies, and what happens when it meets someone else's.</p>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" id="tab-read"   aria-selected="true"  data-panel="panel-read">Read a birthday</button>
+  <button role="tab" id="tab-people" aria-selected="false" data-panel="panel-people">People <span id="count"></span></button>
+  <button role="tab" id="tab-pair"   aria-selected="false" data-panel="panel-pair">Pair</button>
+  <button role="tab" id="tab-wheel"  aria-selected="false" data-panel="panel-wheel">The 48</button>
+</nav>
+
+<!-- READ -->
+<section class="panel" id="panel-read" role="tabpanel">
+  <div class="card">
+    <div class="form-grid">
+      <div><label for="f-name">Name</label><input id="f-name" type="text" placeholder="Who is this?" autocomplete="off"></div>
+      <div><label for="f-month">Birth month</label><select id="f-month"></select></div>
+      <div><label for="f-day">Day</label><select id="f-day"></select></div>
+      <div><label for="f-year">Year <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="f-year" type="text" inputmode="numeric" placeholder="1990" maxlength="4" autocomplete="off"></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="btn-read">Read it</button>
+      <button class="btn ghost" id="btn-save">Save this person</button>
+      <button class="btn ghost" id="btn-clear">Clear</button>
+    </div>
+    <div class="err" id="err"></div>
+  </div>
+  <div class="result" id="result"></div>
+</section>
+
+<!-- PEOPLE -->
+<section class="panel" id="panel-people" role="tabpanel" hidden>
+  <div class="note">Saved in this browser only — nothing leaves the file. Click a card to read it; use the × to remove.</div>
+  <div id="people-list"></div>
+</section>
+
+<!-- PAIR -->
+<section class="panel" id="panel-pair" role="tabpanel" hidden>
+  <div class="card">
+    <div class="pair-pick">
+      <div><label for="p-a">First person</label><select id="p-a"></select></div>
+      <div class="amp">&amp;</div>
+      <div><label for="p-b">Second person</label><select id="p-b"></select></div>
+    </div>
+    <div class="actions"><button class="btn primary" id="btn-pair">Read the pair</button></div>
+    <div class="err" id="pair-err"></div>
+  </div>
+  <div class="result" id="pair-result"></div>
+</section>
+
+<!-- WHEEL -->
+<section class="panel" id="panel-wheel" role="tabpanel" hidden>
+  <div class="note">All 48 periods of the year, in order. Click any one to read it from its first day.</div>
+  <div class="people" id="wheel-list"></div>
+</section>
+
+<footer>
+  <p class="note">Built as one self-contained file. Your people are stored in this browser's localStorage.</p>
+  <details class="about">
+    <summary>How this works, and what's original here</summary>
+    <p class="note">
+      The 48 periods and their date ranges come from this project's README and are used exactly as written.
+      The correspondences are the standard personology framework: each period's sign gives its element and quality;
+      the day of the month reduces to a number 1&ndash;9 with its ruling planet; and the day of the month also names a
+      Major Arcana card (days 1&ndash;22 directly, days 23&ndash;31 by digit sum).
+      Every word of interpretation &mdash; the readings, the paths, the pair profiles &mdash; was written for this app.
+      Nothing is quoted from any book, and the path names here are this app's own, not any published list.
+    </p>
+  </details>
+</footer>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   DATA — the 48 periods, transcribed from README.md verbatim
+   ============================================================ */
+const PERIODS = [
+  {n:"Pisces–Aries Cusp", t:"The Cusp of Rebirth", r:"Mar 19–24", sm:3, sd:19, em:3, ed:24, signs:["Pisces","Aries"]},
+  {n:"Aries I", t:"The Week of the Child", r:"Mar 25–Apr 2", sm:3, sd:25, em:4, ed:2, signs:["Aries"]},
+  {n:"Aries II", t:"The Week of the Star", r:"Apr 3–10", sm:4, sd:3, em:4, ed:10, signs:["Aries"]},
+  {n:"Aries III", t:"The Week of the Pioneer", r:"Apr 11–18", sm:4, sd:11, em:4, ed:18, signs:["Aries"]},
+  {n:"Aries–Taurus Cusp", t:"The Cusp of Power", r:"Apr 19–24", sm:4, sd:19, em:4, ed:24, signs:["Aries","Taurus"]},
+  {n:"Taurus I", t:"The Week of Manifestation", r:"Apr 25–May 2", sm:4, sd:25, em:5, ed:2, signs:["Taurus"]},
+  {n:"Taurus II", t:"The Week of the Teacher", r:"May 3–10", sm:5, sd:3, em:5, ed:10, signs:["Taurus"]},
+  {n:"Taurus III", t:"The Week of the Natural", r:"May 11–18", sm:5, sd:11, em:5, ed:18, signs:["Taurus"]},
+  {n:"Taurus–Gemini Cusp", t:"The Cusp of Energy", r:"May 19–24", sm:5, sd:19, em:5, ed:24, signs:["Taurus","Gemini"]},
+  {n:"Gemini I", t:"The Week of Freedom", r:"May 25–Jun 2", sm:5, sd:25, em:6, ed:2, signs:["Gemini"]},
+  {n:"Gemini II", t:"The Week of New Language", r:"Jun 3–10", sm:6, sd:3, em:6, ed:10, signs:["Gemini"]},
+  {n:"Gemini III", t:"The Week of the Seeker", r:"Jun 11–18", sm:6, sd:11, em:6, ed:18, signs:["Gemini"]},
+  {n:"Gemini–Cancer Cusp", t:"The Cusp of Magic", r:"Jun 19–24", sm:6, sd:19, em:6, ed:24, signs:["Gemini","Cancer"]},
+  {n:"Cancer I", t:"The Week of the Empath", r:"Jun 25–Jul 2", sm:6, sd:25, em:7, ed:2, signs:["Cancer"]},
+  {n:"Cancer II", t:"The Week of the Unconventional", r:"Jul 3–10", sm:7, sd:3, em:7, ed:10, signs:["Cancer"]},
+  {n:"Cancer III", t:"The Week of the Persuader", r:"Jul 11–18", sm:7, sd:11, em:7, ed:18, signs:["Cancer"]},
+  {n:"Cancer–Leo Cusp", t:"The Cusp of Oscillation", r:"Jul 19–25", sm:7, sd:19, em:7, ed:25, signs:["Cancer","Leo"]},
+  {n:"Leo I", t:"The Week of Authority", r:"Jul 26–Aug 2", sm:7, sd:26, em:8, ed:2, signs:["Leo"]},
+  {n:"Leo II", t:"The Week of Balanced Strength", r:"Aug 3–10", sm:8, sd:3, em:8, ed:10, signs:["Leo"]},
+  {n:"Leo III", t:"The Week of Leadership", r:"Aug 11–18", sm:8, sd:11, em:8, ed:18, signs:["Leo"]},
+  {n:"Leo–Virgo Cusp", t:"The Cusp of Exposure", r:"Aug 19–25", sm:8, sd:19, em:8, ed:25, signs:["Leo","Virgo"]},
+  {n:"Virgo I", t:"The Week of System Builders", r:"Aug 26–Sep 2", sm:8, sd:26, em:9, ed:2, signs:["Virgo"]},
+  {n:"Virgo II", t:"The Week of the Enigma", r:"Sep 3–10", sm:9, sd:3, em:9, ed:10, signs:["Virgo"]},
+  {n:"Virgo III", t:"The Week of the Literalist", r:"Sep 11–18", sm:9, sd:11, em:9, ed:18, signs:["Virgo"]},
+  {n:"Virgo–Libra Cusp", t:"The Cusp of Beauty", r:"Sep 19–24", sm:9, sd:19, em:9, ed:24, signs:["Virgo","Libra"]},
+  {n:"Libra I", t:"The Week of the Perfectionist", r:"Sep 25–Oct 2", sm:9, sd:25, em:10, ed:2, signs:["Libra"]},
+  {n:"Libra II", t:"The Week of Society", r:"Oct 3–10", sm:10, sd:3, em:10, ed:10, signs:["Libra"]},
+  {n:"Libra III", t:"The Week of Theater", r:"Oct 11–18", sm:10, sd:11, em:10, ed:18, signs:["Libra"]},
+  {n:"Libra–Scorpio Cusp", t:"The Cusp of Drama & Criticism", r:"Oct 19–25", sm:10, sd:19, em:10, ed:25, signs:["Libra","Scorpio"]},
+  {n:"Scorpio I", t:"The Week of Intensity", r:"Oct 26–Nov 2", sm:10, sd:26, em:11, ed:2, signs:["Scorpio"]},
+  {n:"Scorpio II", t:"The Week of Depth", r:"Nov 3–11", sm:11, sd:3, em:11, ed:11, signs:["Scorpio"]},
+  {n:"Scorpio III", t:"The Week of Charm", r:"Nov 12–18", sm:11, sd:12, em:11, ed:18, signs:["Scorpio"]},
+  {n:"Scorpio–Sagittarius Cusp", t:"The Cusp of Revolution", r:"Nov 19–24", sm:11, sd:19, em:11, ed:24, signs:["Scorpio","Sagittarius"]},
+  {n:"Sagittarius I", t:"The Week of Independence", r:"Nov 25–Dec 2", sm:11, sd:25, em:12, ed:2, signs:["Sagittarius"]},
+  {n:"Sagittarius II", t:"The Week of the Originator", r:"Dec 3–10", sm:12, sd:3, em:12, ed:10, signs:["Sagittarius"]},
+  {n:"Sagittarius III", t:"The Week of the Titan", r:"Dec 11–18", sm:12, sd:11, em:12, ed:18, signs:["Sagittarius"]},
+  {n:"Sagittarius–Capricorn Cusp", t:"The Cusp of Prophecy", r:"Dec 19–25", sm:12, sd:19, em:12, ed:25, signs:["Sagittarius","Capricorn"]},
+  {n:"Capricorn I", t:"The Week of the Ruler", r:"Dec 26–Jan 2", sm:12, sd:26, em:1, ed:2, signs:["Capricorn"]},
+  {n:"Capricorn II", t:"The Week of Determination", r:"Jan 3–9", sm:1, sd:3, em:1, ed:9, signs:["Capricorn"]},
+  {n:"Capricorn III", t:"The Week of Dominance", r:"Jan 10–16", sm:1, sd:10, em:1, ed:16, signs:["Capricorn"]},
+  {n:"Capricorn–Aquarius Cusp", t:"The Cusp of Mystery & Imagination", r:"Jan 17–22", sm:1, sd:17, em:1, ed:22, signs:["Capricorn","Aquarius"]},
+  {n:"Aquarius I", t:"The Week of Genius", r:"Jan 23–30", sm:1, sd:23, em:1, ed:30, signs:["Aquarius"]},
+  {n:"Aquarius II", t:"The Week of Youth & Ease", r:"Jan 31–Feb 7", sm:1, sd:31, em:2, ed:7, signs:["Aquarius"]},
+  {n:"Aquarius III", t:"The Week of Acceptance", r:"Feb 8–15", sm:2, sd:8, em:2, ed:15, signs:["Aquarius"]},
+  {n:"Aquarius–Pisces Cusp", t:"The Cusp of Sensitivity", r:"Feb 16–22", sm:2, sd:16, em:2, ed:22, signs:["Aquarius","Pisces"]},
+  {n:"Pisces I", t:"The Week of Spirit", r:"Feb 23–Mar 2", sm:2, sd:23, em:3, ed:2, signs:["Pisces"]},
+  {n:"Pisces II", t:"The Week of the Loner", r:"Mar 3–10", sm:3, sd:3, em:3, ed:10, signs:["Pisces"]},
+  {n:"Pisces III", t:"The Week of Dancers & Dreamers", r:"Mar 11–18", sm:3, sd:11, em:3, ed:18, signs:["Pisces"]}
+];
+
+/* Sign → element, quality, glyph. Standard astrological correspondence. */
+const SIGNS = {
+  Aries:      {e:'Fire',  q:'Cardinal', g:'♈'},
+  Taurus:     {e:'Earth', q:'Fixed',    g:'♉'},
+  Gemini:     {e:'Air',   q:'Mutable',  g:'♊'},
+  Cancer:     {e:'Water', q:'Cardinal', g:'♋'},
+  Leo:        {e:'Fire',  q:'Fixed',    g:'♌'},
+  Virgo:      {e:'Earth', q:'Mutable',  g:'♍'},
+  Libra:      {e:'Air',   q:'Cardinal', g:'♎'},
+  Scorpio:    {e:'Water', q:'Fixed',    g:'♏'},
+  Sagittarius:{e:'Fire',  q:'Mutable',  g:'♐'},
+  Capricorn:  {e:'Earth', q:'Cardinal', g:'♑'},
+  Aquarius:   {e:'Air',   q:'Fixed',    g:'♒'},
+  Pisces:     {e:'Water', q:'Mutable',  g:'♓'}
+};
+
+const ELEMENTS = {
+  Fire:{
+    word:'ignition',
+    body:'Fire runs on ignition. The energy shows up before the plan does, and the plan usually gets built while already moving. Warmth is the natural output. So is scorch, on the days there is nothing to burn but yourself.'
+  },
+  Earth:{
+    word:'accumulation',
+    body:'Earth runs on accumulation. Nothing arrives all at once; it gets laid down, tested, and then stood on. What Earth builds tends to still be standing years later, which is both the gift and the reason it resists being moved.'
+  },
+  Air:{
+    word:'circulation',
+    body:'Air runs on circulation. Ideas, contacts, phrasings, angles — the mind keeps them in motion, and connection happens faster than commitment. Nothing goes stale. Some things never get finished.'
+  },
+  Water:{
+    word:'absorption',
+    body:'Water runs on absorption. The mood of a room arrives before its words do, and it arrives uninvited. That makes for an uncanny read on people, and a real need for somewhere to put everything that gets picked up.'
+  }
+};
+
+const QUALITIES = {
+  Cardinal:{
+    verb:'starts',
+    body:'Cardinal means you start things. You are the one who says <em>let’s</em>, and the room reorganizes around it. Beginnings are cheap for you. Endings are expensive.'
+  },
+  Fixed:{
+    verb:'holds',
+    body:'Fixed means you hold things. Once committed you are extremely hard to move, which builds trust and occasionally builds walls. Your loyalty and your stubbornness are the same muscle.'
+  },
+  Mutable:{
+    verb:'adapts',
+    body:'Mutable means you adapt things. You change shape to fit the situation and lose almost nothing doing it. The risk is not rigidity, it is dispersal — available to everything, anchored to nothing.'
+  }
+};
+
+/* Reduced day-number 1–9 and its ruling planet. */
+const NUMBERS = {
+  1:{planet:'the Sun',  key:'self-definition',
+     body:'The 1 is the self-starter’s number, ruled by the Sun. It wants originality and a clear signature on the work. It bristles under orders and does its best under its own authority.'},
+  2:{planet:'the Moon', key:'partnership',
+     body:'The 2 is the partner’s number, ruled by the Moon. It thinks in pairs, reads the room by feel, and does its best work alongside someone. Its weather changes; treat that as information, not a fault.'},
+  3:{planet:'Jupiter',  key:'expansion',
+     body:'The 3 is the expansive number, ruled by Jupiter. Ambition, appetite, and a reach wider than the current room. Discipline is the only thing that converts that reach into a result.'},
+  4:{planet:'Uranus',   key:'disruption',
+     body:'The 4 is the contrarian’s number, ruled by Uranus. It spots the flaw in the accepted version and says so out loud. Expect friction with authority, and an unusually good instinct for what everyone else has got wrong.'},
+  5:{planet:'Mercury',  key:'movement',
+     body:'The 5 is the quick number, ruled by Mercury. Versatile, verbal, allergic to being stuck. It recovers from a setback faster than most people finish describing one.'},
+  6:{planet:'Venus',    key:'harmony',
+     body:'The 6 is the magnetic number, ruled by Venus. It draws people and beauty toward it and genuinely cares about harmony. The trouble starts when it keeps the peace at its own expense.'},
+  7:{planet:'Neptune',  key:'vision',
+     body:'The 7 is the visionary’s number, ruled by Neptune. It lives partly elsewhere — in imagination, in pattern, in the not-yet-visible. Grounding is the entire practice; without it the vision never lands.'},
+  8:{planet:'Saturn',   key:'structure',
+     body:'The 8 is the builder’s number, ruled by Saturn. Slow, structural, serious about consequence. It arrives late and then stays. Time is its ally and also its main complaint.'},
+  9:{planet:'Mars',     key:'completion',
+     body:'The 9 is the completer’s number, ruled by Mars. It carries force and finishes things, often for someone else’s benefit. It needs a cause large enough to justify how hard it is going to push.'}
+};
+
+/* Day of month → Major Arcana. 1–22 direct; 23–31 by digit sum. */
+const TAROT = {
+  1: {r:'I',    n:'The Magician',        line:'Everything needed is already on the table. This card asks for skill, not more supply.'},
+  2: {r:'II',   n:'The High Priestess',  line:'Knowledge held quietly. This card asks you to trust what you know before you can prove it.'},
+  3: {r:'III',  n:'The Empress',         line:'Fertility and care. This card asks what you are actually growing, and whether you are feeding it.'},
+  4: {r:'IV',   n:'The Emperor',         line:'Structure and command. This card asks you to build the frame, then live inside your own rules.'},
+  5: {r:'V',    n:'The Hierophant',      line:'Tradition and teaching. This card asks which inherited wisdom still serves and which is only habit.'},
+  6: {r:'VI',   n:'The Lovers',          line:'Choice, not romance. This card asks you to pick — and to accept what the picking costs.'},
+  7: {r:'VII',  n:'The Chariot',         line:'Momentum under control. This card asks you to steer two forces that want to pull in different directions.'},
+  8: {r:'VIII', n:'Strength',            line:'Force without violence. This card asks for patience with the wild part of yourself.'},
+  9: {r:'IX',   n:'The Hermit',          line:'Withdrawal in the service of clarity. This card asks for solitude, then a lamp carried back.'},
+  10:{r:'X',    n:'The Wheel of Fortune',line:'Cycles and timing. This card asks you to stop fighting the turn and read where on it you are.'},
+  11:{r:'XI',   n:'Justice',             line:'Balance and consequence. This card asks for the honest accounting you have been postponing.'},
+  12:{r:'XII',  n:'The Hanged Man',      line:'Suspension and reversal. This card asks you to hang there long enough to see it from the other side.'},
+  13:{r:'XIII', n:'Death',               line:'Ending as clearance. This card asks what has to be finished before the next thing has room.'},
+  14:{r:'XIV',  n:'Temperance',          line:'Blending opposites. This card asks for the patient mix rather than the dramatic choice.'},
+  15:{r:'XV',   n:'The Devil',           line:'Attachment and appetite. This card asks what you call necessary that is really a chain.'},
+  16:{r:'XVI',  n:'The Tower',           line:'Sudden structural failure. This card asks you to notice what was built badly and let it come down.'},
+  17:{r:'XVII', n:'The Star',            line:'Hope after the wreck. This card asks you to keep pouring even when the result is not visible yet.'},
+  18:{r:'XVIII',n:'The Moon',            line:'Illusion and instinct. This card asks you to move by feel through country you cannot fully see.'},
+  19:{r:'XIX',  n:'The Sun',             line:'Clarity and vitality. This card asks you to be plainly visible and stop apologising for the warmth.'},
+  20:{r:'XX',   n:'Judgement',           line:'The call and the reckoning. This card asks you to answer for what you have made, and rise anyway.'},
+  21:{r:'XXI',  n:'The World',           line:'Completion and scope. This card asks you to close the circle before you start a wider one.'},
+  22:{r:'XXII', n:'The Fool',            line:'The leap without a guarantee. This card asks for the beginning nobody has authorised.'}
+};
+
+/* ============================================================
+   LORE — original interpretation written for this app.
+   k = keynote, g = gift, s = shadow, p = practice,
+   path/pur = the derived life path (this app's own naming).
+   ============================================================ */
+const LORE = {
+"Pisces–Aries Cusp":{
+  k:"You sit on the seam where dreaming ends and doing begins — the year's own reset point.",
+  g:"Can begin again from almost nothing, repeatedly, without turning bitter about it.",
+  s:"Restarting becomes the avoidance. Some things need finishing, not rebirth.",
+  p:"Before you begin the next thing, close one that is still open.",
+  path:"The Path of the Threshold",
+  pur:"to keep proving that an ending is survivable, and that what comes after it can be better than what it replaced"},
+"Aries I":{
+  k:"Directness that never got trained out of you — you say the true thing before you have finished calculating it.",
+  g:"Unfiltered honesty and a genuine appetite for whatever is new.",
+  s:"The unedited reaction lands harder on other people than you ever intend.",
+  p:"Count to three before the reply. Say the same thing, slower.",
+  path:"The Path of the Clear Word",
+  pur:"to say plainly what a room has agreed not to mention, and to learn to do it without cost to the person hearing it"},
+"Aries II":{
+  k:"You are noticeable, and you have known it long enough to have complicated feelings about it.",
+  g:"Natural presence — people orient toward you without being asked to.",
+  s:"Attention starts doing the work that substance ought to be doing.",
+  p:"Do one excellent thing this week that nobody watches.",
+  path:"The Path of Earned Light",
+  pur:"to convert the attention you attract without effort into work that would have deserved it anyway"},
+"Aries III":{
+  k:"You go first, into places without a map, and then report back.",
+  g:"Courage in unfamiliar terrain and an instinct for the untried route.",
+  s:"Going first hardens into going alone, out of pride rather than necessity.",
+  p:"Bring one person with you on the next attempt.",
+  path:"The Path of First Ground",
+  pur:"to open country other people can then live in, and to stay long enough to see them arrive"},
+"Aries–Taurus Cusp":{
+  k:"Drive married to substance — you do not just want the surge, you want it to hold.",
+  g:"Force with follow-through. You can carry real weight and still move.",
+  s:"Power applied without invitation reads to everyone else as pressure.",
+  p:"Ask before you push. Then push.",
+  path:"The Path of Applied Force",
+  pur:"to learn the difference between strength that opens a door and strength that breaks one"},
+"Taurus I":{
+  k:"You make things real. Ideas that stay ideas make you restless in your own skin.",
+  g:"Turning intention into something with mass and a location.",
+  s:"You can build a thing so long that you forget to check whether you still want it.",
+  p:"Say out loud, once a month, what you are building and why.",
+  path:"The Path of Making Real",
+  pur:"to bring at least a few things all the way from thought into matter, and to choose those few well"},
+"Taurus II":{
+  k:"You explain the world to people, whether or not anyone gave you the job.",
+  g:"Patience, clarity, and a gift for making difficult things ordinary.",
+  s:"Teaching slides into correcting, and not everyone in the room asked.",
+  p:"Answer only the question that was actually asked.",
+  path:"The Path of Passing It On",
+  pur:"to hand over what you know in a form the next person can actually use"},
+"Taurus III":{
+  k:"Things come easily to you, which is a gift with a bill attached.",
+  g:"Effortless competence and a settled, unforced way of being in a room.",
+  s:"What comes easy rarely gets pushed, so the ceiling stays where it was.",
+  p:"Pick one thing you are bad at and stay with it for a whole season.",
+  path:"The Path of the Raised Ceiling",
+  pur:"to find the edge of your natural ability and then deliberately work past it"},
+"Taurus–Gemini Cusp":{
+  k:"Solid ground and quick air at once — grounded and restless in the same body.",
+  g:"Stamina plus versatility. You can sprint, and you can also stay.",
+  s:"Energy with no channel becomes scatter, or burnout, and often both.",
+  p:"Choose the one river. Let everything else be a stream.",
+  path:"The Path of the Chosen Channel",
+  pur:"to aim an unusual quantity of energy at something narrow enough to be changed by it"},
+"Gemini I":{
+  k:"Constraint reads to you as danger, even when it is only structure.",
+  g:"Independence, and a curiosity that has never been bottled.",
+  s:"Freedom guarded closely enough becomes a cell with better decor.",
+  p:"Commit to one thing on purpose and notice that you survive it.",
+  path:"The Path of Chosen Bonds",
+  pur:"to discover that the commitments you pick yourself are the ones that make you freer, not smaller"},
+"Gemini II":{
+  k:"You find words for things that did not have them yet.",
+  g:"Inventive expression — you rename the world and the names stick.",
+  s:"Novelty of phrase outruns clarity of meaning, and you lose the room.",
+  p:"Say the important thing in the plainest words you own.",
+  path:"The Path of New Naming",
+  pur:"to give language to experiences other people have been carrying silently"},
+"Gemini III":{
+  k:"You are looking for something, and the looking is most of the life.",
+  g:"Restless inquiry. You go and find out rather than assume.",
+  s:"The search becomes an elegant way of never arriving anywhere.",
+  p:"Sit still with one answer for a week before you question it.",
+  path:"The Path of the Long Question",
+  pur:"to keep asking after everyone else has settled, and to know when an answer is good enough to live on"},
+"Gemini–Cancer Cusp":{
+  k:"Mind and feeling braided together — you sense things you can also explain.",
+  g:"Imagination with real emotional truth underneath it.",
+  s:"The inner world gets more vivid, and more habitable, than the outer one.",
+  p:"Tell one person the actual thing you are feeling this week.",
+  path:"The Path of the Told Interior",
+  pur:"to carry what you perceive inwardly out into a form other people can meet"},
+"Cancer I":{
+  k:"You feel the room before anybody speaks, and you carry away whatever you picked up.",
+  g:"Profound attunement — people feel understood in your vicinity.",
+  s:"Other people's weather gets mistaken for your own forecast.",
+  p:"Ask: is this mine? Put down whatever is not.",
+  path:"The Path of the Clear Boundary",
+  pur:"to feel as much as you feel without being dissolved by it"},
+"Cancer II":{
+  k:"You feel deeply and you refuse the standard shape for it.",
+  g:"Emotional honesty that ignores the expected script entirely.",
+  s:"Unconventional hardens into contrary for its own sake.",
+  p:"Do one ordinary thing, sincerely, with no irony anywhere in it.",
+  path:"The Path of the Honest Odd",
+  pur:"to be strange because it is true, never merely to avoid being ordinary"},
+"Cancer III":{
+  k:"You move people, usually by feeling, and sometimes before they have decided.",
+  g:"Compelling warmth and genuine, workable influence.",
+  s:"Persuasion turns quietly into the management of other people's lives.",
+  p:"Make the case once, then let them actually choose.",
+  path:"The Path of Willing Consent",
+  pur:"to use real influence only where it has been genuinely invited"},
+"Cancer–Leo Cusp":{
+  k:"You swing between the private self and the public one, and both of them are true.",
+  g:"Range — you can hold a room, and you can hold a confidence.",
+  s:"The swing exhausts the people trying to keep up with which one is here today.",
+  p:"Tell people which mode you are in. It costs one sentence.",
+  path:"The Path of the Two Rooms",
+  pur:"to stop treating your public self and your private self as rivals"},
+"Leo I":{
+  k:"You end up in charge, even when you walked in with no such plan.",
+  g:"Natural command and a steady hand under pressure.",
+  s:"Authority unexamined becomes the standing assumption that you are right.",
+  p:"Ask the quietest person in the room what they think. Then wait.",
+  path:"The Path of Answerable Power",
+  pur:"to hold authority in a way that stays accountable to the people under it"},
+"Leo II":{
+  k:"Strength that has learned restraint — that is the entire assignment.",
+  g:"Power that does not need to prove itself on an hourly basis.",
+  s:"Balance held too carefully becomes never fully committing to anything.",
+  p:"Spend it all on one thing that deserves the whole amount.",
+  path:"The Path of the Full Spend",
+  pur:"to find the one thing worth the undivided force you have been rationing"},
+"Leo III":{
+  k:"People follow you, and you feel the weight of it more than you let on.",
+  g:"Vision, plus the nerve to be held responsible for it.",
+  s:"Carrying everything alone reads as strength and functions as isolation.",
+  p:"Delegate something you are certain only you can do.",
+  path:"The Path of the Shared Load",
+  pur:"to lead without making yourself the single point of failure"},
+"Leo–Virgo Cusp":{
+  k:"You reveal what others keep covered — including, uncomfortably, your own workings.",
+  g:"Fearless honesty and a sharp eye for what is actually going on.",
+  s:"Exposure without care is just damage with a justification attached.",
+  p:"Before you say the true thing, ask what it is for.",
+  path:"The Path of Useful Truth",
+  pur:"to bring things into the light in a way that helps rather than merely wounds"},
+"Virgo I":{
+  k:"You see the mess and you build the structure that ends it.",
+  g:"Order-making. You leave things more workable than you found them.",
+  s:"The system becomes the point instead of the thing the system was for.",
+  p:"Ship it imperfect once, and watch the world continue.",
+  path:"The Path of the Working Order",
+  pur:"to build systems that serve people, and to dismantle them when they stop"},
+"Virgo II":{
+  k:"People never quite work you out, and you are not fully trying to help them.",
+  g:"Depth held in reserve — you keep something back for yourself.",
+  s:"Privacy widens into a distance nobody is able to cross.",
+  p:"Let one person see one unfinished thing.",
+  path:"The Path of the Opened Door",
+  pur:"to keep your depth and still let the right people in"},
+"Virgo III":{
+  k:"You take things at their word and you expect the same in return.",
+  g:"Precision, integrity, and a very low tolerance for vagueness.",
+  s:"A literal reading misses the subtext they meant for you to catch.",
+  p:"Ask what they meant, not only what they said.",
+  path:"The Path of the Exact Thing",
+  pur:"to hold a standard of accuracy without losing the human meaning underneath it"},
+"Virgo–Libra Cusp":{
+  k:"Craft and grace at once — you want the thing to work, and to be beautiful.",
+  g:"Discernment. You can tell good from very nearly good.",
+  s:"The standard turns into the reason nothing is ever actually released.",
+  p:"Call something finished while you can still see flaws in it.",
+  path:"The Path of the Finished Beautiful",
+  pur:"to make things well and then let them go into the world unprotected"},
+"Libra I":{
+  k:"You hold a high line, and you hold it against yourself first.",
+  g:"Refinement, and an unwillingness to accept the sloppy version of anything.",
+  s:"The critic's voice runs on you longest and at the highest volume.",
+  p:"Name three things you did well this week. Out loud.",
+  path:"The Path of the Kind Standard",
+  pur:"to keep the high standard and stop using it as an instrument against yourself"},
+"Libra II":{
+  k:"You think in terms of the group — what it needs, and what it is becoming.",
+  g:"Social intelligence and real, unperformed care for the collective.",
+  s:"Belonging quietly costs you the position you actually held.",
+  p:"State one unpopular opinion you genuinely hold.",
+  path:"The Path of the Held Position",
+  pur:"to serve the group without disappearing into its consensus"},
+"Libra III":{
+  k:"Life is staged for you. Presentation is not fakery — it is your medium.",
+  g:"Dramatic instinct and the ability to make a moment actually land.",
+  s:"The performance outlasts the honesty that was underneath it.",
+  p:"Have one conversation with no audience and no angle.",
+  path:"The Path Behind the Curtain",
+  pur:"to keep the theatre and still be reachable when the lights are off"},
+"Libra–Scorpio Cusp":{
+  k:"You have an eye that cuts and a genuine taste for intensity.",
+  g:"Penetrating judgment — you see the flaw and the point at the same time.",
+  s:"Criticism is far easier to give than the thing criticised was to make.",
+  p:"For every critique, name what was genuinely good.",
+  path:"The Path of the Fair Blade",
+  pur:"to use a severe eye in the service of the work rather than against its makers"},
+"Scorpio I":{
+  k:"You do nothing at half. Half is not on the menu.",
+  g:"Total commitment and a focus that unnerves people.",
+  s:"That heat consumes what it is aimed at, and periodically consumes you.",
+  p:"Deliberately do one thing casually.",
+  path:"The Path of the Banked Fire",
+  pur:"to keep an intensity this rare burning long enough to finish something"},
+"Scorpio II":{
+  k:"You go under the surface as a matter of course. Small talk is a foreign country.",
+  g:"Perception that reaches what other people miss entirely.",
+  s:"Depth becomes brooding, and brooding has no exit built into it.",
+  p:"Come up for air. Do something light on purpose.",
+  path:"The Path of the Returned Diver",
+  pur:"to go as deep as you go and reliably come back up"},
+"Scorpio III":{
+  k:"You are magnetic, and you know exactly how the mechanism works.",
+  g:"Compelling presence and real, practised skill with people.",
+  s:"Charm used as armour keeps everyone at a very pleasant distance.",
+  p:"Be unimpressive on purpose with someone you trust.",
+  path:"The Path of the Dropped Guard",
+  pur:"to be known by a few people rather than admired by many"},
+"Scorpio–Sagittarius Cusp":{
+  k:"You are built to overturn things that deserve overturning.",
+  g:"Nerve, conviction, and a willingness to break the arrangement.",
+  s:"Not every structure still standing is a structure worth toppling.",
+  p:"Ask what replaces it before you take it down.",
+  path:"The Path of What Comes After",
+  pur:"to tear down only what you are prepared to rebuild"},
+"Sagittarius I":{
+  k:"You need room, and you will pay a great deal for it.",
+  g:"Self-reliance and an honesty that does not wait for permission.",
+  s:"Independence becomes the refusal of help you genuinely need.",
+  p:"Accept one offer of help without renegotiating its terms.",
+  path:"The Path of the Open Hand",
+  pur:"to stay free and still let yourself be carried occasionally"},
+"Sagittarius II":{
+  k:"You start things that did not exist before. Being the source is the role.",
+  g:"Originality and the will to make version one of something.",
+  s:"Starting is thrilling; the middle of the work is where you go quiet.",
+  p:"Finish the least exciting twenty per cent of something.",
+  path:"The Path of the Finished Original",
+  pur:"to carry at least a few of your originations all the way to done"},
+"Sagittarius III":{
+  k:"You work at a large scale. Small containers make you strange.",
+  g:"Scope, endurance, and a genuinely big frame for things.",
+  s:"A big vision tramples the small human details it happens to run over.",
+  p:"Do something small and thoughtful for one person.",
+  path:"The Path of the Human Scale",
+  pur:"to build at the size you build without losing sight of individual people"},
+"Sagittarius–Capricorn Cusp":{
+  k:"You see where this is going well before the evidence has come in.",
+  g:"Foresight paired with the discipline to actually act on it.",
+  s:"Being right early is lonely, and easy to grow bitter about.",
+  p:"Explain the vision in terms today's people can use today.",
+  path:"The Path of the Translated Vision",
+  pur:"to make what you can see usable by people who cannot see it yet"},
+"Capricorn I":{
+  k:"You take responsibility structurally, and then you never quite put it down.",
+  g:"Authority that has been earned, and a long sense of duty.",
+  s:"Control offered as care is still control when it arrives.",
+  p:"Let someone else decide, and mean it.",
+  path:"The Path of the Loosened Grip",
+  pur:"to carry real responsibility without needing to hold every part of it"},
+"Capricorn II":{
+  k:"You outlast the problem. That is the whole strategy, and it works.",
+  g:"Persistence that does not require enthusiasm in order to continue.",
+  s:"Determination aimed at the wrong thing is merely expensive.",
+  p:"Every quarter, ask whether this is still worth the grind.",
+  path:"The Path of the Right Grind",
+  pur:"to spend an extraordinary capacity for endurance on something that deserves it"},
+"Capricorn III":{
+  k:"You take the space you need and you are comfortable at the top of it.",
+  g:"Command, competence, and a high tolerance for pressure.",
+  s:"Dominance shrinks the very people who could have helped you.",
+  p:"Follow someone else's lead completely, once.",
+  path:"The Path of the Made Room",
+  pur:"to occupy your natural altitude while leaving room for other people to grow"},
+"Capricorn–Aquarius Cusp":{
+  k:"Practical mind, strange interior — you build in the dark and hand over something finished.",
+  g:"Structural discipline in the service of genuinely unusual vision.",
+  s:"The interior stays so private that it never actually gets made.",
+  p:"Show the unfinished strange thing to one person.",
+  path:"The Path of the Shown Work",
+  pur:"to bring what is odd and interior in you out where it can be built"},
+"Aquarius I":{
+  k:"Your mind runs at an angle to everyone else's, which is the gift and the cost.",
+  g:"Original thinking that skips steps other people still need.",
+  s:"Being ahead curdles into contempt for the people catching up.",
+  p:"Explain your idea to someone who is not impressed by you.",
+  path:"The Path of the Bridged Gap",
+  pur:"to make an unusual mind legible enough to be useful to others"},
+"Aquarius II":{
+  k:"You keep something young and unhardened. Life does not stick to you the usual way.",
+  g:"Lightness, openness, and genuinely easy company.",
+  s:"Ease becomes a way of never being weighted by anything at all.",
+  p:"Take one thing seriously enough to be hurt by it.",
+  path:"The Path of the Willing Weight",
+  pur:"to keep your lightness and still let a few things matter enough to cost you"},
+"Aquarius III":{
+  k:"You take people as they are, which is far rarer than it sounds.",
+  g:"Non-judgment and a wide, genuine tolerance.",
+  s:"Accepting everything means never drawing the line you actually needed.",
+  p:"Say no to one thing you would normally absorb.",
+  path:"The Path of the Drawn Line",
+  pur:"to accept people fully and still hold a boundary where one is required"},
+"Aquarius–Pisces Cusp":{
+  k:"You are tuned finely enough that the world comes in loud.",
+  g:"Perceptiveness and real compassion — not the performed kind.",
+  s:"Thin skin gets mistaken for weakness, including by you.",
+  p:"Build one hour a day that nothing is allowed into.",
+  path:"The Path of the Guarded Instrument",
+  pur:"to protect a sensitivity this fine so that it can keep being used"},
+"Pisces I":{
+  k:"Something in you is oriented past the material, and you feel it as a pull.",
+  g:"Faith, imagination, and a generous default reading of people.",
+  s:"The pull elsewhere makes the practical life feel optional, which it is not.",
+  p:"Do the boring administrative thing today. That is also spiritual.",
+  path:"The Path of the Grounded Spirit",
+  pur:"to keep faith with what you sense and still show up for the ordinary week"},
+"Pisces II":{
+  k:"You need solitude the way other people need company.",
+  g:"Self-sufficiency and a rich, well-furnished interior life.",
+  s:"Solitude chosen often enough eventually stops being chosen.",
+  p:"Initiate contact once this week. You, first.",
+  path:"The Path of the Open Door",
+  pur:"to keep the solitude you need without letting it become the only room"},
+"Pisces III":{
+  k:"You move through life by rhythm and image more than by argument.",
+  g:"Grace, imagination, and an instinct for beauty in motion.",
+  s:"Dreaming with no landing strip leaves the dream permanently airborne.",
+  p:"Give one dream a date on the calendar.",
+  path:"The Path of the Landed Dream",
+  pur:"to bring at least one vision all the way down to the ground where people can stand on it"}
+};
+
+/* Element pair relations (symmetric). mode: easy | complementary | charged */
+const EL_REL = {
+  'Fire|Fire'  :{mode:'easy',          line:'Two fires. Enormous combined output, and a standing question about who is tending which flame.'},
+  'Earth|Earth':{mode:'easy',          line:'Two earths. Stable to the point of immovable — this pair builds well and pivots slowly.'},
+  'Air|Air'    :{mode:'easy',          line:'Two airs. The conversation <em>is</em> the relationship — wonderful, right up until something has to be decided.'},
+  'Water|Water':{mode:'easy',          line:'Two waters. Understood without explaining, and nobody left on the shore when both go under at once.'},
+  'Air|Fire'   :{mode:'complementary', line:'Air feeds fire. One brings the idea, the other brings the ignition. Watch it burn through the oxygen faster than either intended.'},
+  'Earth|Water':{mode:'complementary', line:'Water makes earth fertile. One holds the shape, the other brings feeling into it. The risk is silt — comfort thickening into inertia.'},
+  'Earth|Fire' :{mode:'charged',       line:'Heat against mass. Fire wants it now, earth wants it built properly. Genuinely productive once both admit the other is also right.'},
+  'Fire|Water' :{mode:'charged',       line:'Steam or extinction, rarely nothing. Intensity is guaranteed; the work is not scalding or smothering one another.'},
+  'Air|Earth'  :{mode:'complementary', line:'Wind over ground. One theorises, the other implements. Mutual respect makes this formidable; contempt makes it a stalemate.'},
+  'Air|Water'  :{mode:'charged',       line:'Weather over sea. One names the feeling, the other is having it. Air has to slow down; water has to say it out loud.'}
+};
+const Q_REL = {
+  'Cardinal|Cardinal':'Two starters. No shortage of beginnings — decide early who is going to finish.',
+  'Fixed|Fixed'      :'Two holders. Unshakeable together, and neither one will be the one who bends.',
+  'Mutable|Mutable'  :'Two adapters. Endless flexibility, and a shortage of anybody holding the shape.',
+  'Cardinal|Fixed'   :'Starter and holder. One opens it, the other keeps it alive — the classic working division.',
+  'Cardinal|Mutable' :'Starter and adapter. One sets the direction, the other helps it survive contact with reality.',
+  'Fixed|Mutable'    :'Holder and adapter. One provides the anchor, the other the range. The anchor must not become a leash.'
+};
+const relKey = (a,b) => [a,b].sort().join('|');
+
+/* ---------- core engine ---------- */
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DIM = [31,29,31,30,31,30,31,31,30,31,30,31];
+
+/* Day-number: reduce all the way to 1-9 (29 -> 11 -> 2, ruled by the Moon). */
+function reduceNum(n){ while(n > 9){ n = String(n).split('').reduce((a,c)=>a + (+c), 0); } return n; }
+/* Tarot: days 1-22 map straight to the Major Arcana; 23-31 sum their digits
+   ONCE, so the 29th draws XI Justice, not II. Deliberately not reduceNum. */
+function digitSum(n){ return String(n).split('').reduce((a,c)=>a + (+c), 0); }
+function tarotIndex(day){ return day <= 22 ? day : digitSum(day); }
+function tarotFor(day){ return TAROT[tarotIndex(day)]; }
+
+function findPeriod(month, day){
+  const key = month * 100 + day;
+  return PERIODS.find(p=>{
+    const s = p.sm * 100 + p.sd, e = p.em * 100 + p.ed;
+    return s <= e ? (key >= s && key <= e) : (key >= s || key <= e);
+  });
+}
+
+function profileOf(person){
+  const per = findPeriod(person.month, person.day);
+  const signs = per.signs.map(s=>({name:s, ...SIGNS[s]}));
+  const elements = [...new Set(signs.map(s=>s.e))];
+  const qualities = [...new Set(signs.map(s=>s.q))];
+  const num = reduceNum(person.day);
+  return {
+    person, per, signs, elements, qualities, num,
+    planet: NUMBERS[num].planet,
+    numInfo: NUMBERS[num],
+    tarot: tarotFor(person.day),
+    card: tarotIndex(person.day),
+    lore: LORE[per.n],
+    cusp: per.signs.length > 1,
+    idx: PERIODS.indexOf(per)
+  };
+}
+
+const esc = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dateLabel = p => MONTHS[p.month-1] + ' ' + p.day + (p.year ? ', ' + p.year : '');
+const firstName = n => String(n).trim().split(/\s+/)[0] || 'They';
+
+/* ============================================================
+   LAYER I — the individual reading
+   ============================================================ */
+const LEADS = [
+  (n,pr)=>`${n} was born inside <strong>${pr.n}</strong> — ${pr.t.toLowerCase()}, running ${pr.r}. `,
+  (n,pr)=>`${pr.r} is <strong>${pr.n}</strong>, ${pr.t.toLowerCase()}. That is where ${n} lands. `,
+  (n,pr)=>`Of the year's forty-eight periods, ${n} falls in <strong>${pr.n}</strong> — ${pr.t.toLowerCase()}, ${pr.r}. `
+];
+
+function renderCrest(P){
+  const p = P.person;
+  return `
+  <div class="crest">
+    <div class="who">${esc(p.name)} &nbsp;·&nbsp; ${dateLabel(p)}</div>
+    <div class="glyphs">${P.signs.map(s=>s.g).join(' ')}</div>
+    <div class="pname">${esc(P.per.n)}</div>
+    <div class="ptitle">${esc(P.per.t)}</div>
+    <div class="prange">${esc(P.per.r)}</div>
+  </div>
+  <div class="facts">
+    <div class="fact">
+      <div class="k">Element</div>
+      <div class="v">${P.elements.map(e=>`<span class="el-${e}">${e}</span>`).join(' &amp; ')}</div>
+      <div class="n">${P.signs.map(s=>s.name).join(' / ')}</div>
+    </div>
+    <div class="fact">
+      <div class="k">Quality</div>
+      <div class="v">${P.qualities.join(' &amp; ')}</div>
+      <div class="n">${P.cusp ? 'cusp — two signs' : 'single sign'}</div>
+    </div>
+    <div class="fact">
+      <div class="k">Day number</div>
+      <div class="v">${P.num}</div>
+      <div class="n">day ${P.person.day} &middot; ruled by ${P.planet}</div>
+    </div>
+    <div class="fact">
+      <div class="k">Tarot</div>
+      <div class="v">${P.tarot.n}</div>
+      <div class="n">${P.tarot.r}${P.person.day > 22 ? ' &middot; ' + P.person.day + ' → ' + P.card : ''}</div>
+    </div>
+  </div>`;
+}
+
+function renderReading(P){
+  const n = esc(firstName(P.person.name));
+  const L = P.lore;
+  const lead = LEADS[(P.idx + P.num) % LEADS.length](n, P.per);
+  const els = P.elements, qs = P.qualities;
+
+  const currents = P.cusp
+    ? `<p>${n} sits on a cusp, which means two weathers rather than one. ${ELEMENTS[els[0]].body}</p>
+       ${els[1] ? `<p>Underneath that, a second current: ${ELEMENTS[els[1]].body}</p>` : ''}
+       <p>${QUALITIES[qs[0]].body}${qs[1] ? ' And at the same time — ' + QUALITIES[qs[1]].body.charAt(0).toLowerCase() + QUALITIES[qs[1]].body.slice(1) : ''}</p>`
+    : `<p>${ELEMENTS[els[0]].body}</p><p>${QUALITIES[qs[0]].body}</p>`;
+
+  const converge = `${n} is ${els.join('/')} matter moved in a ${qs.join('/')} way, counted by a ${P.num} and pictured as ${P.tarot.n}. Put plainly: the ${ELEMENTS[els[0]].word} is the fuel, ${qs[0].toLowerCase()} is the gear it runs in, ${P.planet} sets the tempo, and ${P.tarot.n} is the instruction that keeps coming back around.`;
+
+  return `
+  <div class="layer">
+    <h3>Layer I — The Period <small>who this is, at the point of the year they arrived</small></h3>
+    <div class="layer-body">
+      <p class="lead">${lead}${L.k}</p>
+      <h4>The current running underneath</h4>
+      ${currents}
+      <h4>The number — ${P.num}, ruled by ${P.planet}</h4>
+      <p>Born on the ${P.person.day}${P.person.day > 9 ? `, which reduces to ${P.num}` : ''}. ${P.numInfo.body}</p>
+      <h4>The card — ${P.tarot.r}, ${P.tarot.n}</h4>
+      <p>The ${P.person.day}${ordinal(P.person.day)} of the month${P.person.day > 22 ? ` reduces to ${P.card}, and` : ''} draws <strong>${P.tarot.n}</strong>. ${P.tarot.line}</p>
+      <h4>Where it converges</h4>
+      <div class="pull">${converge}</div>
+      <div class="gsl">
+        <div><div class="t">The gift</div><div class="b">${L.g}</div></div>
+        <div><div class="t">The cost</div><div class="b">${L.s}</div></div>
+        <div><div class="t">The practice</div><div class="b">${L.p}</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function ordinal(d){
+  if(d > 3 && d < 21) return 'th';
+  return {1:'st',2:'nd',3:'rd'}[d % 10] || 'th';
+}
+
+/* ============================================================
+   LAYER III — the derived life path
+   ============================================================ */
+function renderPath(P){
+  const n = esc(firstName(P.person.name));
+  const L = P.lore;
+  const goal = `${cap(P.numInfo.key)} is the register this path is measured in — ${P.planet} keeps returning ${n} to it — and ${P.tarot.n} is the recurring instruction: ${lower(P.tarot.line)}`;
+  return `
+  <div class="layer three">
+    <h3>Layer III — The Path <small>what the period implies about direction, not personality</small></h3>
+    <div class="layer-body">
+      <p class="lead">${L.path}</p>
+      <p>Read the period as a starting position rather than a verdict. From where ${n} begins, the work is <strong>${L.pur}</strong>.</p>
+      <div class="pull">${goal}</div>
+      <div class="gsl">
+        <div><div class="t">Starting capital</div><div class="b">${L.g}</div></div>
+        <div><div class="t">The lesson</div><div class="b">${L.s}</div></div>
+        <div><div class="t">First move</div><div class="b">${L.p}</div></div>
+      </div>
+      <p class="note" style="margin-top:16px">Path names on this screen are written for this app — they are a reading of the period data above, not a quotation of any published list.</p>
+    </div>
+  </div>`;
+}
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const lower = s => s.charAt(0).toLowerCase() + s.slice(1);
+
+/* ============================================================
+   LAYER II — the pair. Every one of the 1,176 combinations of
+   48 periods resolves through this engine.
+   ============================================================ */
+function pairContext(A, B){
+  const crosses = [];
+  A.elements.forEach(ea=>B.elements.forEach(eb=>{
+    const k = relKey(ea, eb);
+    if(!crosses.some(c=>c.k === k)) crosses.push({k, ea, eb, ...EL_REL[k]});
+  }));
+  const primary = EL_REL[relKey(A.elements[0], B.elements[0])];
+  const qKey = relKey(A.qualities[0], B.qualities[0]);
+  return {
+    a: esc(firstName(A.person.name)),
+    b: esc(firstName(B.person.name)),
+    A, B,
+    mode: primary.mode,
+    crosses,
+    qLine: Q_REL[qKey],
+    elA: A.elements[0], elB: B.elements[0],
+    qA: A.qualities[0], qB: B.qualities[0],
+    sameNum: A.num === B.num,
+    sumNum: reduceNum(A.num + B.num),
+    sameCard: A.card === B.card,
+    samePeriod: A.per.n === B.per.n
+  };
+}
+
+const DOMAINS = [
+  {t:'Love &amp; intimacy', f:c=>({
+    easy:`In private these two need very little translation. Both run on ${ELEMENTS[c.elA].word}, so mood, pace and silence all read the same way, and closeness arrives early without much negotiation. What the pairing lacks is contrast — neither is naturally positioned to see what the other cannot. Build that in deliberately, or the intimacy slowly becomes a mirror.`,
+    complementary:`The difference is the attraction here rather than the obstacle. ${c.a} brings ${c.elA.toLowerCase()} to it and ${c.b} brings ${c.elB.toLowerCase()}, and in private that gap is exactly what keeps the temperature up. Desire built on real otherness tends to last — provided neither one starts quietly trying to convert the other into a version of themselves.`,
+    charged:`Expect heat rather than a level temperature. ${c.elA} and ${c.elB} do not naturally settle, so this runs hot and then cool, and the intensity and the friction turn out to be the same fact seen from two sides. It works when both of them stop reading a strong reaction as evidence that something has gone wrong.`
+  })[c.mode]},
+
+  {t:'Friendship', f:c=>({
+    easy:`As friends they are effortless and slightly enclosed — the shorthand develops fast and outsiders find it hard to get in. ${c.samePeriod ? 'Sharing a period makes that doubly true: the same blind spot sits in both of them, unchallenged.' : `${c.A.per.t} and ${c.B.per.t} are near enough in temperament that neither has to explain themselves twice.`} The friendship needs a third party, or a shared project, to keep it from turning into a closed loop.`,
+    complementary:`This is the pairing that widens both of them. ${c.a} takes ${c.b} into territory ${c.b} would not have entered alone, and ${c.b} returns the favour from the other direction — ${c.A.per.t.toLowerCase()} meeting ${c.B.per.t.toLowerCase()}. The friendship stays interesting for years precisely because neither has fully absorbed the other.`,
+    charged:`The friendship has an edge to it, and the edge is what makes it valuable. These two will misread each other periodically — ${c.elA} and ${c.elB} do not process at the same speed — and each misreading is survivable if it gets said out loud early. Handled badly this goes cold quickly; handled well it becomes the friendship that tells them the truth.`
+  })[c.mode]},
+
+  {t:'Work &amp; collaboration', f:c=>
+    `${c.qLine} ${c.qA === c.qB
+      ? `Both operate as ${c.qA.toLowerCase()} — the same gear, which is efficient and also means an obvious gap nobody is covering.`
+      : `${c.a} ${QUALITIES[c.qA].verb} and ${c.b} ${QUALITIES[c.qB].verb}, which is a real division of labour if they name it rather than assume it.`} ${
+      c.sameNum
+        ? `They also share a ${c.A.num}, so ${NUMBERS[c.A.num].planet} sets the tempo for both — decisive, and blind in the same direction.`
+        : `Their numbers, ${c.A.num} and ${c.B.num}, resolve to a ${c.sumNum}: ${NUMBERS[c.sumNum].key} is the register this partnership actually works in, whatever it says on the brief.`}`},
+
+  {t:'Family &amp; the long haul', f:c=>
+    `Over years rather than months, the thing that decides this pairing is not chemistry but tolerance for the other's default. ${
+      c.mode === 'easy'
+        ? `Shared ${c.elA.toLowerCase()} makes the household easy and the drift invisible — the risk is decades of comfortable agreement with nothing tested.`
+        : c.mode === 'complementary'
+          ? `${c.elA} and ${c.elB} keep supplying each other with what the other runs short of, which is why this configuration tends to hold up under pressure.`
+          : `${c.elA} and ${c.elB} will keep striking the same flint. In a family that either becomes the reliable argument or the reliable honesty, and which one it becomes is decided early.`
+    } ${c.samePeriod ? 'Sharing a period, they will recognise their own worst habit in the other and dislike it there first.' : `${c.A.per.n} and ${c.B.per.n} carry different instincts about what safety means; say those out loud once, properly, and most of the recurring argument disappears.`}`}
+];
+
+function renderPair(A, B){
+  const c = pairContext(A, B);
+  const side = P => `
+    <div>
+      <div class="vn">${esc(P.person.name)} &nbsp;·&nbsp; ${dateLabel(P.person)}</div>
+      <div class="vp">${esc(P.per.n)}</div>
+      <div class="vt">${esc(P.per.t)}</div>
+      <div class="vmeta">
+        <b>${esc(P.per.r)}</b><br>
+        ${P.signs.map(s=>s.g + ' ' + s.name).join(' &amp; ')} &middot; <span class="el-${P.elements[0]}">${P.elements.join('/')}</span> &middot; ${P.qualities.join('/')}<br>
+        Day ${P.person.day} &middot; number <b>${P.num}</b>, ruled by ${P.planet}<br>
+        ${P.tarot.r} · <b>${P.tarot.n}</b>
+      </div>
+    </div>`;
+
+  const spread = c.sameCard
+    ? `Both draw <strong>${A.tarot.n}</strong> — the same instruction handed to two different people. Whatever that card asks, this pair will be asked it together, and will answer it in two different registers.`
+    : `Read them as a two-card spread. <strong>${A.tarot.n}</strong> is what ${c.a} brings to the table; <strong>${B.tarot.n}</strong> is what ${c.b} brings. ${A.tarot.line} ${B.tarot.line} The relationship lives in the gap between those two instructions.`;
+
+  return `
+  <div class="vs">${side(A)}${side(B)}</div>
+  <div class="layer two">
+    <h3>Layer II — The Pair <small>one of the 1,176 combinations of the forty-eight periods</small></h3>
+    <div class="layer-body">
+      <p class="lead">${c.samePeriod
+        ? `${c.a} and ${c.b} were both born into ${esc(A.per.n)} — the same slot in the year's wheel. That is recognition without effort, and a shared blind spot with nobody outside it to point at it.`
+        : `${esc(A.per.n)} meeting ${esc(B.per.n)} — ${lower(A.per.t)} against ${lower(B.per.t)}.`}</p>
+
+      <h4>The currents</h4>
+      ${c.crosses.map(x=>`<p><strong>${x.ea} &amp; ${x.eb}:</strong> ${x.line}</p>`).join('')}
+      <p><strong>${c.qA} &amp; ${c.qB}:</strong> ${c.qLine}</p>
+
+      <h4>Across the four rooms</h4>
+      <div class="domains">
+        ${DOMAINS.map(d=>`<div class="domain"><div class="dt">${d.t}</div><div class="db">${d.f(c)}</div></div>`).join('')}
+      </div>
+
+      <h4>The two-card spread</h4>
+      <p>${spread}</p>
+
+      <h4>What each one is carrying in</h4>
+      <div class="gsl" style="grid-template-columns:1fr 1fr">
+        <div><div class="t">${esc(firstName(A.person.name))} — the gift, and the cost</div><div class="b">${A.lore.g}<br><br><span style="color:var(--dimmer)">${A.lore.s}</span></div></div>
+        <div><div class="t">${esc(firstName(B.person.name))} — the gift, and the cost</div><div class="b">${B.lore.g}<br><br><span style="color:var(--dimmer)">${B.lore.s}</span></div></div>
+      </div>
+
+      <h4>The one thing to do about it</h4>
+      <div class="pull">${c.a}: ${lower(A.lore.p)} &nbsp;/&nbsp; ${c.b}: ${lower(B.lore.p)}</div>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   STORAGE
+   ============================================================ */
+const KEY = 'personology.people.v1';
+function loadPeople(){
+  try{ const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : []; }
+  catch(e){ return []; }
+}
+function savePeople(list){
+  try{ localStorage.setItem(KEY, JSON.stringify(list)); return true; }
+  catch(e){ toast('Could not save — storage is unavailable'); return false; }
+}
+let PEOPLE = loadPeople();
+
+/* ============================================================
+   UI
+   ============================================================ */
+const $ = id => document.getElementById(id);
+let toastTimer;
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('on'), 2200);
+}
+
+/* tabs */
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>showTab(btn.id));
+});
+function showTab(id){
+  document.querySelectorAll('nav.tabs button').forEach(b=>{
+    const on = b.id === id;
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+    $(b.dataset.panel).hidden = !on;
+  });
+  if(id === 'tab-people') renderPeople();
+  if(id === 'tab-pair') fillPairSelects();
+  if(id === 'tab-wheel') renderWheel();
+}
+
+/* date selects */
+function fillMonths(){
+  $('f-month').innerHTML = MONTHS.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+}
+function fillDays(keep){
+  const m = +$('f-month').value;
+  const max = DIM[m-1];
+  const cur = keep != null ? keep : (+$('f-day').value || 1);
+  $('f-day').innerHTML = Array.from({length:max}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
+  $('f-day').value = Math.min(cur, max);
+}
+fillMonths(); fillDays(1);
+$('f-month').addEventListener('change', ()=>fillDays());
+
+/* read */
+function currentInput(){
+  const name = $('f-name').value.trim();
+  const month = +$('f-month').value;
+  const day = +$('f-day').value;
+  const yRaw = $('f-year').value.trim();
+  const year = yRaw ? parseInt(yRaw, 10) : null;
+  if(!name) return {err:'Give this person a name first.'};
+  if(yRaw && (!/^\d{4}$/.test(yRaw) || year < 1000 || year > 3000)) return {err:'Year should be four digits, or left blank.'};
+  if(month === 2 && day === 29 && year && !isLeap(year)) return {err:`${year} was not a leap year — there is no 29 February in it.`};
+  return {person:{id:'p' + Date.now() + Math.random().toString(36).slice(2,7), name, month, day, year}};
+}
+const isLeap = y => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+
+function doRead(){
+  $('err').textContent = '';
+  const r = currentInput();
+  if(r.err){ $('err').textContent = r.err; $('result').innerHTML = ''; return null; }
+  const P = profileOf(r.person);
+  $('result').innerHTML = renderCrest(P) + renderReading(P) + renderPath(P);
+  $('result').scrollIntoView({behavior:'smooth', block:'start'});
+  return P;
+}
+$('btn-read').addEventListener('click', doRead);
+$('f-name').addEventListener('keydown', e=>{ if(e.key === 'Enter') doRead(); });
+$('f-year').addEventListener('keydown', e=>{ if(e.key === 'Enter') doRead(); });
+
+$('btn-save').addEventListener('click', ()=>{
+  $('err').textContent = '';
+  const r = currentInput();
+  if(r.err){ $('err').textContent = r.err; return; }
+  const dup = PEOPLE.find(p=>p.name.toLowerCase() === r.person.name.toLowerCase() && p.month === r.person.month && p.day === r.person.day);
+  if(dup){ toast(r.person.name + ' is already saved'); return; }
+  PEOPLE.push(r.person);
+  savePeople(PEOPLE);
+  updateCount(); renderPeople(); fillPairSelects();
+  toast('Saved ' + r.person.name);
+  if(!$('result').innerHTML) doRead();
+});
+
+$('btn-clear').addEventListener('click', ()=>{
+  $('f-name').value = ''; $('f-year').value = '';
+  $('f-month').value = 1; fillDays(1);
+  $('result').innerHTML = ''; $('err').textContent = '';
+  $('f-name').focus();
+});
+
+/* people */
+function updateCount(){ $('count').textContent = PEOPLE.length ? '(' + PEOPLE.length + ')' : ''; }
+function renderPeople(){
+  const box = $('people-list');
+  if(!PEOPLE.length){
+    box.innerHTML = `<div class="empty"><div class="big">✦</div>Nobody saved yet.<br>Read a birthday, then press <em>Save this person</em>.</div>`;
+    return;
+  }
+  const sorted = PEOPLE.slice().sort((x,y)=>(x.month - y.month) || (x.day - y.day));
+  box.innerHTML = '<div class="people">' + sorted.map(p=>{
+    const P = profileOf(p);
+    return `<div class="pcard" data-id="${p.id}">
+      <button class="x" data-del="${p.id}" title="Remove">×</button>
+      <div class="pn">${esc(p.name)}</div>
+      <div class="pd">${dateLabel(p)} &nbsp;${P.signs.map(s=>s.g).join('')}</div>
+      <div class="pp">${esc(P.per.n)}</div>
+      <div class="pt">${esc(P.per.t)}</div>
+      <div class="chips"><span class="chip el-${P.elements[0]}">${P.elements.join('/')}</span><span class="chip">${P.num} · ${P.planet}</span><span class="chip">${P.tarot.n}</span></div>
+    </div>`;
+  }).join('') + '</div>';
+}
+$('people-list').addEventListener('click', e=>{
+  const del = e.target.closest('[data-del]');
+  if(del){
+    e.stopPropagation();
+    const p = PEOPLE.find(x=>x.id === del.dataset.del);
+    PEOPLE = PEOPLE.filter(x=>x.id !== del.dataset.del);
+    savePeople(PEOPLE); updateCount(); renderPeople(); fillPairSelects();
+    if(p) toast('Removed ' + p.name);
+    return;
+  }
+  const card = e.target.closest('.pcard');
+  if(!card) return;
+  const p = PEOPLE.find(x=>x.id === card.dataset.id);
+  if(!p) return;
+  $('f-name').value = p.name;
+  $('f-month').value = p.month; fillDays(p.day);
+  $('f-year').value = p.year || '';
+  showTab('tab-read'); doRead();
+});
+
+/* pair */
+function fillPairSelects(){
+  const opts = PEOPLE.slice().sort((x,y)=>x.name.localeCompare(y.name))
+    .map(p=>`<option value="${p.id}">${esc(p.name)} — ${MONTHS[p.month-1].slice(0,3)} ${p.day}</option>`).join('');
+  const blank = '<option value="">— choose —</option>';
+  ['p-a','p-b'].forEach(id=>{
+    const cur = $(id).value;
+    $(id).innerHTML = blank + opts;
+    if(cur) $(id).value = cur;
+  });
+  $('btn-pair').disabled = PEOPLE.length < 2;
+  $('pair-err').textContent = PEOPLE.length < 2 ? 'Save at least two people to use pair mode.' : '';
+}
+$('btn-pair').addEventListener('click', ()=>{
+  const a = PEOPLE.find(p=>p.id === $('p-a').value);
+  const b = PEOPLE.find(p=>p.id === $('p-b').value);
+  if(!a || !b){ $('pair-err').textContent = 'Pick two people.'; return; }
+  if(a.id === b.id){ $('pair-err').textContent = 'Pick two different people.'; return; }
+  $('pair-err').textContent = '';
+  $('pair-result').innerHTML = renderPair(profileOf(a), profileOf(b));
+  $('pair-result').scrollIntoView({behavior:'smooth', block:'start'});
+});
+
+/* the 48 */
+function renderWheel(){
+  $('wheel-list').innerHTML = PERIODS.map((p,i)=>{
+    const P = profileOf({name:'—', month:p.sm, day:p.sd, year:null});
+    return `<div class="pcard" data-per="${i}">
+      <div class="pn" style="font-size:17px">${esc(p.n)}</div>
+      <div class="pt">${esc(p.t)}</div>
+      <div class="pp" style="margin-top:8px">${esc(p.r)}</div>
+      <div class="chips"><span class="chip el-${P.elements[0]}">${P.elements.join('/')}</span><span class="chip">${P.qualities.join('/')}</span></div>
+    </div>`;
+  }).join('');
+}
+$('wheel-list').addEventListener('click', e=>{
+  const c = e.target.closest('[data-per]');
+  if(!c) return;
+  const p = PERIODS[+c.dataset.per];
+  $('f-name').value = $('f-name').value.trim() || 'This period';
+  $('f-month').value = p.sm; fillDays(p.sd);
+  $('f-year').value = '';
+  showTab('tab-read'); doRead();
+});
+
+/* starfield */
+(function stars(){
+  const cv = $('stars'), ctx = cv.getContext('2d');
+  function draw(){
+    const w = cv.width = innerWidth, h = cv.height = innerHeight;
+    ctx.clearRect(0,0,w,h);
+    const n = Math.min(190, Math.round(w * h / 9000));
+    for(let i = 0; i < n; i++){
+      const x = Math.random() * w, y = Math.random() * h;
+      const r = Math.random() * 1.15 + .18;
+      ctx.globalAlpha = Math.random() * .6 + .12;
+      ctx.fillStyle = i % 11 === 0 ? '#e8c07a' : '#ffffff';
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill();
+    }
+  }
+  draw();
+  let t; addEventListener('resize', ()=>{ clearTimeout(t); t = setTimeout(draw, 220); });
+})();
+
+updateCount(); fillPairSelects();
+$('f-name').focus();
+</script>
+</body>
+</html>
