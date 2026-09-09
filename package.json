@@ -1,0 +1,13 @@
+{
+  "name": "personology-birthday-index",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A self-contained personology birthday index: one HTML file, no build step required to run it.",
+  "scripts": {
+    "build": "node build.js",
+    "check": "node build.js --check",
+    "test": "node build.js --check && node test.js",
+    "start": "node -e \"console.log('Open index.html in a browser — there is no server to run.')\""
+  },
+  "license": "MIT"
+}
