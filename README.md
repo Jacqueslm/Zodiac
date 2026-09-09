@@ -15,6 +15,11 @@ falls in, then reads it three ways:
 - **Layer III — the path.** A life-path reading derived from the period, number
   and card.
 
+Each reading also carries a **state of mind**, a **body and wellbeing** note
+(the region each sign traditionally rules, plus the period's own tendency), and
+a **correspondences** panel: birthstone for the birth month, the planetary
+stone, sign and planet colours, metal, day of the week, flower and body zone.
+
 People are saved to the browser's `localStorage`. A **Matrix** tab reads every
 saved person against every other automatically, and **The 48** tab browses the
 whole year.
@@ -136,6 +141,13 @@ correspondences the app uses are standard: a period's sign gives its element
 and quality, the day of the month reduces to a number with its ruling planet,
 and the day of the month also names a Major Arcana card.
 
+The correspondence tables are traditional attributions: the body region each
+sign rules, the classical planetary metals and days, and the common modern
+birthstone list. Uranus and Neptune are modern planets with no classical metal
+or day, and the app says so rather than inventing one.
+
 All interpretive text in the app — the readings, the path descriptions, the
-pair profiles — was written for this project. Nothing is quoted from any book,
+pair profiles, the health and state-of-mind notes — was written for this
+project. The health notes are general observations about temperament, not
+medical advice, and the app says that too. Nothing is quoted from any book,
 and the path names are this app's own rather than any published list.
