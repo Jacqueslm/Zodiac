@@ -23,7 +23,7 @@ const NAMES = ['PERIODS','LORE','NUMBERS','TAROT','EL_REL','Q_REL','SIGNS','ELEM
                'isLeap','parseBirthday','parseBulkLine','renderCrest','renderReading','renderPath','renderPair',
                'parseCSV','parseContactsCSV','parseVCF','parseContacts','parseContactDate',
                'WELLBEING','SIGN_BODY','SIGN_SWATCH','PLANET_LORE','BIRTHSTONE','DESTINY',
-               'makeQuiz','QUIZ_KINDS','findPeriod'];
+               'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT'];
 const ctx = vm.createContext({console});
 vm.runInContext(engine + `\n;globalThis.__api = {${NAMES.join(',')}};`, ctx, {filename:'index.html:engine'});
 const api = ctx.__api;
@@ -34,7 +34,7 @@ const {PERIODS, LORE, NUMBERS, TAROT, EL_REL, Q_REL, SIGNS, ELEMENTS, QUALITIES,
        parseBirthday, parseBulkLine, renderCrest, renderReading, renderPath, renderPair,
        parseCSV, parseContactsCSV, parseVCF, parseContacts, parseContactDate,
        WELLBEING, SIGN_BODY, SIGN_SWATCH, PLANET_LORE, BIRTHSTONE, DESTINY,
-       makeQuiz, QUIZ_KINDS, findPeriod} = api;
+       makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT} = api;
 
 let failures = 0, checks = 0;
 function ok(label){ checks++; console.log('  ✓ ' + label); }
@@ -201,6 +201,82 @@ lineFails.length ? bad('bulk lines split name from date', lineFails.join('\n    
 is(parseBulkLine('   '), null, 'blank lines are ignored');
 is(parseBulkLine('# a comment'), null, 'comment lines are ignored');
 ok('unreadable lines report an error instead of throwing: ' + JSON.stringify(parseBulkLine('Just A Name').error));
+
+/* ---------------------------------------------------------- */
+group('Readings are specific, not boilerplate');
+
+const portraitGaps = [];
+PERIODS.forEach(p=>{
+  const t = PORTRAIT[p.n];
+  if(!t) return portraitGaps.push(`no portrait for ${p.n}`);
+  if(t.length < 300) portraitGaps.push(`${p.n}: portrait only ${t.length} chars`);
+  if(t.split(/(?<=[.!?])\s/).filter(x=>x.trim()).length < 3) portraitGaps.push(`${p.n}: fewer than 3 sentences`);
+});
+Object.keys(PORTRAIT).forEach(k=>{ if(!PERIODS.some(p=>p.n === k)) portraitGaps.push(`orphan portrait "${k}"`); });
+portraitGaps.length ? bad('every period has a substantial portrait', portraitGaps.join('\n      '))
+                    : ok('all 48 periods have a portrait of 3+ sentences');
+is(new Set(PERIODS.map(p=>PORTRAIT[p.n])).size, 48, 'all 48 portraits are distinct');
+
+/* The point of the portraits: the part of a reading driven by the PERIOD
+   must be mostly specific to it. Before portraits existed it was 11%.
+   Excluded from the denominator: the number and card sections (driven by
+   the day of the month — everyone born on the 19th shares them by
+   design), the correspondences data panel, and the section headings. */
+const strip = h => h.replace(/<[^>]+>/g, ' ').replace(/&mdash;/g, '-').replace(/\s+/g, ' ').trim();
+function periodProse(p){
+  let h = renderReading(profileOf({name:'X', month:p.sm, day:p.sd, year:1990}));
+  const a = h.indexOf('<h4>The number'), b = h.indexOf('<h4>Where it converges');
+  if(a > -1 && b > a) h = h.slice(0, a) + h.slice(b);
+  const c = h.indexOf('<h4>Correspondences');
+  if(c > -1) h = h.slice(0, c);
+  return strip(h.replace(/<h4>[\s\S]*?<\/h4>/g, ' '));
+}
+const proses = PERIODS.map(periodProse);
+const share = PERIODS.map((p, i)=>{
+  const own = [PORTRAIT[p.n], LORE[p.n].k, LORE[p.n].g, LORE[p.n].s, LORE[p.n].p,
+               WELLBEING[p.n].h, WELLBEING[p.n].m].join(' ').length;
+  return own / proses[i].length * 100;
+});
+const minShare = Math.min(...share), avgShare = share.reduce((a,b)=>a + b, 0) / share.length;
+/* 40% is a regression guard, not a target: the figure was 11% before the
+   portraits and sits in the mid-forties now. */
+minShare >= 40 ? ok(`period-driven prose is ${minShare.toFixed(0)}-${Math.max(...share).toFixed(0)}% specific to its own period (avg ${avgShare.toFixed(0)}%, was 11% before portraits)`)
+               : bad('a reading is mostly about its own period', `the thinnest is only ${minShare.toFixed(0)}% specific`);
+
+/* Two readings may still share correspondence lines — a body zone with the
+   same sign, an element/quality line, a number's register. That is the
+   system working. What must not happen is two readings looking alike, so
+   cap how much of a reading any other reading can duplicate. */
+const sentencesOf = r => r.split(/(?<=[.!?])\s/).map(x=>x.trim()).filter(x=>x.length > 30);
+const sents = proses.map(sentencesOf);
+let worstPair = {pct:0};
+for(let i = 0; i < sents.length; i++){
+  const setI = new Set(sents[i]);
+  for(let j = i + 1; j < sents.length; j++){
+    const dupChars = sents[j].filter(x=>setI.has(x)).join(' ').length;
+    const pct = dupChars / Math.min(proses[i].length, proses[j].length) * 100;
+    if(pct > worstPair.pct) worstPair = {pct, a:PERIODS[i].n, b:PERIODS[j].n};
+  }
+}
+worstPair.pct <= 20
+  ? ok(`the most alike pair of readings duplicates only ${worstPair.pct.toFixed(0)}% of each other (${worstPair.a} / ${worstPair.b})`)
+  : bad('no two readings look alike', `${worstPair.a} and ${worstPair.b} duplicate ${worstPair.pct.toFixed(0)}%`);
+
+/* Portraits themselves must never be shared. */
+const portraitSents = PERIODS.map(p=>sentencesOf(PORTRAIT[p.n]));
+const dupPortrait = new Set();
+for(let i = 0; i < portraitSents.length; i++){
+  const setI = new Set(portraitSents[i]);
+  for(let j = i + 1; j < portraitSents.length; j++)
+    portraitSents[j].forEach(x=>{ if(setI.has(x)) dupPortrait.add(x); });
+}
+dupPortrait.size === 0 ? ok('no sentence is reused between any two portraits')
+                       : bad('no sentence is reused between any two portraits', [...dupPortrait].slice(0,3).join(' | '));
+
+/* The portrait must actually reach the page. */
+const shown = PERIODS.filter(p=>!renderReading(profileOf({name:'X', month:p.sm, day:p.sd, year:1990})).includes(PORTRAIT[p.n]));
+shown.length ? bad('every portrait is rendered into its reading', shown.map(p=>p.n).join(', '))
+             : ok('every portrait is rendered into its reading');
 
 /* ---------------------------------------------------------- */
 group('The quiz');

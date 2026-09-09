@@ -462,36 +462,19 @@ const SIGNS = {
 
 const ELEMENTS = {
   Fire:{
-    word:'ignition',
-    body:'Fire runs on ignition. The energy shows up before the plan does, and the plan usually gets built while already moving. Warmth is the natural output. So is scorch, on the days there is nothing to burn but yourself.'
-  },
+    word:'ignition',},
   Earth:{
-    word:'accumulation',
-    body:'Earth runs on accumulation. Nothing arrives all at once; it gets laid down, tested, and then stood on. What Earth builds tends to still be standing years later, which is both the gift and the reason it resists being moved.'
-  },
+    word:'accumulation',},
   Air:{
-    word:'circulation',
-    body:'Air runs on circulation. Ideas, contacts, phrasings, angles — the mind keeps them in motion, and connection happens faster than commitment. Nothing goes stale. Some things never get finished.'
-  },
+    word:'circulation',},
   Water:{
-    word:'absorption',
-    body:'Water runs on absorption. The mood of a room arrives before its words do, and it arrives uninvited. That makes for an uncanny read on people, and a real need for somewhere to put everything that gets picked up.'
-  }
+    word:'absorption',}
 };
 
 const QUALITIES = {
-  Cardinal:{
-    verb:'starts',
-    body:'Cardinal means you start things. You are the one who says <em>let’s</em>, and the room reorganizes around it. Beginnings are cheap for you. Endings are expensive.'
-  },
-  Fixed:{
-    verb:'holds',
-    body:'Fixed means you hold things. Once committed you are extremely hard to move, which builds trust and occasionally builds walls. Your loyalty and your stubbornness are the same muscle.'
-  },
-  Mutable:{
-    verb:'adapts',
-    body:'Mutable means you adapt things. You change shape to fit the situation and lose almost nothing doing it. The risk is not rigidity, it is dispersal — available to everything, anchored to nothing.'
-  }
+  Cardinal:{verb:'starts',  gear:'opens things and hands them on'},
+  Fixed:   {verb:'holds',   gear:'holds its shape under pressure'},
+  Mutable: {verb:'adapts',  gear:'keeps changing shape to fit'}
 };
 
 /* Reduced day-number 1–9 and its ruling planet. */
@@ -934,6 +917,62 @@ const LORE = {
 };
 
 /* ============================================================
+   PORTRAITS — the substance of a reading. One per period, written
+   to be specific to that period rather than to its element or
+   quality, which 3 and 16 periods share respectively.
+   ============================================================ */
+const PORTRAIT = {
+"Pisces–Aries Cusp":"Born at the exact turn of the astrological year, on the seam where the last sign dissolves and the first one ignites. It shows up as a life with more chapters than most people get — jobs, cities, versions of yourself, each entered wholeheartedly and left without much looking back. You are unusually good at the first week of anything, and the enthusiasm is real rather than performed. What comes harder is the ninth month, when the thing has stopped being new and has become simply the thing you do.",
+"Aries I":"There is something in you that never got sanded down. Where most adults run a sentence through a filter first, yours arrive at full volume and full honesty, and you are regularly startled by how hard they land. People find this refreshing right up until it costs them something. The compensation is that nobody ever has to guess where they stand with you — and in a room full of people quietly managing each other, that turns out to be rare and worth a great deal.",
+"Aries II":"You are looked at. It started early, probably before you had any say in it, and you have had a complicated relationship with it ever since — half enjoying it, half suspicious of it. You perform well under observation and noticeably worse in private, which is worth knowing about yourself. The real question of this period is whether the work would survive if nobody were watching, and whether you would still bother to make it.",
+"Aries III":"You are drawn to the version of a situation nobody has tried yet. New job, new system, new city, new method — not restlessness exactly, but because the untested route is genuinely more interesting to you than the proven one. This makes you valuable at the beginning of things and slightly bored in the middle of them. You have almost certainly built something other people are still using, and left before you ever saw it work.",
+"Aries–Taurus Cusp":"Fire's drive sitting on Earth's foundations — you want the surge and you want it to hold. In practice that reads as someone who can carry a genuinely heavy load without mentioning it, and keep moving while carrying it. People rely on you more than they say out loud. The blind spot is that force this available gets used automatically, and what feels to you like ordinary effort can land on other people as pressure they never agreed to.",
+"Taurus I":"Ideas that stay ideas make you physically restless. You need the thing to exist — the built version, the shipped version, the one with weight to it. This is why you finish what other people abandon, and why your work tends to still be standing years later. The risk is momentum: you are so good at completing things that you can be most of the way through one before you notice you stopped wanting it somewhere around year two.",
+"Taurus II":"You explain things. Not because anybody asked, but because you cannot comfortably watch someone struggle with something you understand. Your particular gift is patience with the second and third explanation, where most people have already lost interest. Where it goes wrong is the line between explaining and correcting, which is far thinner than it feels from the inside, and which you cross most often with the people closest to you.",
+"Taurus III":"Things have generally come easily. You picked up skills other people ground for, and you have probably been faintly embarrassed by how little effort some of your successes actually took. The hidden cost is that you have rarely had to be bad at something in public, so you quietly avoid the situations where that could happen. Your ceiling is not your ability — it is the point where things stop being easy, which is precisely where you tend to stop.",
+"Taurus–Gemini Cusp":"Two engines: a slow one that keeps going and a fast one that keeps changing direction. On good days that is stamina plus versatility, and you outlast the quick people while outpacing the steady ones. On bad days the two fight each other and you end up busy in six directions with nothing finished. You are at your best when something external forces you to pick one — and you resent the constraint the entire time it is working.",
+"Gemini I":"Any arrangement that closes off options registers in your nervous system as danger, even when it is plainly just a normal commitment. You have probably left situations that were fine and struggled afterwards to explain why. What you are really protecting is the ability to change your mind, which matters to you more than almost anything. The thing worth learning is that a commitment you chose yourself does not confine you the way an imposed one does — but you have to make one to find that out.",
+"Gemini II":"You name things. The phrase that makes a vague situation suddenly obvious, the word for the feeling nobody had described — that is your specific talent, and people repeat your formulations back to you months later without remembering where they got them. The trap is enjoying the phrase for its own sake, at which point a certain kind of cleverness starts costing you clarity. The most powerful thing you do is say the important thing in the plainest words available, and it is the thing you do least.",
+"Gemini III":"There is a question underneath your life that you have never stopped asking. It has taken different forms — books, people, places, disciplines — but it is recognisably the same question each time. This makes you genuinely interesting and genuinely difficult to pin down. The uncomfortable possibility worth sitting with is that the searching has become the point, and that arriving anywhere would feel more like a loss than a relief.",
+"Gemini–Cancer Cusp":"You sense things before there is evidence, and unusually, you can also explain what you sensed — most people get one or the other. The result is an inner life that is vivid, detailed and almost entirely invisible to everyone around you. You have probably conducted whole relationships in your head that the other person knew nothing about. The work is external: something made, something said, something that takes what is in there and puts it where it can actually be met.",
+"Cancer I":"You read a room before anybody speaks — the tension in it, the thing that was said just before you walked in, who is not all right. This is genuinely uncommon, and people feel understood around you without being able to say why. The cost is that you carry it home. Much of what you feel in an evening was picked up somewhere else during the day, and until you can reliably tell the difference, you will keep treating other people's weather as your own forecast.",
+"Cancer II":"You feel things deeply and refuse to feel them the expected way. Where others reach for the standard response — the appropriate grief, the correct enthusiasm — you produce something sideways and truer. People find you strange and then find you honest, usually in that order. The only thing to watch is the point where the refusal becomes automatic, and you are being unusual out of habit rather than out of accuracy.",
+"Cancer III":"You move people. Not by argument but by warmth, timing, and a very accurate read of what someone needs to hear. You often know how a conversation will end before it has started. This is real power and you have had it since you were young. The line to watch is the one between influencing and handling, because from the inside they feel identical — and the people closest to you can usually tell the difference even when you cannot.",
+"Cancer–Leo Cusp":"Two selves that both tell the truth: one that holds a room and one that needs the door shut. You can go from the centre of the party to entirely unreachable in an afternoon, and both states are genuine. The people around you are not confused about which one is real — they are confused because they get no warning. One sentence about which mode you are in dissolves most of what looks from outside like unpredictability.",
+"Leo I":"You end up running things you did not set out to run. Meetings turn toward you, decisions route through you, and you find this normal rather than notable. Your steadiness under pressure is real and people are right to rely on it. The failure mode is quiet: authority that goes unquestioned starts to feel like correctness, and you can pass years without noticing that people stopped disagreeing with you out loud some time ago.",
+"Leo II":"Considerable force, deliberately held in check — that is the whole shape of this period. You do not need to prove anything hourly, which puts you well ahead of most people carrying your kind of strength. But restraint practised long enough becomes its own habit, and there is a version of you that never fully commits to anything on the grounds that holding something back is the mature choice. It is not always. Some things deserve the entire amount.",
+"Leo III":"People follow you, and you feel the weight of that far more than you let anyone see. You plan further ahead than those around you and absorb pressure rather than passing it down, which is admirable and slowly isolating. The trap is becoming the single point everything runs through — and calling that responsibility when it is closer to a fear that nobody else will do it properly.",
+"Leo–Virgo Cusp":"You see what is actually going on — the unspoken arrangement, the thing everyone is politely not mentioning — and you tend to say it. That makes you clarifying and occasionally dangerous to be near. You apply the same unsparing eye to yourself, which is why the honesty rarely reads as cruelty. The question worth asking before speaking is simply what the truth is for, because exposure with no purpose behind it is just damage that happens to be accurate.",
+"Virgo I":"You walk into disorder and start building the structure that ends it — the process, the checklist, the way this will work from now on. Things run better after you have been somewhere, and often keep running long after you have gone. The characteristic mistake is falling in love with the system: maintaining a process well past the point where it serves anything, because dismantling your own work feels like undoing it rather than finishing it.",
+"Virgo II":"People do not quite work you out, and you are not especially trying to help them. You hold a great deal in reserve — not secretively, just privately — and the effect is that even close friends sense there is more they have not been shown. There is real depth behind it. The risk is that privacy hardens into distance so gradually you never notice, until the number of people who actually know you has quietly reached zero.",
+"Virgo III":"You take people at their word and expect the same courtesy in return. Vagueness genuinely bothers you — not pedantically, but because imprecision causes problems downstream and you are usually the one who ends up fixing them. Your accuracy is a service to everyone around you. Where it costs you is subtext: the thing someone meant but did not say, which you answer literally and correctly, leaving them feeling unheard by somebody who was in fact listening very carefully.",
+"Virgo–Libra Cusp":"You want it to work and you want it to be beautiful, and you will not trade either for the other. This gives you a discernment most people simply lack — you can tell good from very nearly good, and the gap between them matters to you. It also makes you the last person to let go of anything. Work sits at ninety-five per cent for months while you see flaws nobody else would notice, and the world never gets the ninety-five per cent version.",
+"Libra I":"You hold a high line, and the first person it is held against is you. Everyone else gets patience; you get an internal commentary that would be considered abusive if it were addressed to anybody else. The standard is genuinely worth having and your work is better for it. What is not worth having is the belief that the self-attack is what produces the quality — because it is not, and the evidence is every time you did well and felt absolutely nothing.",
+"Libra II":"You think in terms of the group — what it needs, where it is heading, who is being left out of it. This is real social intelligence rather than the performed kind. The danger is specific and slow: you weigh the collective view so habitually that after enough years you can lose track of which opinions were ever yours. The corrective is uncomfortable and simple, which is to say the unpopular thing you believe, out loud, from time to time.",
+"Libra III":"Presentation is not dishonesty for you, it is the medium you think in. You know how a room will read a gesture, how timing changes a sentence, when to let a pause do the work. That makes you compelling, and leaves people slightly unsure whether they have met you. The performance is not a lie — but it can outlast the honesty underneath it, and there needs to be at least one person in your life who gets no performance whatsoever.",
+"Libra–Scorpio Cusp":"You see the flaw immediately. Not maliciously — it is simply the first thing that presents itself, in a film, a plan, a person, a room. Combined with a real taste for intensity, this makes you a formidable critic and exhausting company on a bad day. Worth keeping in view: noticing the fault is the easy half of the job, and the thing you are critiquing was harder to make than your critique was to deliver.",
+"Scorpio I":"Half measures are not really available to you. Whatever you are into, you are all the way into; whatever you have left, you left completely. This gives you a focus that unnerves people and gets things done that moderate effort never would. It also burns through things — projects, relationships, and periodically yourself. What you are missing is not restraint exactly, it is pacing, so that the intensity lasts long enough to actually finish something.",
+"Scorpio II":"Small talk is a foreign country you visit reluctantly. You go under the surface as a matter of course and grow impatient with conversations that stay on it. People tell you things they had not planned to tell anyone. The corresponding problem is that going down is effortless for you and coming back up is not — and there is a version of this period that spends decades submerged and calls it depth long after it became a habit.",
+"Scorpio III":"You are magnetic, and unusually, you know exactly how the mechanism works. You can read what a person responds to and adjust inside a single sentence. This is a genuine social skill and it has opened doors for you. It is also perfect armour: charm keeps everyone at a distance so pleasant that nobody notices they are being kept there — including, most of the time, you.",
+"Scorpio–Sagittarius Cusp":"You are built to overturn things. Received wisdom irritates you on contact, and you have a genuine nerve for saying the arrangement is wrong when everyone else has quietly agreed to live with it. Some of what you have torn down badly needed tearing down. But the impulse fires whether or not the target deserves it, and the thing separating a revolutionary from a wrecker is a boring question: what replaces this, and have you actually thought about it.",
+"Sagittarius I":"You need room, and you have paid for it — in money, in relationships, in opportunities taken on worse terms because the better terms came with strings attached. The honesty and the self-reliance are real and hard-won. What is worth examining is how much of the independence is preference and how much is refusal, because you have almost certainly turned down help you needed on the grounds that needing it was itself the problem.",
+"Sagittarius II":"You make version one. The thing that did not exist, the idea nobody had framed that way, the first draft other people then build on. Being the source is genuinely your role and you are good at it. The pattern worth watching is what happens around the sixty per cent mark, when the excitement of origination has worn off and what remains is the unglamorous work of finishing — which is where most of your ideas are currently sitting.",
+"Sagittarius III":"You think at a scale that makes small containers uncomfortable. Modest plans bore you; you would rather attempt something too large and fall short than execute something small perfectly. It is why the things you have built are bigger than your circumstances would predict. The cost is granular and human: at that scale individual people become details, and you have run over a few of them without registering it at the time.",
+"Sagittarius–Capricorn Cusp":"You see where it is going before there is any evidence, and you have the discipline to act on the sight — which is rarer than the vision itself. You have also had the experience of being right several years early and getting no credit for it, because nobody else could see it yet. That is the specific loneliness of this period, and it curdles into bitterness if left alone. The work is translation: putting what you see into terms today's people can act on today.",
+"Capricorn I":"Responsibility finds you and then does not leave. You take charge structurally — not by grabbing at it, but by being the one who has already thought about what happens if this goes wrong. People are genuinely safer for it. The subtle failure is that care and control become the same gesture: you handle things for people, they stop handling them, and you end up carrying weight you resent while continuing to refuse to put it down.",
+"Capricorn II":"Your strategy is to outlast the problem, and it works often enough that you rarely question it. You do not need to feel motivated — you simply continue, which puts you far ahead of everyone waiting for enthusiasm to arrive. The vulnerability is aim rather than effort: this much persistence pointed at the wrong thing produces years of expensive progress in a direction you would not choose if you ever stopped to look up.",
+"Capricorn III":"You take the space you need without apologising, and you are comfortable at the top of a structure in a way most people are not. Pressure that flattens others is ordinary working conditions for you. What it costs is not obvious from the inside: capable people around you get quieter, contribute less, and eventually stop offering the thing that would have helped — and you experience this as everyone else simply being less competent than you.",
+"Capricorn–Aquarius Cusp":"Practical, organised, entirely conventional on the surface, and genuinely strange underneath. You build in private and hand over something finished, so people are regularly surprised by whatever was going on in there. The discipline is real and so is the oddness. The risk is that the interior stays so private it never gets made at all, and the most interesting thing about you remains something nobody has ever seen.",
+"Aquarius I":"Your mind reaches conclusions by a route other people cannot follow, and it skips steps they still need. When you are right, you are right early and by a wide margin. The difficulty is social rather than intellectual: an idea nobody can follow helps nobody, and the contempt that creeps in when people fail to keep up costs you precisely the influence your thinking deserves.",
+"Aquarius II":"Life has not stuck to you the way it sticks to most people. You have kept something unhardened — a lightness that makes you easy company and lets you begin again without the accumulated weight others carry around. It is genuinely enviable. The question it raises is whether anything has been allowed to matter enough to hurt, because nothing sticking also means nothing holding, and there is a version of this that reaches sixty entirely unmarked and entirely untouched.",
+"Aquarius III":"You take people exactly as they are. Not as tolerance you have worked at — it is simply your default, and it is far rarer than it sounds. People relax around you because they can tell they are not being assessed. The corresponding gap is a line you never draw: accepting everything means some things get absorbed that should have been refused, and the resentment surfaces later, somewhere else, aimed at the wrong target.",
+"Aquarius–Pisces Cusp":"You are tuned finely enough that ordinary life comes in loud — noise, moods, weather, other people's unspoken states. The compassion it produces is real rather than performed, and you know things about people they have never told you. The mistake, which you may have been making for years, is treating the sensitivity as a weakness to be overcome rather than as equipment to be protected. It is instrumentation, and it needs conditions.",
+"Pisces I":"Something in you is oriented past the material, and you feel it as an actual pull rather than a belief you decided to hold. It produces genuine faith, a generous default reading of people, and an imagination that asks nobody's permission. It also makes the practical layer of life feel optional in a way it is not. The forms, the appointments, the boring maintenance — these are not beneath the inner life, they are the floor it stands on.",
+"Pisces II":"You need solitude the way other people need company — not as recovery from socialising, but as the condition in which you are actually yourself. Your interior is well furnished and you are rarely bored alone. The trap is gradual: solitude chosen often enough stops being a choice and becomes the only available setting, and the invitations thin out until you notice the door you were keeping shut is now simply shut.",
+"Pisces III":"You move through things by rhythm and image rather than by argument. Decisions arrive as a felt sense of rightness and you are usually correct, though you cannot always show the working. There is a grace in how you do things that people notice without ever naming. The missing piece is a landing strip: a dream with no date attached stays airborne indefinitely, and you have several up there now that would be real by summer if any of them had a deadline."
+};
+
+/* ============================================================
    DESTINY — the path layer. Original writing, one entry per period.
    A path runs FROM a starting position you did not choose TOWARD a
    destination you can. Deliberately distinct from the LORE entries
@@ -987,8 +1026,7 @@ const DESTINY = {
 "Aquarius–Pisces Cusp":{from:"a perceptiveness fine enough to be painful", toward:"protecting it so that it can keep being used", lesson:"that sensitivity is equipment, not weakness", goal:"a life built to your actual tolerances", pitfall:"enduring more input than you can process", release:"the shame about needing less of everything", reward:"perception that lasts a lifetime", step:"Build one hour a day that nothing gets into."},
 "Pisces I":{from:"faith and a pull toward what lies past the material", toward:"keeping that and still showing up for the ordinary week", lesson:"that the practical life is not the enemy of the inner one", goal:"meaning that survives contact with admin", pitfall:"the drift that leaves the actual life untended", release:"the sense that ordinary things are beneath it", reward:"an inner life with a foundation under it", step:"Do the boring administrative thing today."},
 "Pisces II":{from:"self-sufficiency and a richly furnished interior", toward:"solitude that stays genuinely chosen", lesson:"that solitude chosen often enough stops being a choice", goal:"a few people you actively keep", pitfall:"the door that quietly stopped opening", release:"the belief that reaching out is a weakness", reward:"aloneness that remains a pleasure", step:"Initiate contact this week. You first."},
-"Pisces III":{from:"grace, imagination and an instinct for beauty in motion", toward:"bringing one vision all the way down to the ground", lesson:"that a dream with no date stays a dream", goal:"something imagined that now exists", pitfall:"a lifetime of airborne intentions", release:"the romance of the unrealised", reward:"the dream, standing, where people can use it", step:"Tell someone the date, and let them hold you to it."}
-};
+"Pisces III":{from:"grace, imagination and an instinct for beauty in motion", toward:"bringing one vision all the way down to the ground", lesson:"that a dream with no date stays a dream", goal:"something imagined that now exists", pitfall:"a lifetime of airborne intentions", release:"the romance of the unrealised", reward:"the dream, standing, where people can use it", step:"Tell someone the date, and let them hold you to it."}};
 
 /* ============================================================
    WELLBEING — original writing, one entry per period.
@@ -1103,6 +1141,7 @@ function profileOf(person){
     tarot: tarotFor(person.day),
     card: tarotIndex(person.day),
     lore: LORE[per.n],
+    portrait: PORTRAIT[per.n],
     well: WELLBEING[per.n],
     dest: DESTINY[per.n],
     body: signsOf(per).map(x=>SIGN_BODY[x]),
@@ -1337,11 +1376,7 @@ function renderReading(P){
   const lead = LEADS[(P.idx + P.num) % LEADS.length](n, P.per);
   const els = P.elements, qs = P.qualities;
 
-  const currents = P.cusp
-    ? `<p>${n} sits on a cusp, which means two weathers rather than one. ${ELEMENTS[els[0]].body}</p>
-       ${els[1] ? `<p>Underneath that, a second current: ${ELEMENTS[els[1]].body}</p>` : ''}
-       <p>${QUALITIES[qs[0]].body}${qs[1] ? ' And at the same time — ' + QUALITIES[qs[1]].body.charAt(0).toLowerCase() + QUALITIES[qs[1]].body.slice(1) : ''}</p>`
-    : `<p>${ELEMENTS[els[0]].body}</p><p>${QUALITIES[qs[0]].body}</p>`;
+  const currents = `<p>${P.elements.map((e, i)=>`<strong>${e}</strong> — ${ELEMENTS[e].word}`).join(', and ')}, in a <strong>${P.qualities.join('/')}</strong> gear that ${P.qualities.map(q=>QUALITIES[q].gear).join(', and ')}.${P.cusp ? ' A cusp birth, so two weathers rather than one.' : ''}</p>`;
 
   const converge = `${n} is ${els.join('/')} matter moved in a ${qs.join('/')} way, counted by a ${P.num} and pictured as ${P.tarot.n}. Put plainly: the ${ELEMENTS[els[0]].word} is the fuel, ${qs[0].toLowerCase()} is the gear it runs in, ${P.planet} sets the tempo, and ${P.tarot.n} is the instruction that keeps coming back around.`;
 
@@ -1350,7 +1385,9 @@ function renderReading(P){
     <h3>Layer I — The Period <small>who this is, at the point of the year they arrived</small></h3>
     <div class="layer-body">
       <p class="lead">${lead}${L.k}</p>
-      <h4>The current running underneath</h4>
+      <h4>${esc(P.per.t)}</h4>
+      <p>${P.portrait}</p>
+      <h4>The current underneath</h4>
       ${currents}
       <h4>The number — ${P.num}, ruled by ${P.planet}</h4>
       <p>Born on the ${P.person.day}${P.person.day > 9 ? `, which reduces to ${P.num}` : ''}. ${P.numInfo.body}</p>

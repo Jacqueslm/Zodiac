@@ -6,9 +6,9 @@ no server, no build step, no dependencies.
 Enter a name and a birthday and it finds which of the 48 periods below the date
 falls in, then reads it three ways:
 
-- **Layer I — the period.** Name, title, date range, sign(s), element, quality,
-  the reduced day-number with its ruling planet, and the tarot card for the day
-  of the month.
+- **Layer I — the period.** A written portrait of that period, then its date
+  range, sign(s), element, quality, the reduced day-number with its ruling
+  planet, and the tarot card for the day of the month.
 - **Layer II — the pair.** Any two saved people read together: elemental and
   quality currents, four relationship domains, and a two-card spread. All 1,176
   combinations of the 48 periods resolve.
