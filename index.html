@@ -2789,16 +2789,20 @@ function fightHTML(){
   </div>`;
 }
 
-async function openFight(youProfile, themProfile){
+async function openFight(youProfile, themProfile, level){
   document.body.insertAdjacentHTML('beforeend', fightHTML());
   await loadFighterAsset();
   const you = fighterFrom(youProfile), them = fighterFrom(themProfile);
   F = {
-    youP:youProfile, themP:themProfile,
-    you, them, round:1, rounds:3, clock:90, phase:'walkin',
-    meter:{you:0, them:0}, stars:{you:0, them:0}, downs:{you:0, them:0},
-    busyUntil:0, theirNext:0, swing:null, guard:null, over:null,
-    lastTaunt:0, camShot:'house', shake:0, slow:1, drag:null
+    youP:youProfile, themP:themProfile, you, them,
+    level: level || 1,
+    round:1, clock:ROUND_SECS, rest:0, phase:'walkin',
+    youHP:100, themHP:100, ysp:0, bsp:0,
+    landed:{you:0, them:0}, downs:{you:0, them:0}, downsFight:{you:0, them:0},
+    cards:{you:0, them:0}, roundsWon:{you:0, them:0},
+    busy:false, queued:null, down:false, count:0,
+    swing:null, dodge:null, block:false, theirNext:0, lastTaunt:0,
+    over:null, shake:0, slow:1
   };
   $('h-you').textContent = you.name === you.period ? you.period : you.name;
   $('h-them').textContent = them.period;
@@ -2820,6 +2824,7 @@ async function openFight(youProfile, themProfile){
     F.phase = 'live'; F.theirNext = performance.now() + 1400;
     setShot('shoulder'); call('Round one'); blip('bell');
   }, 2600);
+  hud();
   loop();
 }
 
@@ -2839,19 +2844,39 @@ function closeFight(){
   const el = $('r3'); if(el) el.remove();
 }
 
-/* ---------- HUD helpers ---------- */
+/* ---------- the rules, taken from The Fight of Your Life ----------
+   Six rounds of thirty seconds with fourteen between them. Both fighters
+   start every round on 100 and you recover 25 in the corner. The cue tells
+   you which way to move — dodge the side it shows. Slipping opens a counter
+   just under half the time, because always would not be a fight. Rounds are
+   scored ten-point-must: more punches landed takes the round 10-9, a
+   knockdown costs a point. Four knockdowns in the fight is a knockout, three
+   in one round is a stoppage, and six rounds without either goes to the
+   cards.                                                                  */
+const ROUNDS = 6, ROUND_SECS = 30, REST_SECS = 14;
+const HIT = {jab:9, combo:[7, 10], hook:12, upper:16};
+const CONTACT = {jab:500/1.3, combo:400/1.3, hook:400/1.3, upper:470/1.3};
+const RECOVER = {jab:240, combo:420, hook:240, upper:260};
+const SUPER_SEQ = [['lead_jab',8,500],['right_jab',8,500],['hook',12,400],['right_uppercut',18,470]];
+
+const smooth = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+const levelT = () => smooth(((F ? F.level : 1) - 1) / 10);
+const tellMs = () => 1900 - 1000 * levelT();          /* 1.9s down to 0.9s */
+const theirHit = () => Math.round(10 + 16 * levelT()); /* 10 up to 26 */
+
+/* ---------- HUD ---------- */
 const setW = (id, pct) => { const e = $(id); if(e) e.style.width = Math.max(0, Math.min(100, pct)) + '%'; };
 function hud(){
   if(!F) return;
-  setW('b-you', F.you.hp / F.you.maxHp * 100);
-  setW('b-them', F.them.hp / F.them.maxHp * 100);
-  setW('m-you', F.meter.you); setW('m-them', F.meter.them);
-  $('s-you').textContent = '★'.repeat(F.stars.you);
-  $('s-them').textContent = '★'.repeat(F.stars.them);
-  const m = Math.floor(F.clock / 60), s = Math.floor(F.clock % 60);
-  $('h-clk').textContent = m + ':' + String(s).padStart(2, '0');
-  $('h-rd').textContent = 'ROUND ' + F.round;
-  $('r3-super').hidden = F.meter.you < 100 || F.phase !== 'live';
+  setW('b-you', F.youHP); setW('b-them', F.themHP);
+  setW('m-you', F.ysp);   setW('m-them', F.bsp);
+  /* stars are rounds won, the way a card reads */
+  $('s-you').textContent  = '★'.repeat(F.roundsWon.you)  + '☆'.repeat(Math.max(0, 3 - F.roundsWon.you));
+  $('s-them').textContent = '☆'.repeat(Math.max(0, 3 - F.roundsWon.them)) + '★'.repeat(F.roundsWon.them);
+  const t = Math.max(0, Math.ceil(F.phase === 'rest' ? F.rest : F.clock));
+  $('h-clk').textContent = F.phase === 'rest' ? 'REST ' + t : '0:' + String(t).padStart(2, '0');
+  $('h-rd').textContent = 'ROUND ' + F.round + ' / ' + ROUNDS;
+  $('r3-super').hidden = !(F.phase === 'live' && F.ysp >= 100 && !F.busy && !F.down);
 }
 function call(text, ms){ const e = $('r3-call'); if(!e) return; e.textContent = text; e.classList.add('on');
   clearTimeout(e._t); e._t = setTimeout(()=>e.classList.remove('on'), ms || 1600); }
@@ -2865,167 +2890,226 @@ function speedlines(on){ const e = $('r3-lines'); if(e) e.classList.toggle('on',
 function hurt(level){ const e = $('r3-red'); if(e) e.style.opacity = level; }
 function chant(side, text){ const e = $(side === 'L' ? 'r3-cl' : 'r3-cr'); if(!e) return;
   e.textContent = text; e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(()=>e.classList.remove('on'), 2400); }
+const now = () => performance.now();
+const wait = ms => new Promise(r=>setTimeout(r, ms));
 
-/* ---------- your punches ---------- */
-function youPunch(kind){
-  if(!F || F.over || F.phase !== 'live') return;
-  const now = performance.now();
-  if(now < F.busyUntil) return;
-  const P = PUNCH[kind];
-  if(P.needsStar && F.stars.you < 1){ call('No star yet — dodge clean to earn one'); return; }
-  if(P.needsStar) F.stars.you--;
-  F.busyUntil = now + P.wind + P.recover;
-  F.youSwingUntil = now + P.wind + 120;
-  F.youArm = kind === 'jab' ? 'L' : 'R';
-  if(R3.ok) playClip(R3.S.you, CLIP[kind] || CLIP.jab, {speed:1.25});
-
-  setTimeout(()=>{
-    if(!F || F.over) return;
-    /* it guards by its style; Fixed blocks most */
-    const blocked = Math.random() < F.them.style.block;
-    const factor = elementFactor(F.you.elements, F.them.elements);
-    let dmg = Math.max(2, Math.round(F.you.power * P.dmg * factor / 3));
-    if(blocked){ dmg = Math.max(1, Math.round(dmg * .35)); call('Blocked'); blip('whoosh');
-      if(R3.ok) playClip(R3.S.them, CLIP.block, {speed:1.3}); }
-    else {
-      F.meter.you = Math.min(100, F.meter.you + P.meter);
-      flash(); blip('thud'); shake(kind === 'upper' ? 16 : kind === 'hook' ? 11 : 6);
-      if(R3.ok) playClip(R3.S.them, kind === 'hook' || kind === 'upper' ? CLIP.hitBig
-                                   : kind === 'combo' ? CLIP.hitBody : CLIP.hitHead, {speed:1.15});
-      if(kind === 'upper' || kind === 'hook') slam(P.name.toUpperCase() + '!');
-      if(Math.random() < .35) call(kind === 'jab' ? 'Sharp jab.' : kind === 'combo' ? 'One-two!' : 'Big ' + P.name.toLowerCase() + '!');
-      chant('R', F.you.period.split(' ')[0].toUpperCase() + '!');
-    }
-    F.them.hp -= dmg;
-    hud(); checkDown();
-  }, P.wind);
+/* ---------- landing a punch ---------- */
+function land(kind, base){
+  if(!F || F.over) return;
+  const blocked = Math.random() < F.them.style.block;
+  const factor = elementFactor(F.you.elements, F.them.elements);
+  let dmg = Math.max(1, Math.round(base * factor * (0.85 + F.you.power / 60)));
+  if(blocked){
+    dmg = Math.max(1, Math.round(dmg * .35));
+    call('Blocked'); blip('whoosh');
+    if(R3.ok) playClip(R3.S.them, CLIP.block, {speed:1.4});
+  } else {
+    F.landed.you++;
+    F.ysp = Math.min(100, F.ysp + (kind === 'jab' ? 7 : kind === 'combo' ? 10 : kind === 'hook' ? 13 : 17));
+    flash(); blip('thud'); shake(kind === 'upper' ? 16 : kind === 'hook' ? 12 : 6);
+    if(R3.ok) playClip(R3.S.them, kind === 'upper' || kind === 'hook' ? CLIP.hitBig
+                                : kind === 'combo' ? CLIP.hitBody : CLIP.hitHead, {speed:1.15});
+    if(kind === 'upper' || kind === 'hook') slam(kind === 'upper' ? 'UPPERCUT!' : 'HOOK!');
+    chant('R', F.you.period.split(' ')[0].toUpperCase() + '!');
+  }
+  F.themHP = Math.max(0, F.themHP - dmg);
+  hud();
+  if(F.themHP <= 0) return knockdown('them');
+  if(F.themHP <= 28 && Math.random() < .5){
+    call('It is hurt.');
+    if(R3.ok) playClip(R3.S.them, CLIP.stunned, {speed:1.1});
+  }
 }
 
-function fireSuper(){
-  if(!F || F.over || F.meter.you < 100) return;
-  F.meter.you = 0; F.busyUntil = performance.now() + 1500;
-  slam(METER_WORD + '!'); speedlines(true); F.slow = .35; setShot('low');
-  call('It is hurt!', 2200);
-  let n = 0;
-  const hit = setInterval(()=>{
-    if(!F || F.over) return clearInterval(hit);
-    const factor = elementFactor(F.you.elements, F.them.elements);
-    F.them.hp -= Math.max(3, Math.round(F.you.power * .5 * factor / 3));
-    flash(); blip('thud'); shake(14); hud();
-    if(++n >= 5){ clearInterval(hit); speedlines(false); F.slow = 1; setShot('shoulder'); checkDown(); }
-  }, 170);
+async function youPunch(kind){
+  if(!F || F.over || F.phase !== 'live' || F.down) return;
+  if(F.busy){ F.queued = kind; return; }                    /* queued, as the real game does */
+  F.busy = true;
+  const map = {jab:CLIP.jab, combo:CLIP.combo, hook:CLIP.hook, upper:CLIP.upper};
+  if(R3.ok) playClip(R3.S.you, map[kind], {speed:1.3});
+  if(kind === 'combo'){
+    await wait(CONTACT.combo); land('combo', HIT.combo[0]);
+    await wait(270 / 1.3);     if(F && !F.over) land('combo', HIT.combo[1]);
+  } else {
+    await wait(CONTACT[kind]); land(kind, HIT[kind]);
+  }
+  await wait(RECOVER[kind]);
+  if(F){ F.busy = false; const q = F.queued; F.queued = null; if(q) youPunch(q); }
+}
+
+/* ---------- the super ---------- */
+async function fireSuper(){
+  if(!F || F.over || F.busy || F.down || F.ysp < 100) return;
+  F.busy = true; F.ysp = 0; hud();
+  speedlines(true); F.slow = .35; setShot('low');
+  slam(METER_WORD + '!'); call('Here it comes.', 2200); chant('R', METER_WORD + '!');
+  for(const [clip, dmg, at] of SUPER_SEQ){
+    if(!F || F.over) break;
+    if(R3.ok) playClip(R3.S.you, clip, {speed:1.3});
+    await wait(at / 1.3 * 1.6);
+    land('upper', dmg);
+    await wait(260);
+  }
+  speedlines(false);
+  if(F){ F.slow = 1; setShot('shoulder'); F.busy = false; }
 }
 
 /* ---------- its turn ---------- */
-const now = () => performance.now();
-function theirWindup(){
-  const tier = F.round <= 1 ? 1 : F.round <= 2 ? 2 : 3;
-  const tell = [1150, 880, 700][tier - 1] * F.them.style.tellScale;
-  const lean = Math.random() < .5 ? 'left' : 'right';
-  const feint = tier > 1 && Math.random() < F.them.style.feint;
-  F.swing = {lean, hits:feint ? (lean === 'left' ? 'right' : 'left') : lean, feint,
-             at:performance.now() + tell, taken:false};
-  F.guard = null;
-  blip('whoosh');
-  if(R3.ok){
-    const c = tier === 1 ? (lean === 'left' ? CLIP.hook : CLIP.hookR)
-            : (Math.random() < .5 ? (lean === 'left' ? CLIP.jab : CLIP.jabR)
-                                  : (lean === 'left' ? CLIP.upper : CLIP.upperR));
-    playClip(R3.S.them, c, {speed:Math.max(.55, 900 / tell)});
-  }
-  cue(lean);
-  if(now() - (F.lastTaunt || 0) > 5200){ F.lastTaunt = now(); voice(F.them.period, F.them.taunt.t); }
-}
-
+/* The arrow that tells you which way to move. Dodge the side it shows. */
 function cue(side){
-  const e = $('r3-c' + (side === 'left' ? 'l' : 'r'));
+  const root = $('r3'); if(!root) return;
   const q = document.createElement('div');
-  q.className = 'cue ' + (side === 'left' ? 'L' : 'R'); q.innerHTML = '<b>' + (side === 'left' ? '◀' : '▶') + '</b>';
-  $('r3').appendChild(q); setTimeout(()=>q.remove(), 700);
+  q.className = 'cue ' + (side === 'left' ? 'L' : 'R');
+  q.innerHTML = '<b>' + (side === 'left' ? '\u25c0' : '\u25b6') + '</b>';
+  root.appendChild(q);
+  setTimeout(()=>q.remove(), 900);
 }
 
-function resolveTheirSwing(){
-  const sw = F.swing; F.swing = null;
-  const safe = sw.hits === 'left' ? 'right' : 'left';
-  const g = F.guard;
+async function theirWindup(){
+  if(!F || F.over || F.phase !== 'live' || F.busy || F.down) return;
+  const side = Math.random() < .5 ? 'left' : 'right';
+  F.swing = {side, at:0};
+  F.dodge = null; F.block = false;
+  cue(side);
+  if(R3.ok) R3.S.them.group.rotation.y += side === 'left' ? .30 : -.30;
+  if(R3.ok && R3.S.back) R3.S.back.intensity = 14;
+  blip('whoosh');
+  if(now() - (F.lastTaunt || 0) > 5200){ F.lastTaunt = now(); voice(F.them.period, F.them.taunt.t); }
+
+  await wait(tellMs());
+  if(!F || F.over || F.down){ if(F && R3.ok) R3.S.them.group.rotation.y = Math.PI - (GLB ? Math.PI : 0); return; }
+  for(let i = 0; i < 12 && F.busy; i++) await wait(60);   /* it waits out your punch */
+  if(!F || F.over || F.down) return;
+  F.busy = true;
+  if(R3.ok) R3.S.them.group.rotation.y = Math.PI - (GLB ? Math.PI : 0);
+
+  const clip = side === 'left' ? CLIP.hook : CLIP.hookR;
+  if(R3.ok) playClip(R3.S.them, clip, {speed:1.4});
+  await wait(400 / 1.4);
+  if(!F || F.over) return;
+
+  F.swing = null;
+  const dodged = F.dodge === side, blocked = !dodged && F.block;
   const factor = elementFactor(F.them.elements, F.you.elements);
-  const raw = Math.max(3, Math.round(F.them.power * factor / 2.4) - Math.round(F.you.guard / 3));
-  if(R3.ok) playClip(R3.S.you, g === 'block' ? CLIP.block
-                             : g === 'left' ? CLIP.dodgeL
-                             : g === 'right' ? CLIP.dodgeR : CLIP.idle, {speed:1.3});
-  if(g === safe){
-    F.stars.you = Math.min(3, F.stars.you + 1);
-    F.meter.you = Math.min(100, F.meter.you + 9);
-    call(sw.feint ? 'Read the feint!' : 'Slipped it!'); blip('ding');
-    chant('R', 'SLIP!');
-    /* You slipped what it is proud of, so you get to name what it is not. */
-    voice(F.you.period, F.them.taunt.c);
-  } else if(g === 'block'){
-    F.you.hp -= Math.max(1, Math.round(raw * .4)); call('Blocked it'); blip('whoosh'); shake(4);
+  const raw = Math.max(2, Math.round(theirHit() * factor - F.you.guard / 4));
+  if(dodged){
+    slam('MISS'); blip('whoosh'); chant('R', 'SLIP!');
+    /* slipping opens it up just under half the time */
+    if(Math.random() < .42){
+      await wait(180);
+      slam('COUNTER'); blip('ding'); call('Straight back at it.');
+      voice(F.you.period, F.them.taunt.c);
+      land('hook', HIT.hook);
+    }
+  } else if(blocked){
+    F.youHP = Math.max(0, F.youHP - Math.max(1, Math.round(raw * .4)));
+    call('Blocked it'); blip('whoosh'); shake(4);
   } else {
-    F.you.hp -= raw; flash(); blip('thud'); shake(12);
-    if(R3.ok) playClip(R3.S.you, F.you.hp / F.you.maxHp < .35 ? CLIP.stunned : CLIP.hitHead, {speed:1.1});
-    F.meter.them = Math.min(100, F.meter.them + 14);
-    if(F.you.hp / F.you.maxHp < .35) slam('HURT!');
+    F.youHP = Math.max(0, F.youHP - raw);
+    F.landed.them++; F.bsp = Math.min(100, F.bsp + 14);
+    flash(); blip('thud'); shake(12);
+    if(R3.ok) playClip(R3.S.you, F.youHP < 35 ? CLIP.stunned : CLIP.hitHead, {speed:1.1});
+    if(F.youHP < 35) slam('HURT!');
     chant('L', F.them.period.split(' ')[0].toUpperCase() + '!');
   }
-  hurt(Math.max(0, .55 - F.you.hp / F.you.maxHp * .55));
+  hurt(Math.max(0, .55 - F.youHP / 100 * .55));
   hud();
-  if(!checkDown()) F.theirNext = performance.now() + (700 + Math.random() * 900);
+  F.busy = false;
+  if(F.youHP <= 0) return knockdown('you');
+  F.theirNext = now() + 600 + Math.random() * 900;
 }
 
-/* ---------- knockdowns and the end ---------- */
-function shake(n){ if(F) F.shake = Math.max(F.shake, n); }
-
-function checkDown(){
-  if(!F || F.over) return false;
-  const who = F.them.hp <= 0 ? 'them' : F.you.hp <= 0 ? 'you' : null;
-  if(!who) return false;
-  F[who].hp = 0; F.downs[who]++;
-  F.phase = 'down'; F.downWho = who; F.count = 0;
-  setShot('low'); F.slow = .4; speedlines(true);
-  slam('DOWN!'); blip('down');
+/* ---------- knockdowns ---------- */
+async function knockdown(who){
+  if(!F || F.down || F.over) return;
+  F.down = true; F.busy = true;
+  F.downs[who]++; F.downsFight[who]++;
+  slam('DOWN'); blip('down'); speedlines(true); F.slow = .4; setShot('low');
+  call(who === 'them' ? 'Down it goes.' : 'You are down.', 2400);
   if(R3.ok){
-    const B = who === 'them' ? R3.S.them : R3.S.you;
-    if(B.rigged) playClip(B, CLIP.down, {hold:.98});
-    else B.group.rotation.x = who === 'them' ? -1.2 : 1.2;
+    playClip(R3.S[who === 'them' ? 'them' : 'you'], CLIP.down, {hold:.98});
+    playClip(R3.S[who === 'them' ? 'you' : 'them'], CLIP.win, {loop:true, fade:.4});
   }
-  countOn();
-  return true;
-}
-function countOn(){
-  F.countTimer = setTimeout(()=>{
-    if(!F || F.phase !== 'down') return;
-    F.count++;
-    $('r3-count').textContent = F.count;
+  await wait(1400);
+  const out = F.downsFight[who] >= 4, stopped = !out && F.downs[who] >= 3;
+  const target = out ? 10 : 8;
+  for(let n = 1; n <= target; n++){
+    if(!F) return;
+    F.count = n;
+    $('r3-count').textContent = n;
     $('r3-count').classList.remove('go'); void $('r3-count').offsetWidth; $('r3-count').classList.add('go');
     blip('bell');
-    if(F.count >= 10) return endFight(F.downWho === 'you' ? 'them' : 'you', 'by knockout');
-    if(F.downWho === 'them' && F.count >= 4 && F.downs.them < 2) return riseUp('them');
-    countOn();
-  }, 750);
-}
-function riseUp(who){
-  clearTimeout(F.countTimer);
-  F[who].hp = Math.round(F[who].maxHp / 3);
-  if(R3.ok){
-    const B = R3.S[who === 'them' ? 'them' : 'you'];
-    if(B.rigged) playClip(B, CLIP.up, {then:CLIP.idle});
-    else B.group.rotation.x = 0;
+    await wait(700);
   }
-  F.phase = 'live'; F.slow = 1; speedlines(false); hurt(0);
   $('r3-count').textContent = '';
-  call(who === 'you' ? 'Up at ' + F.count + '!' : 'It beats the count.');
-  F.theirNext = performance.now() + 1200; setShot('shoulder'); hud();
+  if(!F) return;
+  if(out) return decision(who === 'them' ? 'you' : 'them', 'by knockout');
+  if(stopped) return decision(who === 'them' ? 'you' : 'them', 'stopped, three down in the round');
+  /* up at eight, on thirty */
+  if(who === 'them') F.themHP = 30; else F.youHP = 30;
+  if(R3.ok){ playClip(R3.S[who === 'them' ? 'them' : 'you'], CLIP.up, {then:CLIP.idle}); }
+  await wait(1200);
+  if(!F) return;
+  F.down = false; F.busy = false; F.slow = 1; speedlines(false); hurt(0); setShot('shoulder');
+  call('Up at eight.');
+  hud();
+  F.theirNext = now() + 1200;
+  if(F.clock <= 0) endRound();
 }
-function endFight(winner, how){
-  clearTimeout(F.countTimer);
-  F.over = {winner, how}; F.phase = 'over'; F.slow = 1; speedlines(false);
-  $('r3').classList.add('over');
+
+/* ---------- scoring ---------- */
+function endRound(){
+  if(!F || F.over || F.phase !== 'live') return;
+  F.phase = 'rest'; F.rest = REST_SECS; blip('bell'); slam('BELL');
+  /* ten-point must: more landed takes it 10-9, a knockdown costs a point */
+  let sy = 10, st = 10;
+  if(F.landed.you > F.landed.them) st = 9; else if(F.landed.them > F.landed.you) sy = 9;
+  sy -= F.downs.you; st -= F.downs.them;
+  F.cards.you += sy; F.cards.them += st;
+  if(sy > st) F.roundsWon.you++; else if(st > sy) F.roundsWon.them++;
+  call(sy > st ? 'Your round, ' + sy + '-' + st : st > sy ? 'Its round, ' + st + '-' + sy : 'Even round, 10-10', 3000);
+  voice('Corner', 'Cards: you ' + F.cards.you + ', it ' + F.cards.them + '. ' + F.you.gift.replace(/\.$/, '') + '. Use it.');
   setShot('house');
-  $('r3-count').textContent = '';
-  slam(winner === 'you' ? 'WINNER' : 'DOWN. NOT OUT.');
-  call((winner === 'you' ? F.you.period : F.them.period) + ' — ' + how, 6000);
+  $('r3-corner').hidden = false;
+  hud();
+}
+function cornerChoice(kind){
+  if(!F || F.phase !== 'rest') return;
+  $('r3-corner').hidden = true;
+  if(kind === 'water'){ F.youHP = Math.min(100, F.youHP + 10); call('Water.'); }
+  if(kind === 'towel'){ F.bsp = Math.max(0, F.bsp - 25); call('Towel. It cools off.'); }
+  if(kind === 'word'){ F.ysp = Math.min(100, F.ysp + 25); call('A word. ' + METER_WORD + ' builds.'); }
+  F.rest = Math.min(F.rest, 2);
+  hud();
+}
+function nextRound(){
+  if(!F || F.over) return;
+  F.round++;
+  if(F.round > ROUNDS){
+    const w = F.cards.you === F.cards.them ? 'draw'
+            : F.cards.you > F.cards.them ? 'you' : 'them';
+    return decision(w, w === 'draw' ? 'a draw on the cards, ' + F.cards.you + '-' + F.cards.them
+                                    : 'on the cards, ' + Math.max(F.cards.you, F.cards.them) + '-' + Math.min(F.cards.you, F.cards.them));
+  }
+  F.themHP = 100; F.youHP = Math.min(100, F.youHP + 25);
+  F.landed = {you:0, them:0}; F.downs = {you:0, them:0};
+  F.clock = ROUND_SECS; F.phase = 'live'; F.busy = false; F.down = false;
+  $('r3-corner').hidden = true;
+  hurt(0); setShot('shoulder'); blip('bell');
+  call('Round ' + F.round);
+  if(R3.ok){ playClip(R3.S.you, CLIP.idle, {loop:true}); playClip(R3.S.them, CLIP.idle, {loop:true}); }
+  F.theirNext = now() + 1400;
+  hud();
+}
+
+function decision(winner, how){
+  if(!F || F.over) return;
+  F.over = {winner, how}; F.phase = 'over'; F.slow = 1; F.busy = false;
+  speedlines(false); hurt(0); setShot('house');
+  $('r3-count').textContent = ''; $('r3-corner').hidden = true;
+  $('r3').classList.add('over');
+  slam(winner === 'you' ? 'WINNER' : winner === 'draw' ? 'DRAW' : 'DOWN. NOT OUT.');
+  call((winner === 'you' ? F.you.period : winner === 'them' ? F.them.period : 'Even') + ' — ' + how, 7000);
   voice(winner === 'you' ? 'Corner' : F.them.period,
         winner === 'you' ? 'That is how it is done.' : 'Same time tomorrow.');
   blip(winner === 'you' ? 'ding' : 'down');
@@ -3033,34 +3117,12 @@ function endFight(winner, how){
     playClip(R3.S.you,  winner === 'you' ? CLIP.win : CLIP.lose, {hold:.95});
     playClip(R3.S.them, winner === 'you' ? CLIP.lose : CLIP.win, {hold:.95});
   }
-  $('r3-replies').classList.remove('on');
-  $('r3-replies').innerHTML = `<button data-again="1">Again</button><button data-quit="1">Leave</button>`;
+  $('r3-replies').innerHTML = '<button data-again="1">Again</button><button data-quit="1">Leave</button>';
   $('r3-replies').classList.add('on');
   hud();
 }
 
-/* ---------- between rounds ---------- */
-function endRound(){
-  if(F.round >= F.rounds){
-    return endFight(F.you.hp / F.you.maxHp >= F.them.hp / F.them.maxHp ? 'you' : 'them', 'on points');
-  }
-  F.phase = 'corner'; blip('bell'); setShot('shoulder');
-  call('End of round ' + F.round);
-  voice('Corner', F.you.gift.replace(/\.$/, '') + '. Use it.');
-  $('r3-corner').hidden = false;
-}
-function cornerChoice(kind){
-  if(F.phase !== 'corner') return;
-  $('r3-corner').hidden = true;
-  if(kind === 'water'){ F.you.hp = Math.min(F.you.maxHp, F.you.hp + Math.round(F.you.maxHp * .12)); call('Water. Some of it back.'); }
-  if(kind === 'towel'){ F.stars.you = Math.min(3, F.stars.you + 1); call('Towel. Head clear — a star.'); }
-  if(kind === 'word'){ F.meter.you = Math.min(100, F.meter.you + 25); call('A word. ' + METER_WORD + ' builds.'); }
-  hurt(0);
-  F.round++; F.clock = 90; F.phase = 'live';
-  F.theirNext = performance.now() + 1500; setShot('shoulder');
-  blip('bell'); call('Round ' + F.round);
-  hud();
-}
+function shake(n){ if(F) F.shake = Math.max(F.shake, n); }
 
 /* ---------- the frame ---------- */
 let lastT = 0;
@@ -3069,13 +3131,13 @@ function loop(t){
   if(!F) return;
   const dt = Math.min(0.05, (t - lastT) / 1000 || 0); lastT = t;
 
-  if(F.phase === 'live'){
+  if(F.phase === 'live' && !F.down){
     F.clock -= dt * F.slow;
-    if(F.clock <= 0){ F.clock = 0; hud(); return endRound(); }
-    const now = performance.now();
-    if(F.swing && !F.swing.taken && now >= F.swing.at){ F.swing.taken = true; resolveTheirSwing(); }
-    else if(!F.swing && now >= F.theirNext) theirWindup();
-    if(Math.floor(F.clock) % 30 === 0 && Math.random() < .01) chant('L', F.them.period.split(' ')[0].toUpperCase() + '!');
+    if(F.clock <= 0){ F.clock = 0; hud(); if(!F.busy) endRound(); }
+    else if(!F.busy && now() >= F.theirNext){ F.theirNext = now() + 99999; theirWindup(); }
+  } else if(F.phase === 'rest'){
+    F.rest -= dt;
+    if(F.rest <= 0) nextRound();
   }
   hud();
   drawRing(dt);
@@ -3103,7 +3165,7 @@ function drawRing(dt){
 
   /* the opponent's lean on its tell, and both fighters' idle sway */
   const sway = Math.sin(now / 420) * .045;
-  S.them.group.position.x = (F && F.swing ? (F.swing.lean === 'left' ? -.46 : .46) : 0) + sway;
+  S.them.group.position.x = (F && F.swing ? (F.swing.side === 'left' ? -.34 : .34) : 0) + sway;
   S.you.group.position.x = -1.18 - sway;
   S.them.group.position.y = Math.abs(Math.sin(now / 300)) * .03;
 
@@ -3114,13 +3176,13 @@ function drawRing(dt){
     const yourArm = F && F.youArm === 'L' ? S.you.armL : S.you.armR;
     [S.you.armL, S.you.armR].forEach(a=>ease(a, GUARD.sh, GUARD.el, .2));
     if(throwing) ease(yourArm, EXTEND.sh, EXTEND.el, .55);
-    const theyThrow = F && F.swing && now > F.swing.at - 130;
+    const theyThrow = F && F.swing;
     [S.them.armL, S.them.armR].forEach(a=>ease(a, GUARD.sh, GUARD.el, .2));
-    if(theyThrow) ease(F.swing.hits === 'left' ? S.them.armR : S.them.armL, EXTEND.sh, EXTEND.el, .5);
+    if(theyThrow) ease(F.swing.side === 'left' ? S.them.armR : S.them.armL, EXTEND.sh, EXTEND.el, .5);
   }
 
   /* the backlight pulses when it is winding up */
-  if(S.back) S.back.intensity = 6.4 + (F && F.swing ? 3.4 * Math.max(0, 1 - (F.swing.at - now) / 900) : Math.sin(now/700) * .5);
+  if(S.back) S.back.intensity = F && F.swing ? 13 : 6.4 + Math.sin(now / 700) * .5;
   const step = dt * (F ? F.slow : 1);
   if(S.you.mixer) S.you.mixer.update(step);
   if(S.them.mixer) S.them.mixer.update(step);
@@ -3149,11 +3211,18 @@ function wireFight(){
   root.addEventListener('keydown', e=>e.stopPropagation());
 }
 function setGuard(dir){
-  if(!F || F.phase !== 'live') return;
-  F.guard = dir;
+  if(!F || F.phase !== 'live' || F.down) return;
+  if(dir === 'block'){ F.block = true; if(R3.ok) playClip(R3.S.you, CLIP.block, {speed:1.6}); }
+  else { F.dodge = dir; if(R3.ok) playClip(R3.S.you, dir === 'left' ? CLIP.dodgeL : CLIP.dodgeR, {speed:2.2}); }
   const b = document.querySelector('[data-d="' + dir + '"]');
   if(b){ b.classList.add('held'); setTimeout(()=>b.classList.remove('held'), 260); }
-  if(!F.swing) blip('whoosh');
+  /* The guard is not on a timer. Pressing early still counts — the dodge and
+     block flags are cleared at the start of its next wind-up, not here. Only
+     the pose returns to the idle. */
+  clearTimeout(F._guardT);
+  F._guardT = setTimeout(()=>{
+    if(F && !F.busy && R3.ok) playClip(R3.S.you, CLIP.idle, {loop:true, fade:.2});
+  }, dir === 'block' ? 800 : 650);
 }
 addEventListener('keydown', e=>{
   if(!F || F.over) return;
@@ -3175,12 +3244,19 @@ function fightSetupHTML(){
     .map(p=>`<option value="${p.id}">${esc(p.name)} — ${findPeriod(p.month,p.day).n}</option>`).join('');
   return `<div class="game">
     <h2>The fight</h2>
-    <p class="sub2">Three rounds, no questions. You throw the punches; it winds up with a lean before it
-    swings, so slip the other way. It talks the whole time about what its period is good at — slip it clean
-    and you get to say what it is bad at.</p>
+    <p class="sub2">Six rounds of thirty seconds. You throw the punches. Before it swings, an arrow shows
+    which way to move — <strong>dodge the way the arrow points</strong>, or block for less. Slip it clean and
+    it is sometimes wide open. Rounds are scored on the cards, four knockdowns is a knockout.</p>
     <div class="form-grid" style="grid-template-columns:1fr 1fr">
       <div><label for="fy">You</label><select id="fy"><option value="">Random period</option>${opts}</select></div>
       <div><label for="ft">Opponent</label><select id="ft"><option value="">Random period</option>${opts}</select></div>
+    </div>
+    <div class="form-grid" style="grid-template-columns:1fr; margin-top:12px">
+      <div><label for="fl">Level</label><select id="fl">
+        <option value="1">1 — it telegraphs early, and hits light</option>
+        <option value="6">2 — quicker, and it hurts</option>
+        <option value="11">3 — barely a warning, and it takes your head off</option>
+      </select></div>
     </div>
     <div class="actions"><button class="btn primary" id="f-bell">Ring the bell</button>
       <button class="btn ghost" id="f-back">Back</button></div>
@@ -3197,7 +3273,7 @@ $('game-box').addEventListener('click', e=>{
   if(t.id === 'f-back'){ return renderGame(); }
   if(t.id === 'f-bell'){
     const byId = id => { const p = PEOPLE.find(x=>x.id === id); return p ? profileOf(p) : randomPeriodProfile(); };
-    openFight(byId($('fy').value), byId($('ft').value));
+    openFight(byId($('fy').value), byId($('ft').value), +(($('fl')||{}).value) || 1);
   }
 });
 

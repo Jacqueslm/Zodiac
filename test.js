@@ -393,6 +393,38 @@ html.includes('function retargetClips') ? ok('clip tracks are retargeted onto th
 html.includes('function groundFeet') ? ok('feet are grounded off the foot bones, not the rest pose')
                                      : bad('feet are grounded off the foot bones, not the rest pose');
 
+/* The rules, taken from the real game rather than guessed. */
+const RULE = [
+  ['const ROUNDS = 6', 'six rounds'],
+  ['ROUND_SECS = 30', 'thirty seconds a round'],
+  ['REST_SECS = 14', 'fourteen seconds in the corner'],
+  ['HIT = {jab:9, combo:[7, 10], hook:12, upper:16}', 'the real damage numbers'],
+  ['1900 - 1000 * levelT()', 'the tell running 1900ms down to 900ms'],
+  ['10 + 16 * levelT()', 'its punch running 10 up to 26'],
+  ['F.dodge === side', 'dodging the side the arrow shows'],
+  ['Math.random() < .42', 'a counter opening just under half the time'],
+  ['F.downsFight[who] >= 4', 'four knockdowns is a knockout'],
+  ['F.downs[who] >= 3', 'three in a round is a stoppage'],
+  ['F.youHP = Math.min(100, F.youHP + 25)', 'recovering 25 in the corner'],
+  ['F.themHP = 100;', 'both back to 100 each round']
+];
+const ruleGaps = RULE.filter(([frag])=>!html.includes(frag));
+ruleGaps.length ? bad('the fight follows the real rules', ruleGaps.map(r=>'missing: ' + r[1]).join('\n      '))
+                : ok(`the fight follows all ${RULE.length} rules taken from the real game`);
+
+/* Ten-point must: more landed takes the round, a knockdown costs a point. */
+(html.includes('let sy = 10, st = 10;') && html.includes('sy -= F.downs.you; st -= F.downs.them;'))
+  ? ok('rounds are scored ten-point-must on the cards')
+  : bad('rounds are scored ten-point-must on the cards');
+html.includes("'★'.repeat(F.roundsWon.you)")
+  ? ok('the stars show rounds won, not a dodge currency')
+  : bad('the stars show rounds won, not a dodge currency');
+/* The guard must not be cleared on a timer, or pressing early stops counting. */
+/F\._guardT = setTimeout\([^]*?F\.dodge = null/.test(html)
+  ? bad('the guard is not cleared on a timer', 'a timer still clears F.dodge')
+  : ok('the guard is cleared by the next wind-up, not a timer');
+html.includes('function cue(side)') ? ok('the direction arrow is drawn') : bad('the direction arrow is drawn');
+
 /* Facing. Mixamo bodies face +Z, the primitive fallback faces -Z, so the flip
    has to depend on which one is in the ring. Getting this wrong put the
    fighters back to back, twice. */
