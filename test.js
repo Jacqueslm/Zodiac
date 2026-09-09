@@ -23,7 +23,7 @@ const NAMES = ['PERIODS','LORE','NUMBERS','TAROT','EL_REL','Q_REL','SIGNS','ELEM
                'isLeap','parseBirthday','parseBulkLine','renderCrest','renderReading','renderPath','renderPair',
                'parseCSV','parseContactsCSV','parseVCF','parseContacts','parseContactDate',
                'WELLBEING','SIGN_BODY','SIGN_SWATCH','PLANET_LORE','BIRTHSTONE','DESTINY',
-               'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT','DEPTH','renderDepth',
+               'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT','DEPTH','renderDepth','relSpread',
                'TAUNTS','STYLE','RING_ELEMENT','elementFactor',
                'PLACE_OF','PLACE_NAME','BODY_OF','periodSlug','fightURL','fightBrief'];
 const ctx = vm.createContext({console, URLSearchParams});
@@ -36,7 +36,7 @@ const {PERIODS, LORE, NUMBERS, TAROT, EL_REL, Q_REL, SIGNS, ELEMENTS, QUALITIES,
        parseBirthday, parseBulkLine, renderCrest, renderReading, renderPath, renderPair,
        parseCSV, parseContactsCSV, parseVCF, parseContacts, parseContactDate,
        WELLBEING, SIGN_BODY, SIGN_SWATCH, PLANET_LORE, BIRTHSTONE, DESTINY,
-       makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT, DEPTH, renderDepth,
+       makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT, DEPTH, renderDepth, relSpread,
        TAUNTS, STYLE, RING_ELEMENT, elementFactor,
        PLACE_OF, PLACE_NAME, BODY_OF, periodSlug, fightURL, fightBrief} = api;
 
@@ -571,6 +571,57 @@ html.includes('not medical advice, and not a diagnosis')
   ? ok('the health sections carry their disclaimer') : bad('the health sections carry their disclaimer');
 html.includes('not a schedule')
   ? ok('the stages say plainly they are not a prediction') : bad('the stages say plainly they are not a prediction');
+
+/* ---- the three books as one system ---- */
+
+/* Each deep reading must name the hinge all three books circle, and where
+   they pull against each other. Without the second one it is three lists. */
+const joinBad = [];
+Object.entries(DEPTH).forEach(([n,D])=>{
+  ['hinge','tension'].forEach(f=>{
+    if(!D[f]) return joinBad.push(`${n}: no ${f}`);
+    if(D[f].split(/[.!?]/).filter(x=>x.trim().length>12).length < 3)
+      joinBad.push(`${n}: ${f} is under three sentences`);
+  });
+  const h = D.hinge.toLowerCase();
+  const named = ['birthdays','destiny','relationship','pairing'].filter(w=>h.includes(w)).length;
+  if(named < 2) joinBad.push(`${n}: the hinge does not name the books it is joining`);
+});
+joinBad.length ? bad('every deep reading joins the three books', joinBad.slice(0,4).join('\n      '))
+               : ok('every deep reading names the hinge all three books circle, and where they disagree');
+
+/* The convergence block must quote all three, from their own tables — the
+   Relationships line is the pair engine run against every element, so it
+   cannot drift away from what the Pair layer would actually say. */
+[['P.per.n','the period'],['L.k','the Birthdays line'],['P.dest.from','the Destiny start'],
+ ['P.dest.toward','the Destiny direction'],['relSpread(P)','the Relationships spread']]
+  .forEach(([frag,what])=>{
+    html.includes('${' + frag + '}') || html.includes(frag)
+      ? ok(`the convergence quotes ${what} from its own table`)
+      : bad(`the convergence quotes ${what} from its own table`);
+  });
+
+const spreadBad = [];
+PERIODS.forEach(p=>{
+  const P = profileOf({name:'X', month:p.sm, day:p.sd, year:1990});
+  const line = renderDepth(P);
+  if(!DEPTH[p.n]) return;
+  ['Fire','Earth','Air','Water'].forEach(e=>{
+    const mode = EL_REL[relKey(P.elements[0], e)].mode;
+    /* cap() upper-cases whichever mode lands first, so match case-insensitively */
+    if(!line.includes(e)) spreadBad.push(`${p.n}: ${e} missing from the spread`);
+    if(!line.toLowerCase().includes(mode)) spreadBad.push(`${p.n}: no ${mode} pairing shown`);
+  });
+});
+spreadBad.length ? bad('the Relationships spread covers all four elements', spreadBad.slice(0,4).join('\n      '))
+                 : ok('the Relationships spread runs each period against all four elements, from the pair engine');
+
+/* The pair layer must read the deep material, not sit beside it. */
+(html.includes('function pairDepth') && html.includes('${pairDepth(A, B)}'))
+  ? ok('the pair reading pulls in the deep layer') : bad('the pair reading pulls in the deep layer');
+['DA.close','DB.close','DA.raised','DA.making'].every(f=>html.includes(f))
+  ? ok('the pair reads closeness and family off both people')
+  : bad('the pair reads closeness and family off both people');
 
 /* ---------------------------------------------------------- */
 group('The quiz');

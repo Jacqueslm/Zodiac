@@ -224,6 +224,14 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 .layer.two.stub p{margin-bottom:12px; color:var(--dim); font-size:15px}
 
 
+/* ---------- the three books converging ---------- */
+.books{margin:0 0 16px; border:1px solid var(--line); border-radius:var(--r); overflow:hidden}
+.books>div{padding:11px 15px; border-bottom:1px solid var(--line)}
+.books>div:last-child{border-bottom:0}
+.books small{display:block; font-size:10px; letter-spacing:.15em; text-transform:uppercase;
+  color:var(--gold); margin-bottom:3px}
+.books span{font-size:14.5px; line-height:1.6; color:var(--dim)}
+
 /* ---------- the deep layer ---------- */
 .layer.deep .layer-body{padding-bottom:22px}
 .dp{margin:0 0 14px; padding:13px 16px; background:rgba(255,255,255,.028);
@@ -1392,15 +1400,40 @@ function renderCrest(P){
 
 /* The deep layer renders only for periods that have been written, so the
    app stays honest about what is finished rather than padding the rest. */
+/* The third book's angle, taken from the pair engine rather than written
+   again — this is literally how this period resolves against every element. */
+function relSpread(P){
+  const mine = P.elements[0];
+  const by = {easy:[], complementary:[], charged:[]};
+  ['Fire','Earth','Air','Water'].forEach(e=>by[EL_REL[relKey(mine, e)].mode].push(e));
+  const say = k => by[k].length ? `${by[k].join(' and ')}` : null;
+  const parts = [];
+  if(say('easy'))          parts.push(`easy with ${say('easy')}`);
+  if(say('complementary')) parts.push(`complementary with ${say('complementary')}`);
+  if(say('charged'))       parts.push(`charged with ${say('charged')}`);
+  return cap(parts.join(', ')) + '.';
+}
+
 function renderDepth(P){
   const D = DEPTH[P.per.n];
   if(!D) return '';
+  const L = P.lore;
   const n = esc(firstName(P.person.name));
   const box = (t, b) => `<div class="dp"><div class="dt">${t}</div><div class="db">${b}</div></div>`;
   return `
   <div class="layer deep">
     <h3>The whole person <small>the two sides, health three ways, family, closeness, and the stages</small></h3>
     <div class="layer-body">
+      <h4>Where the three books meet</h4>
+      <div class="books">
+        <div><small>Birthdays &mdash; who this is</small><span>${esc(P.per.n)}, ${esc(P.per.t.replace(/^The /,'the '))}. ${L.k}</span></div>
+        <div><small>Destiny &mdash; where it is pointed</small><span>From ${P.dest.from}, toward ${P.dest.toward}.</span></div>
+        <div><small>Relationships &mdash; what it does to other people</small><span>${relSpread(P)}</span></div>
+      </div>
+      <p>${D.hinge}</p>
+      <h4>Where they pull against each other</h4>
+      <div class="pull">${D.tension}</div>
+
       <h4>Where to start</h4>
       ${box('One thing to do', D.action)}
       ${box('One thing to sit with', D.reflect)}
@@ -1584,6 +1617,8 @@ const lower = s => s.charAt(0).toLowerCase() + s.slice(1);
 const DEPTH = {
 
 "Aries I":{
+ hinge:"All three arrive at the same half second. Birthdays has you saying the true thing before you have aimed it; Destiny runs the path from saying it first toward saying it on purpose; and every pairing sounds the same note — people always know where they stand with you, and occasionally wish they had been asked before they found out. One gap between thought and mouth, described three ways.",
+ tension:"They do not agree about it. Birthdays counts the directness as the reason people trust you. Destiny treats it as the thing that costs you people. Both are accurate, and that is the actual difficulty — the instruction was never to become careful, only to own the half second.",
  action:"Pick the conversation you keep replaying and go finish it out loud, this week, with the person who was there.",
  reflect:"When you say the true thing fast, who is it for?",
  strong:"At your best you are the one who says the thing everybody in the room already knew and nobody would start. That is not bluntness, it is nerve, and it is rarer than you think. People bring you problems they have been circling for weeks because they know you will not spend the first twenty minutes being careful. You give them back a whole afternoon.",
@@ -1602,6 +1637,8 @@ const DEPTH = {
   later:"Later the nerve reads as steadiness. Younger people come to you for exactly the quality that used to get you in trouble, and you find you can give it without the heat behind it."}},
 
 "Taurus II":{
+ hinge:"All three land on one gesture: you explaining. Birthdays calls it patience, Destiny calls it the thing you reach for instead of asking, and in any pairing it surfaces as somebody feeling taught when they had wanted to be met. A gift, a habit and an effect, all the same act.",
+ tension:"They pull hard against each other here. Birthdays is right that your patience is rare and genuinely worth something. Destiny is right that it is also how you avoid ever needing anything. So 'explain less' is useless advice. What you would want if you were not being useful is the harder question, and the one worth sitting in.",
  action:"Ask one person what they want from you, before you decide what they need.",
  reflect:"Who in your life knows what you are like when you are not being useful?",
  strong:"At your best you are the person who will explain it a third time without a flicker of impatience, and that is a genuinely uncommon kind of generosity. You make people feel capable rather than slow. Whatever you have built — a skill, a home, a way of doing something — has depth in it, because you stayed long enough to reach the part most people leave before.",
@@ -1620,6 +1657,8 @@ const DEPTH = {
   later:"Later you are the fixed point in a lot of people's lives. Your value stops needing to be demonstrated, which is the rest you have been owed since you were about nine."}},
 
 "Gemini II":{
+ hinge:"Language is the hinge in all three. Birthdays gives you the word nobody else had; Destiny runs from naming it toward meaning it; and every pairing turns on whether the person across from you comes away feeling described or feeling understood, which are not the same experience. One talent seen from three sides.",
+ tension:"The contradiction is real and worth naming. Birthdays treats your phrasing as the gift. Destiny asks you to trade the good version for the plain one. That is a genuine loss, not a trick — the plain version is less impressive, and it is the one that arrives.",
  action:"Say the plain version first this week, and let it sit there without improving it.",
  reflect:"What would you have to feel if you stopped narrating it?",
  strong:"At your best you cut through a stalled argument in one line and everybody breathes out. You are fast without being cruel, which is a much rarer pairing than fast. Friends bring you tangled situations because half an hour near you leaves them holding something they can act on instead of something they have to keep hauling around.",
@@ -1638,6 +1677,8 @@ const DEPTH = {
   later:"Later you get short. The sentences come down to the size of the thing, and people find you clearer than you have ever been. What you say now tends to be the thing they keep."}},
 
 "Scorpio III":{
+ hinge:"All three reach the same hinge from different directions. Birthdays says charm. Destiny runs the path from admired toward known. And every pairing ends in the same place — people feel close to you early and then stop getting closer. One gap, described three ways: the distance between being liked and being known.",
+ tension:"They disagree about what to do with it. Birthdays counts the charm as the gift; Destiny counts it as the thing to release. Both hold. You are not being asked to be less warm — warmth is real and it is yours. You are being asked to stop using it as the exit.",
  action:"Let somebody see you tired or unsure this week without covering it in the same breath.",
  reflect:"Who has seen you on a day you were not worth watching?",
  strong:"At your best you are the reason a room relaxes. You notice who has not spoken and bring them in, you read what a person needs and hand it over before they have had to ask for it. That is a real skill and not everyone has it. The attention people remember from you was genuine, even when it was also deliberate — both of those can be true.",
@@ -1980,6 +2021,28 @@ const DOMAINS = [
     } ${c.samePeriod ? 'Sharing a period, they will recognise their own worst habit in the other and dislike it there first.' : `${c.A.per.n} and ${c.B.per.n} carry different instincts about what safety means; say those out loud once, properly, and most of the recurring argument disappears.`}`}
 ];
 
+/* The pair engine reading the deep layer rather than running beside it: how
+   far each of these two actually lets somebody in, and what the family each
+   of them came from does to the family they would make together. Only shown
+   when both have a deep reading written. */
+function pairDepth(A, B){
+  const DA = DEPTH[A.per.n], DB = DEPTH[B.per.n];
+  if(!DA || !DB) return '';
+  const a = esc(firstName(A.person.name)), b = esc(firstName(B.person.name));
+  const same = A.per.n === B.per.n;
+  return `
+    <h4>How close this actually gets</h4>
+    <div class="dp"><div class="dt">${a}</div><div class="db">${DA.close}</div></div>
+    ${same ? `<p class="note">Both were born into the same period, so that is the same wall twice.
+      Neither of them is positioned to notice it, which is the whole risk of this pairing.</p>`
+      : `<div class="dp"><div class="dt">${b}</div><div class="db">${DB.close}</div></div>`}
+    <h4>As family</h4>
+    <p>${a} arrives carrying this: ${lower(DA.raised)}${same ? '' : ` ${b} arrives carrying this: ${lower(DB.raised)}`}</p>
+    <p>What each of them would build: ${lower(DA.making)}${same ? '' : ` And: ${lower(DB.making)}`}</p>
+    <p class="note">Family is where the first of those two meets the second — what each learned
+    at home is what each will reach for under strain, before either has decided to.</p>`;
+}
+
 function renderPair(A, B){
   const c = pairContext(A, B);
   const side = P => `
@@ -2015,6 +2078,7 @@ function renderPair(A, B){
       <h4>Across the four rooms</h4>
       <div class="domains">
         ${DOMAINS.map(d=>`<div class="domain"><div class="dt">${d.t}</div><div class="db">${d.f(c)}</div></div>`).join('')}
+      ${pairDepth(A, B)}
       </div>
 
       <h4>The two-card spread</h4>
