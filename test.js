@@ -372,9 +372,18 @@ missingClip.length ? bad('every boxing clip the fight needs is referenced', miss
 fs.existsSync(path.join(ROOT, 'fighter.glb'))
   ? bad('the untextured dummy model is no longer shipped', 'fighter.glb is still there')
   : ok('the untextured dummy model is no longer shipped');
-html.includes("FIGHTER_FILES = {you:'fighter1.glb', them:'fighter4.glb'}")
+(html.includes("you:'fighter1.glb'") && html.includes("them:'fighter4.glb'"))
   ? ok('the two fighters are different characters')
   : bad('the two fighters are different characters');
+html.includes("ring:'ring.glb'") ? ok('the ring model is loaded alongside them')
+                                 : bad('the ring model is loaded alongside them');
+/* The real audio, including the referee's count. */
+const AUD = ['bell','crowd','cheer','winner','ref-1','ref-10','round-1','round-6','boss-down','getup'];
+const audGaps = AUD.filter(n=>!fs.existsSync(path.join(ROOT, 'audio', n + '.mp3')));
+audGaps.length ? bad('the app\'s audio is vendored', audGaps.join(', '))
+               : ok(`the app's audio is vendored (${fs.readdirSync(path.join(ROOT,'audio')).length} files)`);
+html.includes("snd('ref-' + n)") ? ok('the referee counts out loud over a knockdown')
+                                 : bad('the referee counts out loud over a knockdown');
 html.includes('.clone()') && html.includes('m.skinning = !!o.isSkinnedMesh')
   ? ok("each character keeps its own texture; only the lighting response changes")
   : bad("each character keeps its own texture; only the lighting response changes");
