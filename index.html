@@ -218,6 +218,21 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 .tally{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px}
 .tally div{background:rgba(0,0,0,.24); border:1px solid var(--line2); border-radius:11px; padding:11px 15px; font-size:13px}
 
+
+.journey{display:grid; grid-template-columns:1fr auto 1fr; gap:14px; align-items:stretch; margin:6px 0 4px}
+@media(max-width:640px){.journey{grid-template-columns:1fr; gap:8px}}
+.journey > div{background:rgba(0,0,0,.26); border:1px solid var(--line2); border-radius:12px; padding:15px}
+.journey .jk{font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--dimmer); margin-bottom:7px}
+.journey .jv{font-size:15px; line-height:1.55; color:#ded9ee}
+.journey .arrow{display:flex; align-items:center; justify-content:center; background:none; border:none; padding:0; color:var(--teal); font-size:22px}
+@media(max-width:640px){.journey .arrow{transform:rotate(90deg); padding:2px 0}}
+.rr{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:6px}
+@media(max-width:640px){.rr{grid-template-columns:1fr}}
+.rr > div{border-radius:12px; padding:14px; border:1px solid var(--line2)}
+.rr .let{background:rgba(240,145,159,.09)} .rr .get{background:rgba(95,217,196,.09)}
+.rr .rk{font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; margin-bottom:6px}
+.rr .let .rk{color:var(--rose)} .rr .get .rk{color:var(--teal)}
+.rr .rv{font-size:14.5px; line-height:1.55; color:#ded9ee}
 .corr{display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:10px; margin-top:6px}
 .corr > div{background:rgba(0,0,0,.24); border:1px solid var(--line2); border-radius:11px; padding:12px 13px}
 .corr .ck{font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--dimmer); margin-bottom:5px}
@@ -887,6 +902,63 @@ const LORE = {
 };
 
 /* ============================================================
+   DESTINY — the path layer. Original writing, one entry per period.
+   A path runs FROM a starting position you did not choose TOWARD a
+   destination you can. Deliberately distinct from the LORE entries
+   above, which describe character rather than direction.
+   ============================================================ */
+const DESTINY = {
+"Pisces–Aries Cusp":{from:"an instinct for beginnings and an easy relationship with endings", toward:"finishing something before the next beginning arrives", lesson:"that starting over is not the same as making progress", goal:"one thing carried the whole way through", pitfall:"treating every difficulty as a signal to begin again elsewhere", release:"the belief that a clean slate is always available", reward:"the particular confidence that only comes from having finished", step:"Keep a list of what you have actually completed. Read it whenever you want to restart."},
+"Aries I":{from:"an unguarded honesty most people lose in their twenties", toward:"honesty that can be received as well as delivered", lesson:"that being right about the content does not excuse the timing", goal:"saying the true thing in a way that actually changes something", pitfall:"mistaking bluntness for courage", release:"the need to be the first to say it", reward:"becoming the person others come to for a straight answer", step:"Before you speak, decide what you want to happen afterwards."},
+"Aries II":{from:"natural presence and an audience that arrives unbidden", toward:"work solid enough to justify the attention", lesson:"that being seen and being good are two separate achievements", goal:"something made that would stand without your name on it", pitfall:"letting the reception stand in for the craft", release:"the habit of checking how it landed", reward:"attention that no longer feels precarious", step:"Finish one piece of work completely before showing it to anyone."},
+"Aries III":{from:"nerve, and an appetite for country nobody has mapped", toward:"building something that outlasts your arrival", lesson:"that being first matters far less than what gets left behind", goal:"a place others can settle because you went ahead", pitfall:"moving on the moment the ground is broken", release:"the restlessness that reads staying as defeat", reward:"seeing something you started still standing years later", step:"Stay one season longer than you want to."},
+"Aries–Taurus Cusp":{from:"real strength and the will to use it", toward:"force that opens doors rather than breaking them", lesson:"that pressure and persuasion are not interchangeable", goal:"getting your way without anyone feeling flattened", pitfall:"escalating where patience would have worked", release:"the assumption that resistance exists to be overcome", reward:"power that people hand you willingly", step:"Try asking twice before pushing once."},
+"Taurus I":{from:"the ability to turn intention into something with weight", toward:"choosing well what deserves to be built at all", lesson:"that the capacity to build is not itself a reason to build", goal:"a small number of things made properly", pitfall:"years spent finishing something you stopped wanting", release:"the sunk cost you keep paying interest on", reward:"work that is still worth having when it is done", step:"Every season, ask whether you would start this today."},
+"Taurus II":{from:"patience and a gift for making hard things plain", toward:"teaching that leaves people abler rather than dependent", lesson:"that the best explanation is the one that becomes unnecessary", goal:"someone who no longer needs you", pitfall:"explaining where you were not asked", release:"the quiet satisfaction of being the one who knows", reward:"watching what you taught get used without you", step:"Answer with a question once a day."},
+"Taurus III":{from:"ability that arrived without ever being worked for", toward:"the edge of that ability, and then past it", lesson:"that talent never pressed becomes a ceiling", goal:"competence you actually earned", pitfall:"staying permanently where you are already good", release:"the comfort of never being visibly bad at anything", reward:"a depth that ease alone cannot produce", step:"Take up something you will be poor at for a year."},
+"Taurus–Gemini Cusp":{from:"an unusual quantity of energy spread across a wide range", toward:"a channel narrow enough to be changed by it", lesson:"that energy without direction is only heat", goal:"one river rather than six streams", pitfall:"the appealing new thing that arrives mid-project", release:"the fear that choosing forecloses everything else", reward:"the depth only sustained attention produces", step:"Name your one river out loud. Say it again in three months."},
+"Gemini I":{from:"independence and a nose for constraint", toward:"commitments you pick for yourself", lesson:"that a chosen bond enlarges rather than confines", goal:"one thing you stayed with on purpose", pitfall:"leaving early to prove that you could", release:"the reflex that reads all structure as threat", reward:"the freedom that only exists on the far side of commitment", step:"Commit to something for a fixed term, then finish the term."},
+"Gemini II":{from:"a knack for naming what had no name yet", toward:"language that carries meaning, not only novelty", lesson:"that a better phrase is not always a clearer one", goal:"something said so well it stops needing your explanation", pitfall:"cleverness bought at the cost of comprehension", release:"the pleasure of the phrase for its own sake", reward:"people using your words to think with", step:"Write it once ornately and once plainly. Keep the plain one."},
+"Gemini III":{from:"genuine curiosity and no fear of not knowing", toward:"an answer you are willing to stand on", lesson:"that perpetual searching makes an excellent hiding place", goal:"a settled position you would defend", pitfall:"reopening what you had already answered", release:"the identity built on still looking", reward:"ground under your feet", step:"Pick one question, answer it, and live on that answer for a year."},
+"Gemini–Cancer Cusp":{from:"a vivid inner world you can also articulate", toward:"bringing that interior into a form other people can meet", lesson:"that an unshared inner life eventually becomes an inaccessible one", goal:"something made out of what you actually feel", pitfall:"preferring the version in your head", release:"the safety of the unshown", reward:"being known rather than imagined", step:"Tell one person the real thing this week."},
+"Cancer I":{from:"an unusual capacity to feel what other people feel", toward:"feeling all of it without being dissolved by it", lesson:"that absorbing someone's pain does not reduce it", goal:"compassion that leaves you intact", pitfall:"mistaking their weather for your own", release:"the sense that a boundary is a kind of coldness", reward:"the ability to help for years rather than months", step:"Ask of every feeling: is this mine?"},
+"Cancer II":{from:"deep feeling that refuses the standard shape", toward:"strangeness that is true rather than merely contrary", lesson:"that refusing the script is not the same as having one", goal:"a way of your own you would keep even if it became normal", pitfall:"defining yourself by what you are against", release:"the need to be unlike", reward:"originality that requires no opponent", step:"Do something conventional, and mean it."},
+"Cancer III":{from:"warmth that moves people before they have decided", toward:"influence that has genuinely been invited", lesson:"that persuading someone is not the same as convincing them", goal:"people choosing freely, and choosing you anyway", pitfall:"quietly managing the people you love", release:"the need to control how it turns out", reward:"trust that does not have to be maintained", step:"Make the case once, then stop."},
+"Cancer–Leo Cusp":{from:"a genuine public self and an equally genuine private one", toward:"letting both exist without treating either as a betrayal", lesson:"that the swing is not instability, but it is exhausting unannounced", goal:"one life rather than two alternating ones", pitfall:"disappearing without warning and calling it needing space", release:"the belief that you have to be one or the other", reward:"range that people can actually rely on", step:"Say which mode you are in. One sentence."},
+"Leo I":{from:"a natural claim on the room", toward:"authority that stays accountable to the people under it", lesson:"that being in charge is not evidence of being right", goal:"power that others would grant you again", pitfall:"surrounding yourself with agreement", release:"the assumption that your judgment is the final one", reward:"loyalty that is not obedience", step:"Ask the quietest person, then wait for the whole answer."},
+"Leo II":{from:"strength that has already learned restraint", toward:"the one thing worth the whole of it", lesson:"that permanent balance is a way of never committing", goal:"something you gave everything to", pitfall:"measured effort, forever", release:"the safety of always holding some back", reward:"finding out what you are actually capable of", step:"Find the thing that deserves all of it. Then give it all."},
+"Leo III":{from:"vision and the nerve to be held responsible for it", toward:"leading without becoming the single point of failure", lesson:"that carrying it alone is a choice, not a duty", goal:"something that runs while you are absent", pitfall:"indispensability mistaken for strength", release:"the belief that nobody else will do it properly", reward:"work that outlives your attention", step:"Hand over something only you can do."},
+"Leo–Virgo Cusp":{from:"an eye for what is really going on, and no fear of saying it", toward:"truth told in a way that helps", lesson:"that exposure without purpose is only damage", goal:"honesty people can survive hearing", pitfall:"revealing something because you can", release:"the thrill of the uncomfortable truth", reward:"being trusted with what people hide", step:"Before you say it, ask what it is for."},
+"Virgo I":{from:"the ability to see a mess and end it", toward:"systems that serve people and get dismantled when they stop", lesson:"that the structure is never the point", goal:"order that makes something else possible", pitfall:"maintaining a system well past its usefulness", release:"the tidiness that has quietly become the goal", reward:"things that work without being tended", step:"Retire one process you built."},
+"Virgo II":{from:"depth held deliberately in reserve", toward:"keeping that depth while letting the right people in", lesson:"that privacy and distance are not the same thing", goal:"a few people who actually know you", pitfall:"mistaking unreachability for integrity", release:"the safety of being unread", reward:"intimacy that costs you nothing you needed", step:"Show one person one unfinished thing."},
+"Virgo III":{from:"precision and a refusal of vagueness", toward:"accuracy that keeps the human meaning intact", lesson:"that a literal reading can miss the point entirely", goal:"being exact and understood at the same time", pitfall:"answering the words instead of the person", release:"the certainty that you heard what was said", reward:"precision people find kind rather than sharp", step:"Ask what they meant. Then answer that."},
+"Virgo–Libra Cusp":{from:"discernment fine enough to tell good from nearly-good", toward:"releasing things while you can still see the flaws", lesson:"that unreleased work helps nobody, however good it is", goal:"a body of finished work", pitfall:"the last ten per cent, forever", release:"the standard used as a reason not to ship", reward:"the strange freedom of things being out of your hands", step:"Call it done today. Publish it tomorrow."},
+"Libra I":{from:"a high line held without compromise", toward:"keeping the standard and stopping the attack on yourself", lesson:"that the critic aimed inward improves nothing", goal:"excellence that does not cost you", pitfall:"achievement followed immediately by dismissal of it", release:"the belief that self-criticism is what makes you good", reward:"work you can simply be pleased with", step:"Name three things you did well. Out loud, weekly."},
+"Libra II":{from:"real care for the group, and the ability to read it", toward:"serving the group without vanishing into it", lesson:"that consensus is not the same as agreement", goal:"a position of your own inside a group you belong to", pitfall:"discovering you no longer know what you think", release:"the fear of being the odd voice", reward:"belonging that includes you as you actually are", step:"Say one unpopular thing you genuinely believe."},
+"Libra III":{from:"an instinct for the moment and how to make it land", toward:"being reachable once the performance stops", lesson:"that presentation is a medium, not a hiding place", goal:"one relationship with no audience in it", pitfall:"the performance outlasting the honesty underneath", release:"the need for the room to be watching", reward:"being known off stage", step:"Have one conversation with no angle."},
+"Libra–Scorpio Cusp":{from:"a judgment that cuts straight to the flaw", toward:"criticism in service of the work rather than against its maker", lesson:"that noticing the fault is the easiest part of the job", goal:"critique people ask you for twice", pitfall:"sharpness that costs you the person", release:"the pleasure of being right about what is wrong", reward:"a judgment people trust", step:"Make something of your own and hand it to someone else to review."},
+"Scorpio I":{from:"total commitment and unnerving focus", toward:"an intensity that lasts long enough to finish something", lesson:"that burning hot and burning out are the same motion", goal:"something completed rather than merely consumed", pitfall:"the all-or-nothing that reliably ends as nothing", release:"the belief that moderation is a kind of dishonesty", reward:"force that is still there next year", step:"Do one thing deliberately casually."},
+"Scorpio II":{from:"perception that reaches what other people miss", toward:"going as deep as you go and reliably coming back up", lesson:"that depth with no return becomes brooding", goal:"insight brought up to where it can be used", pitfall:"staying under", release:"the suspicion that lightness is shallowness", reward:"depth that other people benefit from", step:"Decide in advance what hour you will surface by, and surface then."},
+"Scorpio III":{from:"magnetism you understand and can operate at will", toward:"being known by a few rather than admired by many", lesson:"that charm is excellent armour and poor company", goal:"someone who has seen you unpolished", pitfall:"the pleasant distance you keep everyone at", release:"control over how you are perceived", reward:"closeness that requires no performance", step:"Be unimpressive on purpose with someone safe."},
+"Scorpio–Sagittarius Cusp":{from:"the nerve to break an arrangement that deserves breaking", toward:"building the thing that replaces it", lesson:"that demolition is the easy half", goal:"something standing where you tore something down", pitfall:"overturning by reflex", release:"the identity of the one who refuses", reward:"change that actually holds", step:"Name the replacement before you swing."},
+"Sagittarius I":{from:"self-reliance and honesty that asks nobody's permission", toward:"staying free while letting yourself be carried sometimes", lesson:"that refusing help is not the same as not needing it", goal:"a few people you actually lean on", pitfall:"paying enormously for room you could have shared", release:"the pride in never owing anyone anything", reward:"freedom that is not loneliness", step:"Accept one offer of help without renegotiating it."},
+"Sagittarius II":{from:"the will to make version one of something", toward:"carrying at least a few of them all the way", lesson:"that origination without completion leaves nothing behind", goal:"one finished thing you started from nothing", pitfall:"a graveyard of exciting beginnings", release:"the belief that the middle is somebody else's job", reward:"a body of work rather than a list of ideas", step:"Finish the boring twenty per cent."},
+"Sagittarius III":{from:"scope, endurance and a genuinely large frame", toward:"building big without trampling the small details", lesson:"that the vision is made of individual people", goal:"something large that nobody was crushed by", pitfall:"the collateral you never noticed", release:"impatience with small concerns", reward:"scale that people are glad of", step:"Do something small and specific for one person."},
+"Sagittarius–Capricorn Cusp":{from:"seeing where it goes before the evidence arrives", toward:"making that sight usable by people who cannot see it yet", lesson:"that being right early is worthless untranslated", goal:"a vision somebody else could act on", pitfall:"the bitterness of being ahead", release:"the need to be acknowledged as first", reward:"watching the future you described get built", step:"Explain it in today's terms, to today's people."},
+"Capricorn I":{from:"earned authority and a long sense of duty", toward:"carrying responsibility without holding every part of it", lesson:"that control offered as care is still control", goal:"something well run that is not run by you", pitfall:"help that quietly removes other people's agency", release:"the certainty that your way is the safe one", reward:"rest, eventually", step:"Hand over one responsibility permanently, not as a trial run."},
+"Capricorn II":{from:"persistence that needs no enthusiasm to continue", toward:"spending that endurance on something that deserves it", lesson:"that determination aimed wrongly is merely expensive", goal:"a long effort you would make again", pitfall:"years given to something you never re-examined", release:"the pride in never quitting anything", reward:"the compounding only long effort produces", step:"Every quarter, ask: is this still worth it?"},
+"Capricorn III":{from:"command and a high tolerance for pressure", toward:"occupying your natural altitude while leaving room for others", lesson:"that dominance shrinks the very people who could have helped", goal:"strong people who chose to stay", pitfall:"a room of people who have stopped contributing", release:"the need to be the largest presence in it", reward:"help you did not have to ask for", step:"Promote someone into work you wanted to keep for yourself."},
+"Capricorn–Aquarius Cusp":{from:"structural discipline serving a genuinely unusual interior", toward:"getting what is strange in you actually built", lesson:"that a private vision, kept private, never becomes anything", goal:"the odd thing, made and seen", pitfall:"perfect work nobody knows exists", release:"the privacy that has become avoidance", reward:"the strange thing standing in the world", step:"Put a date on showing it, before you think it is ready."},
+"Aquarius I":{from:"a mind that runs at an angle to everyone else's", toward:"making it legible enough to be useful", lesson:"that an idea nobody can follow helps nobody", goal:"your thinking, in someone else's hands", pitfall:"contempt for the people still catching up", release:"the satisfaction of being ahead", reward:"influence rather than isolation", step:"Explain it to someone who is not impressed by you."},
+"Aquarius II":{from:"lightness and an openness life has not hardened", toward:"letting a few things matter enough to cost you", lesson:"that nothing sticking also means nothing holding", goal:"a commitment heavy enough to change you", pitfall:"a long life that stayed weightless", release:"the ease that keeps everything at arm's length", reward:"depth without losing the lightness", step:"Name one thing you would be genuinely sorry to lose, and say so out loud."},
+"Aquarius III":{from:"a wide and genuine tolerance", toward:"accepting people fully and still holding a line", lesson:"that accepting everything means protecting nothing", goal:"a boundary that coexists with your generosity", pitfall:"resentment arriving where a no should have been", release:"the fear that a limit makes you unkind", reward:"acceptance that costs you nothing", step:"Decide what you will not accept before anyone asks you to accept it."},
+"Aquarius–Pisces Cusp":{from:"a perceptiveness fine enough to be painful", toward:"protecting it so that it can keep being used", lesson:"that sensitivity is equipment, not weakness", goal:"a life built to your actual tolerances", pitfall:"enduring more input than you can process", release:"the shame about needing less of everything", reward:"perception that lasts a lifetime", step:"Build one hour a day that nothing gets into."},
+"Pisces I":{from:"faith and a pull toward what lies past the material", toward:"keeping that and still showing up for the ordinary week", lesson:"that the practical life is not the enemy of the inner one", goal:"meaning that survives contact with admin", pitfall:"the drift that leaves the actual life untended", release:"the sense that ordinary things are beneath it", reward:"an inner life with a foundation under it", step:"Do the boring administrative thing today."},
+"Pisces II":{from:"self-sufficiency and a richly furnished interior", toward:"solitude that stays genuinely chosen", lesson:"that solitude chosen often enough stops being a choice", goal:"a few people you actively keep", pitfall:"the door that quietly stopped opening", release:"the belief that reaching out is a weakness", reward:"aloneness that remains a pleasure", step:"Initiate contact this week. You first."},
+"Pisces III":{from:"grace, imagination and an instinct for beauty in motion", toward:"bringing one vision all the way down to the ground", lesson:"that a dream with no date stays a dream", goal:"something imagined that now exists", pitfall:"a lifetime of airborne intentions", release:"the romance of the unrealised", reward:"the dream, standing, where people can use it", step:"Tell someone the date, and let them hold you to it."}
+};
+
+/* ============================================================
    WELLBEING — original writing, one entry per period.
    General observations about temperament, not medical advice.
    ============================================================ */
@@ -1000,6 +1072,7 @@ function profileOf(person){
     card: tarotIndex(person.day),
     lore: LORE[per.n],
     well: WELLBEING[per.n],
+    dest: DESTINY[per.n],
     body: signsOf(per).map(x=>SIGN_BODY[x]),
     planetLore: PLANET_LORE[num],
     birthstone: BIRTHSTONE[person.month - 1],
@@ -1291,21 +1364,42 @@ function ordinal(d){
    ============================================================ */
 function renderPath(P){
   const n = esc(firstName(P.person.name));
-  const L = P.lore;
-  const goal = `${cap(P.numInfo.key)} is the register this path is measured in — ${P.planet} keeps returning ${n} to it — and ${P.tarot.n} is the recurring instruction: ${lower(P.tarot.line)}`;
+  const D = P.dest;
   return `
   <div class="layer three">
-    <h3>Layer III — The Path <small>what the period implies about direction, not personality</small></h3>
+    <h3>Layer III — The Path <small>a birthday read as a direction rather than a description</small></h3>
     <div class="layer-body">
-      <p class="lead">${L.path}</p>
-      <p>Read the period as a starting position rather than a verdict. From where ${n} begins, the work is <strong>${L.pur}</strong>.</p>
-      <div class="pull">${goal}</div>
-      <div class="gsl">
-        <div><div class="t">Starting capital</div><div class="b">${L.g}</div></div>
-        <div><div class="t">The lesson</div><div class="b">${L.s}</div></div>
-        <div><div class="t">First move</div><div class="b">${L.p}</div></div>
+      <p class="lead">${LORE[P.per.n].path}</p>
+      <p>Where the period above says who ${n} is, the path says which way ${n} is pointed. It begins at a starting position nobody chooses and runs toward a destination that can be chosen — the distance between the two is the work of a life.</p>
+
+      <div class="journey">
+        <div><div class="jk">Starts from</div><div class="jv">${cap(D.from)}</div></div>
+        <div class="arrow">→</div>
+        <div><div class="jk">Moves toward</div><div class="jv">${cap(D.toward)}</div></div>
       </div>
-      <p class="note" style="margin-top:16px">Path names on this screen are written for this app — they are a reading of the period data above, not a quotation of any published list.</p>
+
+      <h4>The core lesson</h4>
+      <p>The lesson of this path is <strong>${D.lesson}</strong>. It arrives repeatedly rather than once, and usually at the point where the starting gift has stopped being enough on its own.</p>
+
+      <h4>The goal</h4>
+      <div class="pull">${cap(D.goal)}.</div>
+
+      <h4>The pitfall</h4>
+      <p>What derails this path is ${D.pitfall}. It rarely looks like failure at the time — it looks like the strength above, used past the point where it was still helping.</p>
+
+      <h4>Release, and reward</h4>
+      <div class="rr">
+        <div class="let"><div class="rk">Let go of</div><div class="rv">${cap(D.release)}</div></div>
+        <div class="get"><div class="rk">What arrives</div><div class="rv">${cap(D.reward)}</div></div>
+      </div>
+
+      <h4>Where to begin</h4>
+      <p>${D.step}</p>
+
+      <h4>The timing of it</h4>
+      <p>${cap(P.numInfo.key)} is the register this path is measured in, with ${P.planet} setting the pace, and ${P.tarot.n} is the instruction that keeps returning: ${lower(P.tarot.line)}</p>
+
+      <p class="note" style="margin-top:18px">Path names and readings on this screen are written for this app — a reading of the period data above, not a quotation of any published list.</p>
     </div>
   </div>`;
 }

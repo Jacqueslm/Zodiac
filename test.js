@@ -22,7 +22,7 @@ const NAMES = ['PERIODS','LORE','NUMBERS','TAROT','EL_REL','Q_REL','SIGNS','ELEM
                'DIM','MONTHS','profileOf','reduceNum','digitSum','tarotFor','tarotIndex','relKey',
                'isLeap','parseBirthday','parseBulkLine','renderCrest','renderReading','renderPath','renderPair',
                'parseCSV','parseContactsCSV','parseVCF','parseContacts','parseContactDate',
-               'WELLBEING','SIGN_BODY','SIGN_SWATCH','PLANET_LORE','BIRTHSTONE'];
+               'WELLBEING','SIGN_BODY','SIGN_SWATCH','PLANET_LORE','BIRTHSTONE','DESTINY'];
 const ctx = vm.createContext({console});
 vm.runInContext(engine + `\n;globalThis.__api = {${NAMES.join(',')}};`, ctx, {filename:'index.html:engine'});
 const api = ctx.__api;
@@ -32,7 +32,7 @@ const {PERIODS, LORE, NUMBERS, TAROT, EL_REL, Q_REL, SIGNS, ELEMENTS, QUALITIES,
        profileOf, reduceNum, digitSum, tarotFor, tarotIndex, relKey, isLeap,
        parseBirthday, parseBulkLine, renderCrest, renderReading, renderPath, renderPair,
        parseCSV, parseContactsCSV, parseVCF, parseContacts, parseContactDate,
-       WELLBEING, SIGN_BODY, SIGN_SWATCH, PLANET_LORE, BIRTHSTONE} = api;
+       WELLBEING, SIGN_BODY, SIGN_SWATCH, PLANET_LORE, BIRTHSTONE, DESTINY} = api;
 
 let failures = 0, checks = 0;
 function ok(label){ checks++; console.log('  ✓ ' + label); }
@@ -199,6 +199,59 @@ lineFails.length ? bad('bulk lines split name from date', lineFails.join('\n    
 is(parseBulkLine('   '), null, 'blank lines are ignored');
 is(parseBulkLine('# a comment'), null, 'comment lines are ignored');
 ok('unreadable lines report an error instead of throwing: ' + JSON.stringify(parseBulkLine('Just A Name').error));
+
+/* ---------------------------------------------------------- */
+group('The path layer (Destiny)');
+
+const destGaps = [];
+const DEST_FIELDS = ['from','toward','lesson','goal','pitfall','release','reward','step'];
+PERIODS.forEach(p=>{
+  const D = DESTINY[p.n];
+  if(!D) return destGaps.push(`no path entry for ${p.n}`);
+  DEST_FIELDS.forEach(f=>{ if(!D[f] || D[f].length < 12) destGaps.push(`${p.n}.${f} missing or too short`); });
+});
+Object.keys(DESTINY).forEach(k=>{ if(!PERIODS.some(p=>p.n === k)) destGaps.push(`orphan path key "${k}"`); });
+destGaps.length ? bad(`all 48 periods have all ${DEST_FIELDS.length} path fields`, destGaps.join('\n      '))
+                : ok(`all 48 periods have all ${DEST_FIELDS.length} path fields`);
+
+DEST_FIELDS.forEach(f=>{
+  const distinct = new Set(PERIODS.map(p=>DESTINY[p.n][f])).size;
+  distinct === 48 ? ok(`all 48 "${f}" entries are distinct`)
+                  : bad(`all 48 "${f}" entries are distinct`, `${distinct} distinct of 48`);
+});
+
+/* The path layer must not simply restate the period layer — that was the
+   original weakness: it reused LORE's gift, cost and practice verbatim. */
+const echoes = [];
+PERIODS.forEach(p=>{
+  const D = DESTINY[p.n], L = LORE[p.n];
+  DEST_FIELDS.forEach(f=>{
+    ['g','s','p','k','pur'].forEach(lf=>{
+      if(D[f] && L[lf] && D[f].trim() === L[lf].trim()) echoes.push(`${p.n}: path.${f} repeats lore.${lf}`);
+    });
+  });
+});
+echoes.length ? bad('no path field is copied from the period layer', echoes.join('\n      '))
+              : ok('no path field is copied from the period layer');
+
+/* Each period's path must render, and must actually show the journey. */
+const pathFails = [];
+PERIODS.forEach(p=>{
+  const P = profileOf({name:'Robin Vale', month:p.sm, day:p.sd, year:1990});
+  let out;
+  try{ out = renderPath(P); }catch(e){ return pathFails.push(`${p.n}: ${e.message}`); }
+  if(/undefined|NaN|\[object Object\]/.test(out)) pathFails.push(`${p.n}: placeholder leaked`);
+  ['Starts from','Moves toward','The core lesson','The goal','The pitfall','Let go of','What arrives','Where to begin']
+    .forEach(sec=>{ if(!out.includes(sec)) pathFails.push(`${p.n}: missing "${sec}"`); });
+});
+pathFails.length ? bad('every period renders a full path with all its sections', pathFails.slice(0,5).join('\n      '))
+                 : ok('every period renders a full path with all its sections');
+
+const samplePath = renderPath(profileOf({name:'Ada', month:11, day:29, year:1988}));
+const sampleRead = renderReading(profileOf({name:'Ada', month:11, day:29, year:1988}));
+samplePath.length > sampleRead.length * 0.45
+  ? ok('the path layer carries real weight next to the period layer')
+  : bad('the path layer carries real weight next to the period layer', `${samplePath.length} vs ${sampleRead.length} chars`);
 
 /* ---------------------------------------------------------- */
 group('Correspondences and wellbeing');
