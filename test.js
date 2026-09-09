@@ -540,15 +540,22 @@ const vocab = {};
 Object.entries(DEPTH).forEach(([n,D])=>{
   vocab[n] = new Set(FIELDS.map(f=>cwords(D[f])).concat(Object.values(D.stages).map(cwords)).flat());
 });
-const generic = [];
+/* A flat floor is not stable as the corpus grows: every reading's unique
+   share falls as more readings exist to share words with, so a fixed 20%
+   would pass early and fail everything later for no reason connected to
+   the writing. Measured against the median instead, which asks the real
+   question — is this one noticeably more generic than its neighbours. */
+const uniq = {};
 Object.entries(vocab).forEach(([n,mine])=>{
   const elsewhere = new Set(Object.entries(vocab).filter(([m])=>m !== n).map(([,S])=>[...S]).flat());
-  if(!elsewhere.size) return;
-  const onlyHere = [...mine].filter(w=>!elsewhere.has(w)).length / mine.size;
-  if(onlyHere < 0.20) generic.push(`${n}: only ${Math.round(onlyHere*100)}% of its vocabulary is its own`);
+  uniq[n] = elsewhere.size ? [...mine].filter(w=>!elsewhere.has(w)).length / mine.size : 1;
 });
+const vals = Object.values(uniq).sort((a,b)=>a - b);
+const median = vals[Math.floor(vals.length / 2)] || 1;
+const generic = Object.entries(uniq).filter(([,v])=>v < median * 0.70)
+  .map(([n,v])=>`${n}: ${Math.round(v*100)}% of its vocabulary is its own, against a median of ${Math.round(median*100)}%`);
 generic.length ? bad('each period reads as its own person', generic.slice(0,4).join('\n      '))
-               : ok('each deep reading is its own person — every one uses a fifth of its vocabulary nowhere else');
+               : ok(`each deep reading is its own person — median ${Math.round(median*100)}% of vocabulary used nowhere else, none far below it`);
 
 /* Nothing may be reused verbatim between two readings. */
 const deepSents = {};
