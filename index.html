@@ -178,6 +178,46 @@ details.about summary::-webkit-details-marker{display:none}
 details.about summary:before{content:"▸ "; color:var(--gold)}
 details.about[open] summary:before{content:"▾ "}
 details.about .note{margin-top:12px}
+
+/* ---------- toolbar / bulk / matrix ---------- */
+.toolbar{display:flex; gap:9px; flex-wrap:wrap; align-items:center; margin:16px 0}
+.toolbar .spacer{flex:1}
+.bulk{margin-top:14px}
+.bulk textarea{
+  width:100%; min-height:132px; resize:vertical; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:13.5px; line-height:1.7; color:var(--ink); background:rgba(0,0,0,.32);
+  border:1px solid var(--line); border-radius:10px; padding:12px; outline:none;
+}
+.bulk textarea:focus{border-color:var(--gold); box-shadow:0 0 0 3px rgba(232,192,122,.13)}
+.report{margin-top:12px; font-size:13px; line-height:1.75}
+.report .ok{color:var(--teal)} .report .skip{color:var(--dim)} .report .no{color:var(--rose)}
+.report ul{margin:6px 0 0; padding-left:18px}
+
+.matrix-wrap{overflow-x:auto; margin-top:18px; border:1px solid var(--line); border-radius:var(--r)}
+table.matrix{border-collapse:collapse; font-size:12.5px; width:100%}
+table.matrix th,table.matrix td{border:1px solid var(--line2); padding:0; text-align:center}
+table.matrix th{
+  background:rgba(255,255,255,.03); color:var(--dim); font-weight:500; padding:9px 11px;
+  white-space:nowrap; font-size:12px; position:sticky; left:0; z-index:1;
+}
+table.matrix thead th{position:static; vertical-align:bottom}
+table.matrix thead th.rot{height:118px; padding:0 4px}
+table.matrix thead th.rot span{
+  display:inline-block; transform:rotate(-60deg); transform-origin:left bottom;
+  white-space:nowrap; width:18px; font-size:12px;
+}
+table.matrix td.cell{cursor:pointer; transition:.14s; padding:11px 9px; min-width:52px}
+table.matrix td.cell:hover{outline:2px solid var(--gold); outline-offset:-2px}
+td.m-easy{background:rgba(95,217,196,.16); color:#bff0e6}
+td.m-complementary{background:rgba(167,139,250,.18); color:#ded1ff}
+td.m-charged{background:rgba(240,145,159,.17); color:#ffd6dc}
+td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
+.legend{display:flex; gap:16px; flex-wrap:wrap; margin-top:14px; font-size:12.5px; color:var(--dim)}
+.legend i{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:6px; vertical-align:-1px}
+.legend .e{background:rgba(95,217,196,.5)} .legend .c{background:rgba(167,139,250,.55)} .legend .g{background:rgba(240,145,159,.5)}
+.tally{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px}
+.tally div{background:rgba(0,0,0,.24); border:1px solid var(--line2); border-radius:11px; padding:11px 15px; font-size:13px}
+.tally b{font-family:var(--serif); font-size:21px; display:block; color:var(--ink); font-weight:500}
 </style>
 </head>
 <body>
@@ -194,6 +234,7 @@ details.about .note{margin-top:12px}
   <button role="tab" id="tab-read"   aria-selected="true"  data-panel="panel-read">Read a birthday</button>
   <button role="tab" id="tab-people" aria-selected="false" data-panel="panel-people">People <span id="count"></span></button>
   <button role="tab" id="tab-pair"   aria-selected="false" data-panel="panel-pair">Pair</button>
+  <button role="tab" id="tab-matrix" aria-selected="false" data-panel="panel-matrix">Matrix</button>
   <button role="tab" id="tab-wheel"  aria-selected="false" data-panel="panel-wheel">The 48</button>
 </nav>
 
@@ -218,7 +259,29 @@ details.about .note{margin-top:12px}
 
 <!-- PEOPLE -->
 <section class="panel" id="panel-people" role="tabpanel" hidden>
-  <div class="note">Saved in this browser only — nothing leaves the file. Click a card to read it; use the × to remove.</div>
+  <div class="note">Saved in this browser only &mdash; nothing leaves the file. Click a card to read it; use the &times; to remove.</div>
+  <div class="toolbar">
+    <button class="btn ghost tiny" id="btn-bulk-toggle">Add many at once</button>
+    <button class="btn ghost tiny" id="btn-export">Export JSON</button>
+    <button class="btn ghost tiny" id="btn-import">Import JSON</button>
+    <input type="file" id="file-import" accept="application/json,.json" hidden>
+    <div class="spacer"></div>
+    <button class="btn ghost tiny" id="btn-wipe">Remove all</button>
+  </div>
+  <div class="card bulk" id="bulk-box" hidden>
+    <label for="bulk-text">One person per line &mdash; name, then birthday</label>
+    <textarea id="bulk-text" spellcheck="false" placeholder="Ada Marchetti, 29 Nov 1988
+Bo Tran, 1991-04-07
+Cy Okonkwo, February 29 1996
+Dara Whitlock, 3/14
+Emeka Nwosu&#9;Oct 21, 1975"></textarea>
+    <div class="note" style="margin-top:9px">Accepts <code>1991-04-07</code>, <code>29 Nov 1988</code>, <code>Nov 29, 1988</code>, <code>3/14/1990</code> and <code>3/14</code>. Numeric dates are read month/day; the year is optional. Separate the name from the date with a comma or a tab.</div>
+    <div class="actions">
+      <button class="btn primary" id="btn-bulk-add">Add them all</button>
+      <button class="btn ghost" id="btn-bulk-clear">Clear</button>
+    </div>
+    <div class="report" id="bulk-report"></div>
+  </div>
   <div id="people-list"></div>
 </section>
 
@@ -234,6 +297,12 @@ details.about .note{margin-top:12px}
     <div class="err" id="pair-err"></div>
   </div>
   <div class="result" id="pair-result"></div>
+</section>
+
+<!-- MATRIX -->
+<section class="panel" id="panel-matrix" role="tabpanel" hidden>
+  <div class="note">Every saved person read against every other, computed automatically. Each cell is the elemental relation between their two periods &mdash; click one to open the full pair reading.</div>
+  <div id="matrix-box"></div>
 </section>
 
 <!-- WHEEL -->
@@ -262,8 +331,11 @@ details.about .note{margin-top:12px}
 
 <script>
 /* ============================================================
-   DATA — the 48 periods, transcribed from README.md verbatim
+   DATA — the 48 periods.
+   Do not hand-edit the block below: it is generated from README.md
+   by `node build.js`. Edit the README, then run the build.
    ============================================================ */
+/* BEGIN GENERATED PERIODS */
 const PERIODS = [
   {n:"Pisces–Aries Cusp", t:"The Cusp of Rebirth", r:"Mar 19–24", sm:3, sd:19, em:3, ed:24, signs:["Pisces","Aries"]},
   {n:"Aries I", t:"The Week of the Child", r:"Mar 25–Apr 2", sm:3, sd:25, em:4, ed:2, signs:["Aries"]},
@@ -314,6 +386,7 @@ const PERIODS = [
   {n:"Pisces II", t:"The Week of the Loner", r:"Mar 3–10", sm:3, sd:3, em:3, ed:10, signs:["Pisces"]},
   {n:"Pisces III", t:"The Week of Dancers & Dreamers", r:"Mar 11–18", sm:3, sd:11, em:3, ed:18, signs:["Pisces"]}
 ];
+/* END GENERATED PERIODS */
 
 /* Sign → element, quality, glyph. Standard astrological correspondence. */
 const SIGNS = {
@@ -822,6 +895,72 @@ const esc = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'
 const dateLabel = p => MONTHS[p.month-1] + ' ' + p.day + (p.year ? ', ' + p.year : '');
 const firstName = n => String(n).trim().split(/\s+/)[0] || 'They';
 
+/* Leap years, for validating 29 February. */
+const isLeap = y => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+
+const MONTH_NAMES = MONTHS.map(m=>m.toLowerCase());
+function monthFromWord(w){
+  w = w.toLowerCase().replace(/\./g, '');
+  if(w.length < 3) return 0;
+  const i = MONTH_NAMES.findIndex(m=>m === w || m.startsWith(w));
+  return i >= 0 ? i + 1 : 0;
+}
+
+/* Returns {month, day, year} or {error}. Accepts ISO, numeric and worded dates. */
+function parseBirthday(raw){
+  const s = String(raw).replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+  if(!s) return {error:'no date'};
+  let m = 0, d = 0, y = null;
+
+  const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  const num = s.match(/^(\d{1,2})[\/.](\d{1,2})(?:[\/.](\d{4}))?$/);
+  if(iso){
+    y = +iso[1]; m = +iso[2]; d = +iso[3];
+  } else if(num){
+    m = +num[1]; d = +num[2]; y = num[3] ? +num[3] : null;
+    if(m > 12 && d <= 12){ const t = m; m = d; d = t; }   // clearly day/month
+  } else {
+    /* Strict: every token must be a month word, a year or a day. Skipping
+       unknown tokens would let a surname be swallowed into the date. */
+    for(const tok of s.split(' ')){
+      const w = monthFromWord(tok);
+      if(w){ if(m) return {error:'two months in one date'}; m = w; continue; }
+      if(/^\d{4}$/.test(tok)){ if(y !== null) return {error:'two years in one date'}; y = +tok; continue; }
+      if(/^\d{1,2}(st|nd|rd|th)?$/i.test(tok)){ if(d) return {error:'two days in one date'}; d = parseInt(tok, 10); continue; }
+      return {error:`could not read "${tok}"`};
+    }
+    if(!m) return {error:'no month found'};
+  }
+  if(!(m >= 1 && m <= 12)) return {error:'month out of range'};
+  if(!(d >= 1 && d <= DIM[m-1])) return {error:`${MONTHS[m-1]} has no day ${d || '?'}`};
+  if(y !== null && (y < 1000 || y > 3000)) return {error:'year out of range'};
+  if(m === 2 && d === 29 && y !== null && !isLeap(y)) return {error:`${y} was not a leap year`};
+  return {month:m, day:d, year:y};
+}
+
+/* "Ada Marchetti, 29 Nov 1988" | tab-separated | "Ada Marchetti 29 Nov 1988" */
+function parseBulkLine(line){
+  const raw = line.trim();
+  if(!raw || raw.startsWith('#')) return null;
+  let name = '', rest = '';
+  const tab = raw.indexOf('\t'), comma = raw.indexOf(',');
+  if(tab > 0){ name = raw.slice(0, tab); rest = raw.slice(tab + 1); }
+  else if(comma > 0){ name = raw.slice(0, comma); rest = raw.slice(comma + 1); }
+  else {
+    const toks = raw.split(/\s+/);
+    for(let i = 1; i < toks.length; i++){
+      const attempt = parseBirthday(toks.slice(i).join(' '));
+      if(!attempt.error){ name = toks.slice(0, i).join(' '); rest = toks.slice(i).join(' '); break; }
+    }
+    if(!name) return {error:'could not find a name and a date'};
+  }
+  name = name.trim();
+  if(!name) return {error:'missing name'};
+  const dt = parseBirthday(rest);
+  if(dt.error) return {error:dt.error};
+  return {name, ...dt};
+}
+
 /* ============================================================
    LAYER I — the individual reading
    ============================================================ */
@@ -1079,6 +1218,7 @@ function showTab(id){
   });
   if(id === 'tab-people') renderPeople();
   if(id === 'tab-pair') fillPairSelects();
+  if(id === 'tab-matrix') renderMatrix();
   if(id === 'tab-wheel') renderWheel();
 }
 
@@ -1108,7 +1248,6 @@ function currentInput(){
   if(month === 2 && day === 29 && year && !isLeap(year)) return {err:`${year} was not a leap year — there is no 29 February in it.`};
   return {person:{id:'p' + Date.now() + Math.random().toString(36).slice(2,7), name, month, day, year}};
 }
-const isLeap = y => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
 
 function doRead(){
   $('err').textContent = '';
@@ -1116,6 +1255,7 @@ function doRead(){
   if(r.err){ $('err').textContent = r.err; $('result').innerHTML = ''; return null; }
   const P = profileOf(r.person);
   $('result').innerHTML = renderCrest(P) + renderReading(P) + renderPath(P);
+  writeHash(r.person);
   $('result').scrollIntoView({behavior:'smooth', block:'start'});
   return P;
 }
@@ -1229,6 +1369,182 @@ $('wheel-list').addEventListener('click', e=>{
   showTab('tab-read'); doRead();
 });
 
+/* ============================================================
+   BULK ENTRY — parse a pasted list instead of typing one at a time
+   ============================================================ */
+function isDuplicate(p){
+  return PEOPLE.some(x=>x.name.toLowerCase() === p.name.toLowerCase() && x.month === p.month && x.day === p.day);
+}
+function newId(){ return 'p' + Date.now() + Math.random().toString(36).slice(2,7); }
+
+$('btn-bulk-toggle').addEventListener('click', ()=>{
+  const box = $('bulk-box');
+  box.hidden = !box.hidden;
+  if(!box.hidden) $('bulk-text').focus();
+});
+$('btn-bulk-clear').addEventListener('click', ()=>{ $('bulk-text').value = ''; $('bulk-report').innerHTML = ''; });
+
+$('btn-bulk-add').addEventListener('click', ()=>{
+  const lines = $('bulk-text').value.split('\n');
+  const added = [], skipped = [], failed = [];
+  lines.forEach((line, i)=>{
+    const r = parseBulkLine(line);
+    if(r === null) return;
+    if(r.error){ failed.push(`line ${i+1}: ${esc(line.trim())} — ${r.error}`); return; }
+    if(isDuplicate(r)){ skipped.push(esc(r.name)); return; }
+    const person = {id:newId(), name:r.name, month:r.month, day:r.day, year:r.year};
+    PEOPLE.push(person); added.push(person);
+  });
+  if(added.length) savePeople(PEOPLE);
+  updateCount(); renderPeople(); fillPairSelects();
+  const parts = [];
+  if(added.length) parts.push(`<div class="ok">Added ${added.length}: ${added.map(p=>esc(p.name) + ' — ' + profileOf(p).per.n).join(', ')}</div>`);
+  if(skipped.length) parts.push(`<div class="skip">Already saved, skipped ${skipped.length}: ${skipped.join(', ')}</div>`);
+  if(failed.length) parts.push(`<div class="no">Could not read ${failed.length}:<ul>${failed.map(f=>`<li>${f}</li>`).join('')}</ul></div>`);
+  $('bulk-report').innerHTML = parts.join('') || '<div class="skip">Nothing to add.</div>';
+  if(added.length){ toast(`Added ${added.length} ${added.length === 1 ? 'person' : 'people'}`); $('bulk-text').value = ''; }
+});
+
+/* ============================================================
+   EXPORT / IMPORT
+   ============================================================ */
+function download(filename, text, type){
+  try{
+    const url = URL.createObjectURL(new Blob([text], {type}));
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    return true;
+  }catch(e){ return false; }
+}
+$('btn-export').addEventListener('click', ()=>{
+  if(!PEOPLE.length){ toast('Nothing to export yet'); return; }
+  const payload = {app:'personology-birthday-index', version:1, exported:new Date().toISOString(), people:PEOPLE};
+  const ok = download('birthdays.json', JSON.stringify(payload, null, 2), 'application/json');
+  toast(ok ? `Exported ${PEOPLE.length}` : 'Export failed');
+});
+$('btn-import').addEventListener('click', ()=>$('file-import').click());
+$('file-import').addEventListener('change', e=>{
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    let data;
+    try{ data = JSON.parse(reader.result); }
+    catch(err){ $('bulk-report').innerHTML = '<div class="no">That file is not valid JSON.</div>'; showTab('tab-people'); return; }
+    const list = Array.isArray(data) ? data : (data && Array.isArray(data.people) ? data.people : null);
+    if(!list){ $('bulk-report').innerHTML = '<div class="no">No people found in that file.</div>'; return; }
+    let added = 0, skipped = 0, bad = 0;
+    list.forEach(p=>{
+      const name = p && typeof p.name === 'string' ? p.name.trim() : '';
+      const month = +(p && p.month), day = +(p && p.day);
+      const year = p && p.year != null && p.year !== '' ? +p.year : null;
+      if(!name || !(month >= 1 && month <= 12) || !(day >= 1 && day <= DIM[month-1])){ bad++; return; }
+      if(isDuplicate({name, month, day})){ skipped++; return; }
+      PEOPLE.push({id:newId(), name, month, day, year:Number.isFinite(year) ? year : null});
+      added++;
+    });
+    if(added) savePeople(PEOPLE);
+    updateCount(); renderPeople(); fillPairSelects();
+    $('bulk-report').innerHTML =
+      `<div class="ok">Imported ${added}.</div>` +
+      (skipped ? `<div class="skip">Skipped ${skipped} already saved.</div>` : '') +
+      (bad ? `<div class="no">Ignored ${bad} unreadable ${bad === 1 ? 'entry' : 'entries'}.</div>` : '');
+    toast(`Imported ${added}`);
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+$('btn-wipe').addEventListener('click', ()=>{
+  if(!PEOPLE.length){ toast('Nothing saved'); return; }
+  if(!confirm(`Remove all ${PEOPLE.length} saved people? This cannot be undone.`)) return;
+  PEOPLE = []; savePeople(PEOPLE);
+  updateCount(); renderPeople(); fillPairSelects();
+  $('bulk-report').innerHTML = ''; $('pair-result').innerHTML = '';
+  toast('Removed everyone');
+});
+
+/* ============================================================
+   MATRIX — every saved person against every other, automatically
+   ============================================================ */
+const MODE_MARK = {easy:'≈', complementary:'+', charged:'⚡'};
+function pairMode(A, B){ return EL_REL[relKey(A.elements[0], B.elements[0])].mode; }
+
+function renderMatrix(){
+  const box = $('matrix-box');
+  if(PEOPLE.length < 2){
+    box.innerHTML = `<div class="empty"><div class="big">✦</div>The matrix needs at least two saved people.<br>Add some under <em>People</em>.</div>`;
+    return;
+  }
+  const list = PEOPLE.slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const profs = list.map(profileOf);
+  const tally = {easy:0, complementary:0, charged:0};
+
+  const head = '<tr><th></th>' + profs.map(P=>
+    `<th class="rot"><span>${esc(firstName(P.person.name))}</span></th>`).join('') + '</tr>';
+
+  const rows = profs.map((A, i)=>{
+    const cells = profs.map((B, j)=>{
+      if(i === j) return '<td class="m-self">·</td>';
+      const mode = pairMode(A, B);
+      if(j > i) tally[mode]++;
+      return `<td class="cell m-${mode}" data-a="${A.person.id}" data-b="${B.person.id}" title="${esc(A.person.name)} × ${esc(B.person.name)} — ${mode} (${A.elements.join('/')} &amp; ${B.elements.join('/')})">${MODE_MARK[mode]}</td>`;
+    }).join('');
+    return `<tr><th>${esc(A.person.name)}<br><span style="color:var(--dimmer);font-size:11px">${esc(A.per.n)}</span></th>${cells}</tr>`;
+  }).join('');
+
+  const total = tally.easy + tally.complementary + tally.charged;
+  box.innerHTML = `
+    <div class="matrix-wrap"><table class="matrix"><thead>${head}</thead><tbody>${rows}</tbody></table></div>
+    <div class="legend">
+      <span><i class="e"></i>≈ easy — shared or same element</span>
+      <span><i class="c"></i>+ complementary — one feeds the other</span>
+      <span><i class="g"></i>⚡ charged — elements that do not settle</span>
+    </div>
+    <div class="tally">
+      <div><b>${total}</b> pairings</div>
+      <div><b>${tally.easy}</b> easy</div>
+      <div><b>${tally.complementary}</b> complementary</div>
+      <div><b>${tally.charged}</b> charged</div>
+    </div>
+    <p class="note" style="margin-top:16px">Cells show the elemental relation only — the shorthand, not the reading. Click any cell for the full pair profile, which also weighs quality, number and card.</p>`;
+}
+$('matrix-box').addEventListener('click', e=>{
+  const cell = e.target.closest('.cell');
+  if(!cell) return;
+  showTab('tab-pair');
+  $('p-a').value = cell.dataset.a;
+  $('p-b').value = cell.dataset.b;
+  $('btn-pair').click();
+});
+
+/* ============================================================
+   PERMALINK — the address bar always points at the current reading
+   ============================================================ */
+function writeHash(p){
+  const h = '#r=' + [encodeURIComponent(p.name), p.month, p.day, p.year || ''].join(',');
+  try{ history.replaceState(null, '', h); }catch(e){ /* file:// may refuse; harmless */ }
+}
+function readHash(){
+  const m = (location.hash || '').match(/^#r=([^,]*),(\d{1,2}),(\d{1,2}),(\d{0,4})$/);
+  if(!m) return null;
+  const name = decodeURIComponent(m[1]), month = +m[2], day = +m[3];
+  const year = m[4] ? +m[4] : null;
+  if(!name || !(month >= 1 && month <= 12) || !(day >= 1 && day <= DIM[month-1])) return null;
+  return {name, month, day, year};
+}
+function applyHash(){
+  const p = readHash();
+  if(!p) return false;
+  $('f-name').value = p.name;
+  $('f-month').value = p.month; fillDays(p.day);
+  $('f-year').value = p.year || '';
+  showTab('tab-read'); doRead();
+  return true;
+}
+addEventListener('hashchange', applyHash);
+
 /* starfield */
 (function stars(){
   const cv = $('stars'), ctx = cv.getContext('2d');
@@ -1249,7 +1565,7 @@ $('wheel-list').addEventListener('click', e=>{
 })();
 
 updateCount(); fillPairSelects();
-$('f-name').focus();
+if(!applyHash()) $('f-name').focus();
 </script>
 </body>
 </html>

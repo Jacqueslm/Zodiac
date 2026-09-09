@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Fails if index.html's period table no longer matches README.md.
+      # Also refuses any README edit that leaves a day of the year
+      # uncovered or claimed by two periods.
+      - name: Period table is in sync with README.md
+        run: node build.js --check
+
+      - name: Test suite
+        run: node test.js
