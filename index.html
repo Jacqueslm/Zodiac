@@ -223,6 +223,100 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 .layer.two.stub .layer-body{padding:18px 20px}
 .layer.two.stub p{margin-bottom:12px; color:var(--dim); font-size:15px}
 
+
+/* ---------- the ring ---------- */
+.r3{position:fixed; inset:0; z-index:100; background:#04030a; overflow:hidden;
+  font-family:var(--sans); user-select:none; touch-action:none}
+.r3 canvas{display:block; width:100%; height:100%}
+.r3 .hud{position:absolute; left:0; right:0; top:0; padding:11px 10px 0; display:grid;
+  grid-template-columns:1fr auto 1fr; gap:9px; align-items:start; z-index:4}
+.r3 .side{min-width:0}
+.r3 .side.r{text-align:right}
+.r3 .nm{font-family:var(--serif); font-size:15px; letter-spacing:.02em; color:#fff;
+  text-shadow:0 2px 6px #000; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.r3 .bar{height:13px; margin-top:4px; background:rgba(8,8,16,.85); border:1px solid rgba(255,255,255,.28); overflow:hidden}
+.r3 .bar i{display:block; height:100%; background:linear-gradient(90deg,#e24b4a,#f2a93b 55%,#9be36a); transition:width .25s}
+.r3 .bar.you i{background:linear-gradient(90deg,#9be36a,#f2a93b 55%,#e24b4a)}
+.r3 .stars{height:15px; margin-top:2px; font-size:13px; letter-spacing:.12em; color:var(--gold);
+  text-shadow:0 0 9px rgba(232,192,122,.8)}
+.r3 .rd{text-align:center; padding:2px 9px; background:rgba(8,8,16,.8); border:1px solid rgba(255,255,255,.22)}
+.r3 .rd span{display:block}
+.r3 #h-clk{font-family:var(--serif); font-size:23px; color:#fff; font-variant-numeric:tabular-nums; line-height:1.1}
+.r3 #h-rd{font-size:9.5px; letter-spacing:.18em; color:var(--gold)}
+.r3 .supers{position:absolute; left:0; right:0; top:82px; display:grid; grid-template-columns:1fr 1fr;
+  gap:12px; padding:0 10px; z-index:4}
+.r3 .sup{display:flex; align-items:center; gap:6px} .r3 .sup.r{flex-direction:row-reverse}
+.r3 .sup b{font-size:9.5px; letter-spacing:.16em; color:#fff; text-shadow:0 1px 0 #000}
+.r3 .mbar{flex:1; height:8px; background:rgba(8,8,16,.8); border:1px solid rgba(255,255,255,.25)}
+.r3 .mbar i{display:block; height:100%; background:linear-gradient(90deg,#f2a93b,#fff1d6);
+  box-shadow:0 0 12px rgba(242,169,59,.9); transition:width .25s}
+.r3 .fx{position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:5}
+.r3 .fx.on{animation:fxflash .16s ease-out}
+@keyframes fxflash{from{opacity:.3}to{opacity:0}}
+.r3 .lines{position:absolute; inset:-40%; pointer-events:none; opacity:0; transition:opacity .2s; z-index:5;
+  background:repeating-conic-gradient(from 0deg, rgba(255,255,255,0) 0deg 4deg, rgba(255,255,255,.11) 4deg 5deg)}
+.r3 .lines.on{opacity:1; animation:spin 2.4s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.r3 .red{position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .4s; z-index:5;
+  background:radial-gradient(ellipse at center, rgba(226,75,74,0) 32%, rgba(226,75,74,.85) 100%)}
+.r3 .slam{position:absolute; left:0; right:0; top:34%; text-align:center; pointer-events:none; z-index:7;
+  font-family:var(--serif); font-size:min(15vw,74px); color:#fff; opacity:0;
+  text-shadow:0 0 26px rgba(0,0,0,.9), 0 5px 0 rgba(226,75,74,.75)}
+.r3 .slam.go{animation:slam .85s ease-out}
+@keyframes slam{from{opacity:1;transform:scale(.4) rotate(-8deg)}60%{opacity:1;transform:scale(1.12) rotate(2deg)}to{opacity:0;transform:scale(1.28)}}
+.r3 .bigcount{position:absolute; left:0; right:0; top:22%; text-align:center; pointer-events:none; z-index:7;
+  font-family:var(--serif); font-size:min(34vw,150px); color:#fff; line-height:1; opacity:0; text-shadow:0 0 40px rgba(226,75,74,.9)}
+.r3 .bigcount.go{animation:countpop .7s ease-out}
+@keyframes countpop{0%{opacity:0;transform:scale(1.6)}20%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.9)}}
+.r3 .call{position:absolute; left:12px; right:12px; bottom:calc(178px + env(safe-area-inset-bottom)); text-align:center;
+  z-index:6; font-family:var(--serif); font-size:20px; color:var(--gold); opacity:0; transition:opacity .2s;
+  text-shadow:0 2px 10px #000}
+.r3 .call.on{opacity:1}
+.r3 .voice{position:absolute; left:14px; right:14px; top:118px; z-index:6; background:rgba(7,10,20,.9);
+  border:2px solid var(--el,#e8c07a); border-radius:12px; padding:9px 12px; opacity:0; transition:opacity .25s}
+.r3 .voice.on{opacity:1}
+.r3 .voice small{display:block; font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); margin-bottom:2px}
+.r3 .voice span{font-family:var(--serif); font-size:17px; color:#fff}
+.r3 .replies{position:absolute; left:12px; right:12px; bottom:calc(196px + env(safe-area-inset-bottom));
+  z-index:8; display:none; gap:7px; flex-direction:column}
+.r3 .replies.on{display:flex}
+.r3 .replies button{font:inherit; font-size:14.5px; color:#fff; background:rgba(7,10,20,.92);
+  border:2px solid rgba(255,255,255,.3); border-radius:10px; padding:12px 13px; text-align:left; cursor:pointer}
+.r3 .replies button:hover{border-color:var(--gold); color:var(--gold)}
+.r3 .superbtn{position:absolute; left:50%; transform:translateX(-50%); top:38%; z-index:8; cursor:pointer;
+  font-family:var(--serif); font-size:27px; letter-spacing:.14em; padding:12px 30px; color:#0b0a06;
+  background:linear-gradient(90deg,#f2a93b,#fff1d6); border:none; border-radius:11px;
+  box-shadow:0 0 34px rgba(242,169,59,.9); animation:supflash .55s ease-in-out infinite alternate}
+@keyframes supflash{from{filter:brightness(1)}to{filter:brightness(1.28)}}
+.r3 .chant{position:absolute; top:46%; max-width:36%; padding:5px 9px; z-index:6; opacity:0; transition:opacity .3s;
+  font-family:var(--serif); font-size:16px}
+.r3 .chant.on{opacity:1}
+.r3 .chant.L{left:10px; color:#ff8a80; border-left:3px solid #e24b4a}
+.r3 .chant.R{right:10px; color:#7ff0b0; border-right:3px solid #2fd08a; text-align:right}
+.r3 .cue{position:absolute; top:30%; z-index:6; color:#e24b4a; pointer-events:none; animation:cuep .6s ease-out}
+.r3 .cue.L{left:7%} .r3 .cue.R{right:7%}
+.r3 .cue b{display:block; font-size:56px; line-height:1; text-shadow:0 0 30px rgba(226,75,74,.9)}
+@keyframes cuep{from{transform:scale(.85);opacity:.65}to{transform:scale(1.15);opacity:0}}
+.r3 .ctl{position:absolute; left:0; right:0; bottom:0; z-index:8; display:grid; gap:8px;
+  padding:12px 12px calc(13px + env(safe-area-inset-bottom));
+  background:linear-gradient(0deg, rgba(4,3,10,.96), rgba(4,3,10,0))}
+.r3 .row{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px}
+.r3 [hidden]{display:none!important}
+.r3.over .row.punch,.r3.over .row.move{display:none}
+.r3 .row.punch{grid-template-columns:repeat(4,1fr)}
+.r3 .ctl button{font:inherit; font-size:14px; font-weight:600; color:#e9e6f2; background:rgba(7,10,20,.82);
+  border:2px solid #2a3350; border-radius:9px; padding:14px 4px; cursor:pointer; transition:.12s}
+.r3 .ctl button.p{border-color:var(--gold); color:var(--gold)}
+.r3 .ctl button.d{border-color:#2fd08a; color:#7ff0b0}
+.r3 .ctl button:active,.r3 .ctl button.held{transform:scale(.94); filter:brightness(1.4)}
+.r3-exit{position:absolute; top:10px; right:10px; z-index:9; background:rgba(7,10,20,.8);
+  border:1px solid rgba(255,255,255,.3); color:#cfd3e6; border-radius:8px; padding:5px 10px; cursor:pointer; font-size:14px}
+.r3-fail{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center;
+  padding:30px; color:var(--dim); z-index:9; background:#04030a; font-size:16px; line-height:1.6}
+@media(max-height:700px){
+  .r3 .ctl button{padding:10px 3px; font-size:12.5px}
+  .r3 .voice{top:104px} .r3 .supers{top:74px}
+}
 .game{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:26px 22px}
 .game h2{font-family:var(--serif); font-weight:500; font-size:27px; margin:0 0 8px}
 .game .qbar{display:flex; justify-content:space-between; align-items:center; font-size:12px;
@@ -270,6 +364,8 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 </head>
 <body>
 <canvas id="stars"></canvas>
+<!-- Three.js r128 (MIT), vendored so the fight works offline and ships exactly as tested. -->
+<script src="three.min.js"></script>
 <div class="wrap">
 
 <header class="top">
@@ -916,6 +1012,25 @@ const LORE = {
   pur:"to bring at least one vision all the way down to the ground where people can stand on it"}
 };
 
+/* Its line, and three replies — only one names this opponent's weakness.
+   The wrong two are other periods' counters, so the reply has to be
+   recognised rather than guessed. */
+function tauntRound(them, pool, rand){
+  const right = them.taunt.c;
+  const wrongs = [];
+  const others = pool.filter(n=>TAUNTS[n] && TAUNTS[n].c !== right);
+  while(wrongs.length < 2 && others.length){
+    const c = TAUNTS[others.splice(Math.floor(rand() * others.length), 1)[0]].c;
+    if(!wrongs.includes(c)) wrongs.push(c);
+  }
+  const options = [right, ...wrongs];
+  for(let i = options.length - 1; i > 0; i--){
+    const j = Math.floor(rand() * (i + 1));
+    [options[i], options[j]] = [options[j], options[i]];
+  }
+  return {line:them.taunt.t, options, answerIndex:options.indexOf(right), answer:right};
+}
+
 /* ============================================================
    PORTRAITS — the substance of a reading. One per period, written
    to be specific to that period rather than to its element or
@@ -1498,6 +1613,110 @@ function renderPath(P){
 }
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const lower = s => s.charAt(0).toLowerCase() + s.slice(1);
+
+/* ============================================================
+   THE FIGHT — each period taunts with its strength; the right
+   counter names its weakness. Original writing, one pair each.
+   ============================================================ */
+const TAUNTS = {
+"Pisces–Aries Cusp":{t:"I can start again from nothing.", c:"You start so you never have to finish."},
+"Aries I":{t:"I say the true thing first.", c:"You say it before you've aimed it."},
+"Aries II":{t:"Everyone in here is watching me.", c:"And there's nothing underneath it."},
+"Aries III":{t:"I go first. Always.", c:"And you always go alone."},
+"Aries–Taurus Cusp":{t:"I can carry more than you.", c:"You call leaning on people carrying."},
+"Taurus I":{t:"I finish everything I build.", c:"You stopped wanting it years ago."},
+"Taurus II":{t:"Let me explain this to you.", c:"Nobody asked you to."},
+"Taurus III":{t:"This comes easy to me.", c:"That's why you never got better."},
+"Taurus–Gemini Cusp":{t:"I can do all of it at once.", c:"And you finish none of it."},
+"Gemini I":{t:"Nothing holds me.", c:"Nothing holds you up either."},
+"Gemini II":{t:"I've got a word for what you are.", c:"Say it plainly. You can't."},
+"Gemini III":{t:"I'm still looking.", c:"Because arriving would end you."},
+"Gemini–Cancer Cusp":{t:"I've already seen how this ends.", c:"In your head. Not in here."},
+"Cancer I":{t:"I know exactly what you're feeling.", c:"You can't tell it from your own."},
+"Cancer II":{t:"I don't do it your way.", c:"You just do the opposite. That's not a way."},
+"Cancer III":{t:"I could talk you out of this.", c:"That's not talking. That's handling."},
+"Cancer–Leo Cusp":{t:"You never know which one you'll get.", c:"Neither do the people who love you."},
+"Leo I":{t:"I'm in charge in here.", c:"Nobody's argued with you in years."},
+"Leo II":{t:"I don't need to prove anything.", c:"So you never give it all. Ever."},
+"Leo III":{t:"They all follow me.", c:"Because you never let them lead."},
+"Leo–Virgo Cusp":{t:"I can see exactly what you are.", c:"And you say it only because you can."},
+"Virgo I":{t:"I built the system you're standing in.", c:"And you'd never tear it down."},
+"Virgo II":{t:"You don't know anything about me.", c:"Nobody does. That's the problem."},
+"Virgo III":{t:"I said exactly what I meant.", c:"And still missed what I meant."},
+"Virgo–Libra Cusp":{t:"Yours isn't good enough.", c:"Yours isn't finished. It never is."},
+"Libra I":{t:"I hold a higher line than you.", c:"And it's aimed at you first."},
+"Libra II":{t:"Everyone in this room is with me.", c:"Name one thing you think alone."},
+"Libra III":{t:"Watch how good this looks.", c:"There's nobody behind it."},
+"Libra–Scorpio Cusp":{t:"I can see every flaw you have.", c:"You've never made anything to be flawed."},
+"Scorpio I":{t:"I go all the way in.", c:"And burn out before the end."},
+"Scorpio II":{t:"I go deeper than you can follow.", c:"You've been down there too long."},
+"Scorpio III":{t:"Everybody likes me.", c:"Nobody is close to you."},
+"Scorpio–Sagittarius Cusp":{t:"I'll tear the whole thing down.", c:"And put what in its place?"},
+"Sagittarius I":{t:"I don't need anyone.", c:"You needed them. You said no."},
+"Sagittarius II":{t:"I made this first.", c:"And never finished it."},
+"Sagittarius III":{t:"I think bigger than you.", c:"You walked over people to do it."},
+"Sagittarius–Capricorn Cusp":{t:"I saw this coming years ago.", c:"And you've been bitter ever since."},
+"Capricorn I":{t:"I'll handle it.", c:"You call that care. It's control."},
+"Capricorn II":{t:"I'll outlast you.", c:"You never checked it was worth it."},
+"Capricorn III":{t:"I take the space I need.", c:"And everyone near you went quiet."},
+"Capricorn–Aquarius Cusp":{t:"You've no idea what I'm building.", c:"Neither has anyone. You never showed it."},
+"Aquarius I":{t:"I'm three steps ahead of you.", c:"And alone up there."},
+"Aquarius II":{t:"None of this touches me.", c:"Nothing ever has."},
+"Aquarius III":{t:"I accept everything.", c:"So you defend nothing."},
+"Aquarius–Pisces Cusp":{t:"I feel everything in this room.", c:"And it's already too much for you."},
+"Pisces I":{t:"There's more to this than you see.", c:"Your actual life is unattended."},
+"Pisces II":{t:"I don't need the room.", c:"The invitations stopped. You noticed."},
+"Pisces III":{t:"I can see the whole thing.", c:"None of it has a date on it."}
+};
+
+/* Element in the ring: colour, and what falls in it. */
+const RING_ELEMENT = {
+  Fire: {colour:'#f0894f', glow:'rgba(240,137,79,.42)', weather:'fire off the floor'},
+  Earth:{colour:'#8fd08a', glow:'rgba(143,208,138,.38)', weather:'dust and grit'},
+  Air:  {colour:'#8fc4f5', glow:'rgba(143,196,245,.38)', weather:'wind streaking across'},
+  Water:{colour:'#8f9cf5', glow:'rgba(143,156,245,.38)', weather:'rain that falls and splashes'}
+};
+
+/* Fighting style comes from the quality. */
+const STYLE = {
+  Cardinal:{name:'leads',   swings:3, feint:0.15, block:0.10, tellScale:0.85, power:1.15, guard:0.85},
+  Fixed:   {name:'holds',   swings:2, feint:0.10, block:0.35, tellScale:1.15, power:1.00, guard:1.30},
+  Mutable: {name:'switches',swings:4, feint:0.40, block:0.15, tellScale:0.95, power:0.90, guard:1.00}
+};
+
+/* Fire → Air → Earth → Water → Fire. Each beats one, loses to one. */
+const BEATS = {Fire:'Air', Air:'Earth', Earth:'Water', Water:'Fire'};
+function elementFactor(mine, theirs){
+  let best = 1;
+  mine.forEach(a=>theirs.forEach(b=>{
+    if(BEATS[a] === b) best = Math.max(best, 1.5);
+    else if(BEATS[b] === a) best = Math.min(best, 0.75);
+  }));
+  return best;
+}
+
+function fighterFrom(profile){
+  const style = STYLE[profile.qualities[0]];
+  const fixed = profile.qualities.includes('Fixed');
+  const maxHp = Math.round(90 + (fixed ? 22 : profile.qualities.includes('Mutable') ? 6 : 12));
+  return {
+    name: profile.person.name,
+    period: profile.per.n,
+    title: profile.per.t,
+    elements: profile.elements,
+    quality: profile.qualities[0],
+    style,
+    hp: maxHp, maxHp,
+    power: Math.round((8 + profile.num) * style.power),
+    guard: Math.round(7 * style.guard),
+    card: profile.tarot,
+    taunt: TAUNTS[profile.per.n],
+    gift: profile.lore.g,
+    shadow: profile.lore.s,
+    ring: RING_ELEMENT[profile.elements[0]]
+  };
+}
+
 
 /* ============================================================
    QUIZ — questions generated from the same data the readings use.
@@ -2084,7 +2303,8 @@ function renderGame(){
       <p class="sub2">${QUIZ_LENGTH} questions drawn from the same data as the readings — periods, dates,
       tarot cards, elements, stones${PEOPLE.length >= 3 ? ', and the people you have saved' : ''}.</p>
       ${best ? `<p class="note" style="margin-bottom:18px">Your best so far: <strong>${best}/${QUIZ_LENGTH}</strong></p>` : ''}
-      <button class="btn primary" id="g-start">Start</button>
+      <div class="actions"><button class="btn primary" id="g-start">Start the quiz</button>
+      <button class="btn ghost" id="g-fight">The fight</button></div>
     </div>`;
     return;
   }
@@ -2139,6 +2359,640 @@ $('game-box').addEventListener('click', e=>{
     GAME.picked = +opt.dataset.i;
     if(GAME.picked === GAME.qs[GAME.i].answerIndex) GAME.score++;
     renderGame();
+  }
+});
+
+/* Thud, whoosh, bell and ding, synthesised — no audio files to ship. */
+let AC = null;
+function blip(type){
+  try{
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+    o.connect(g); g.connect(AC.destination);
+    const set = (wave, f0, f1, vol, dur)=>{
+      o.type = wave; o.frequency.setValueAtTime(f0, t);
+      if(f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+      o.start(t); o.stop(t + dur + .01);
+    };
+    if(type === 'thud')        set('sine', 150, 48, .34, .18);
+    else if(type === 'whoosh') set('triangle', 680, 180, .10, .22);
+    else if(type === 'bell')   set('square', 880, 0, .16, .65);
+    else if(type === 'ding')   set('sine', 1250, 0, .16, .30);
+    else                       set('sawtooth', 90, 0, .12, .40);
+  }catch(e){ /* muted or blocked — the fight carries on silently */ }
+}
+
+/* ============================================================
+   THE RING — a 3D arena built from primitives, lit so the
+   opponent reads as a black shape backlit in its own element.
+   ============================================================ */
+const R3 = {ok:false};
+
+function buildRing(elementColour){
+  const T = window.THREE;
+  const S = {};
+  S.scene = new T.Scene();
+  S.scene.fog = new T.Fog(0x04030a, 6, 26);
+  S.camera = new T.PerspectiveCamera(52, 1, 0.1, 120);
+
+  S.renderer = new T.WebGLRenderer({canvas:$('r3-canvas'), antialias:true});
+  S.renderer.setClearColor(0x04030a, 1);
+  S.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+
+  const col = new T.Color(elementColour);
+
+  /* canvas floor */
+  const floor = new T.Mesh(new T.PlaneGeometry(9, 9),
+    new T.MeshStandardMaterial({color:0x0b0a12, roughness:.98, metalness:0}));
+  floor.rotation.x = -Math.PI / 2;
+  S.scene.add(floor);
+
+  /* a glowing ring of the element's colour painted on the canvas */
+  const paint = new T.Mesh(new T.RingGeometry(2.5, 2.75, 48),
+    new T.MeshBasicMaterial({color:col, transparent:true, opacity:.5, side:T.DoubleSide}));
+  paint.rotation.x = -Math.PI / 2; paint.position.y = 0.01;
+  S.scene.add(paint);
+
+  /* posts and three ropes */
+  const postMat = new T.MeshStandardMaterial({color:0x2a2636, roughness:.6, metalness:.3});
+  const ropeMat = new T.MeshStandardMaterial({color:0x6b6478, roughness:.7, emissive:col, emissiveIntensity:.06});
+  const P = 4.1;
+  [[-P,-P],[P,-P],[-P,P],[P,P]].forEach(([x,z])=>{
+    const post = new T.Mesh(new T.CylinderGeometry(.11,.13,2.05,10), postMat);
+    post.position.set(x, 1.02, z); S.scene.add(post);
+  });
+  [0.55, 1.05, 1.55].forEach(y=>{
+    [[0,-P],[0,P]].forEach(([,z])=>{
+      const r = new T.Mesh(new T.BoxGeometry(P*2, .045, .045), ropeMat);
+      r.position.set(0, y, z); S.scene.add(r);
+    });
+    [[-P,0],[P,0]].forEach(([x])=>{
+      const r = new T.Mesh(new T.BoxGeometry(.045, .045, P*2), ropeMat);
+      r.position.set(x, y, 0); S.scene.add(r);
+    });
+  });
+
+  /* the dark house, and rows of faces suggested by dots */
+  const crowd = new T.Group();
+  for(let i = 0; i < 260; i++){
+    const a = Math.random() * Math.PI * 2, rr = 8.5 + Math.random() * 8;
+    const d = new T.Mesh(new T.SphereGeometry(.10, 5, 4),
+      new T.MeshBasicMaterial({color:new T.Color().setHSL(.09, .25, .18 + Math.random() * .3)}));
+    d.position.set(Math.cos(a) * rr, .5 + Math.random() * 2.6, Math.sin(a) * rr);
+    crowd.add(d);
+  }
+  S.crowd = crowd; S.scene.add(crowd);
+
+  /* lights: cold key on you, the element burning behind them */
+  S.scene.add(new T.AmbientLight(0x1a2338, .40));
+  const key = new T.DirectionalLight(0xdfe6ff, .42); key.position.set(3, 6, 5); S.scene.add(key);
+  S.back = new T.PointLight(col, 7.5, 20); S.back.position.set(0, 2.2, -4.6); S.scene.add(S.back);
+  S.rim = new T.SpotLight(col, 3.2, 20, .7, .6); S.rim.position.set(0, 4.4, -2.6);
+  S.scene.add(S.rim); S.scene.add(S.rim.target);
+
+  S.you = makeBoxer(0x2f5fd6, false, col);
+  S.them = makeBoxer(0x07060c, true, col);
+  S.you.group.position.set(-0.78, 0, 1.78);
+  S.them.group.position.set(0, 0, -1.55);
+  S.them.group.rotation.y = Math.PI;
+  S.scene.add(S.you.group); S.scene.add(S.them.group);
+  S.rim.target.position.copy(S.them.group.position);
+  return S;
+}
+
+/* A boxer from shapes. The opponent is near-black with an emissive rim so it
+   reads as a silhouette lit from behind, the way the shadow bosses do. */
+function makeBoxer(bodyColour, isShadow, glow){
+  const T = window.THREE;
+  const g = new T.Group();
+  const mat = isShadow
+    ? new T.MeshStandardMaterial({color:0x05040a, roughness:1, metalness:0, emissive:glow, emissiveIntensity:.16})
+    : new T.MeshStandardMaterial({color:bodyColour, roughness:.7, metalness:.05});
+  const skin = isShadow ? mat : new T.MeshStandardMaterial({color:0x8a6b52, roughness:.85});
+  const gloveMat = new T.MeshStandardMaterial({color:isShadow ? 0x140a0e : 0xc8262a, roughness:.55,
+    emissive:isShadow ? glow : 0x000000, emissiveIntensity:isShadow ? .3 : 0});
+
+  const torso = new T.Mesh(new T.CylinderGeometry(.30, .38, .84, 12), mat);
+  torso.position.y = 1.16; g.add(torso);
+  const hips = new T.Mesh(new T.CylinderGeometry(.30, .26, .34, 12), mat);
+  hips.position.y = .60; g.add(hips);
+  const head = new T.Mesh(new T.SphereGeometry(.185, 14, 12), skin);
+  head.position.y = 1.78; g.add(head);
+  const neck = new T.Mesh(new T.CylinderGeometry(.09, .11, .14, 8), skin);
+  neck.position.y = 1.63; g.add(neck);
+
+  const limb = (x, y, z, w, h) => {
+    const m = new T.Mesh(new T.CylinderGeometry(w, w * .9, h, 8), mat);
+    m.position.set(x, y, z); return m;
+  };
+  const legL = limb(-.16, .28, 0, .115, .62), legR = limb(.16, .28, 0, .115, .62);
+  g.add(legL); g.add(legR);
+
+  const armL = new T.Group(), armR = new T.Group();
+  armL.position.set(-.34, 1.42, 0); armR.position.set(.34, 1.42, 0);
+  const upperL = limb(0, -.20, 0, .095, .42), upperR = limb(0, -.20, 0, .095, .42);
+  armL.add(upperL); armR.add(upperR);
+  const gl = new T.Mesh(new T.SphereGeometry(.145, 12, 10), gloveMat);
+  const gr = new T.Mesh(new T.SphereGeometry(.145, 12, 10), gloveMat);
+  gl.position.set(0, -.46, 0); gr.position.set(0, -.46, 0);
+  armL.add(gl); armR.add(gr);
+  g.add(armL); g.add(armR);
+
+  /* guard up */
+  armL.rotation.set(-1.15, 0, .32); armR.rotation.set(-1.15, 0, -.32);
+  return {group:g, armL, armR, head, torso, gloveL:gl, gloveR:gr, mat, gloveMat};
+}
+
+/* Camera shots, the way the spec lists them. */
+/* Over-the-shoulder is the working shot: the whole defence is reading which
+   way it leans, and a side-on view makes left and right ambiguous. */
+const SHOT = {
+  tv:      {p:[0.18, 2.10, 3.85], l:[0.10, 1.20, -1.55]},
+  shoulder:{p:[0.10, 1.98, 3.45], l:[0.10, 1.24, -1.55]},
+  low:     {p:[1.35, 0.70, 1.05], l:[0.05, 1.20, -1.60]},
+  house:   {p:[4.20, 2.90, 5.40], l:[0, 1.05, -0.60]}
+};
+function setShot(name, instant){
+  if(!R3.ok) return;
+  const s = SHOT[name] || SHOT.tv;
+  R3.want = {p:s.p.slice(), l:s.l.slice()};
+  if(instant){ R3.camPos = s.p.slice(); R3.camLook = s.l.slice(); }
+}
+
+/* ============================================================
+   THE FIGHT — full screen, three rounds of ninety seconds.
+   You punch. It winds up with a tell. Its taunt names its
+   strength; one reply names its weakness.
+   ============================================================ */
+const METER_WORD = 'ZODIAC';
+let F = null, raf = null;
+
+const PUNCH = {
+  jab:   {name:'Jab',      dmg:.55, wind:110, recover:230, meter:7,  reach:'head'},
+  combo: {name:'1-2',      dmg:.95, wind:170, recover:400, meter:12, reach:'head'},
+  hook:  {name:'Hook',     dmg:1.35,wind:260, recover:620, meter:16, reach:'body'},
+  upper: {name:'Uppercut', dmg:1.9, wind:340, recover:820, meter:22, reach:'chin', needsStar:true}
+};
+
+function fightHTML(){
+  return `
+  <div id="r3" class="r3">
+    <canvas id="r3-canvas"></canvas>
+    <div class="hud">
+      <div class="side">
+        <div class="nm" id="h-you"></div>
+        <div class="bar you"><i id="b-you" style="width:100%"></i></div>
+        <div class="stars" id="s-you"></div>
+      </div>
+      <div class="rd"><span id="h-clk">1:30</span><span id="h-rd">ROUND 1</span></div>
+      <div class="side r">
+        <div class="nm" id="h-them"></div>
+        <div class="bar"><i id="b-them" style="width:100%"></i></div>
+        <div class="stars" id="s-them"></div>
+      </div>
+    </div>
+    <div class="supers">
+      <div class="sup"><b>${METER_WORD}</b><div class="mbar"><i id="m-you" style="width:0%"></i></div></div>
+      <div class="sup r"><div class="mbar"><i id="m-them" style="width:0%"></i></div><b>${METER_WORD}</b></div>
+    </div>
+    <div class="fx" id="r3-fx"></div>
+    <div class="lines" id="r3-lines"></div>
+    <div class="red" id="r3-red"></div>
+    <div class="chant L" id="r3-cl"></div>
+    <div class="chant R" id="r3-cr"></div>
+    <div class="slam" id="r3-slam"></div>
+    <div class="bigcount" id="r3-count"></div>
+    <div class="call" id="r3-call"></div>
+    <div class="voice" id="r3-voice"><small></small><span></span></div>
+    <div class="replies" id="r3-replies"></div>
+    <button class="superbtn" id="r3-super" hidden>${METER_WORD}</button>
+    <button class="r3-exit" id="r3-exit" title="Leave">✕</button>
+    <div class="ctl">
+      <div class="row punch">
+        <button class="p" data-p="jab">Jab</button>
+        <button class="p" data-p="combo">1-2</button>
+        <button class="p" data-p="hook">Hook</button>
+        <button class="p" data-p="upper">Uppercut</button>
+      </div>
+      <div class="row move">
+        <button class="d" data-d="left">◀ Dodge</button>
+        <button class="d" data-d="block">Block</button>
+        <button class="d" data-d="right">Dodge ▶</button>
+      </div>
+      <div class="row corner" id="r3-corner" hidden>
+        <button class="d" data-c="water">Water</button>
+        <button class="d" data-c="towel">Towel</button>
+        <button class="d" data-c="word">A word</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function openFight(youProfile, themProfile){
+  document.body.insertAdjacentHTML('beforeend', fightHTML());
+  const you = fighterFrom(youProfile), them = fighterFrom(themProfile);
+  F = {
+    you, them, round:1, rounds:3, clock:90, phase:'walkin',
+    meter:{you:0, them:0}, stars:{you:0, them:0}, downs:{you:0, them:0},
+    busyUntil:0, theirNext:0, swing:null, guard:null, over:null,
+    lastTaunt:0, replyOpen:false, camShot:'house', shake:0, slow:1, drag:null
+  };
+  $('h-you').textContent = you.name === you.period ? you.period : you.name;
+  $('h-them').textContent = them.period;
+
+  try{
+    R3.S = buildRing(them.ring.colour); R3.ok = true;
+  }catch(e){
+    R3.ok = false;
+    $('r3').insertAdjacentHTML('beforeend',
+      `<div class="r3-fail">The ring needs WebGL, and this browser would not start it.<br><small>${esc(e.message)}</small></div>`);
+  }
+  setShot('house', true);
+  sizeRing(); addEventListener('resize', sizeRing);
+  wireFight();
+  call('Ladies and gentlemen…');
+  voice(them.period, them.taunt.t);
+  setTimeout(()=>{
+    if(!F) return;
+    F.phase = 'live'; F.theirNext = performance.now() + 1400;
+    setShot('shoulder'); call('Round one'); blip('bell');
+  }, 2600);
+  loop();
+}
+
+function sizeRing(){
+  if(!R3.ok) return;
+  const c = $('r3-canvas'); if(!c) return;
+  const w = innerWidth, h = innerHeight;
+  R3.S.renderer.setSize(w, h, false);
+  R3.S.camera.aspect = w / h; R3.S.camera.updateProjectionMatrix();
+}
+
+function closeFight(){
+  cancelAnimationFrame(raf); raf = null;
+  removeEventListener('resize', sizeRing);
+  if(R3.ok && R3.S){ try{ R3.S.renderer.dispose(); }catch(e){} }
+  R3.ok = false; R3.S = null; F = null;
+  const el = $('r3'); if(el) el.remove();
+}
+
+/* ---------- HUD helpers ---------- */
+const setW = (id, pct) => { const e = $(id); if(e) e.style.width = Math.max(0, Math.min(100, pct)) + '%'; };
+function hud(){
+  if(!F) return;
+  setW('b-you', F.you.hp / F.you.maxHp * 100);
+  setW('b-them', F.them.hp / F.them.maxHp * 100);
+  setW('m-you', F.meter.you); setW('m-them', F.meter.them);
+  $('s-you').textContent = '★'.repeat(F.stars.you);
+  $('s-them').textContent = '★'.repeat(F.stars.them);
+  const m = Math.floor(F.clock / 60), s = Math.floor(F.clock % 60);
+  $('h-clk').textContent = m + ':' + String(s).padStart(2, '0');
+  $('h-rd').textContent = 'ROUND ' + F.round;
+  $('r3-super').hidden = F.meter.you < 100 || F.phase !== 'live';
+}
+function call(text, ms){ const e = $('r3-call'); if(!e) return; e.textContent = text; e.classList.add('on');
+  clearTimeout(e._t); e._t = setTimeout(()=>e.classList.remove('on'), ms || 1600); }
+function voice(who, text){ const e = $('r3-voice'); if(!e) return;
+  e.querySelector('small').textContent = who; e.querySelector('span').textContent = text;
+  e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(()=>e.classList.remove('on'), 3200); }
+function slam(text){ const e = $('r3-slam'); if(!e) return; e.textContent = text;
+  e.classList.remove('go'); void e.offsetWidth; e.classList.add('go'); }
+function flash(){ const e = $('r3-fx'); if(!e) return; e.classList.remove('on'); void e.offsetWidth; e.classList.add('on'); }
+function speedlines(on){ const e = $('r3-lines'); if(e) e.classList.toggle('on', !!on); }
+function hurt(level){ const e = $('r3-red'); if(e) e.style.opacity = level; }
+function chant(side, text){ const e = $(side === 'L' ? 'r3-cl' : 'r3-cr'); if(!e) return;
+  e.textContent = text; e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(()=>e.classList.remove('on'), 2400); }
+
+/* ---------- your punches ---------- */
+function youPunch(kind){
+  if(!F || F.over || F.phase !== 'live') return;
+  const now = performance.now();
+  if(now < F.busyUntil) return;
+  const P = PUNCH[kind];
+  if(P.needsStar && F.stars.you < 1){ call('No star yet — dodge clean to earn one'); return; }
+  if(P.needsStar) F.stars.you--;
+  F.busyUntil = now + P.wind + P.recover;
+  F.youSwingUntil = now + P.wind + 120;
+  F.youArm = kind === 'jab' ? 'L' : 'R';
+
+  setTimeout(()=>{
+    if(!F || F.over) return;
+    /* it guards by its style; Fixed blocks most */
+    const blocked = Math.random() < F.them.style.block;
+    const factor = elementFactor(F.you.elements, F.them.elements);
+    let dmg = Math.max(2, Math.round(F.you.power * P.dmg * factor / 3));
+    if(blocked){ dmg = Math.max(1, Math.round(dmg * .35)); call('Blocked'); blip('whoosh'); }
+    else {
+      F.meter.you = Math.min(100, F.meter.you + P.meter);
+      flash(); blip('thud'); shake(kind === 'upper' ? 16 : kind === 'hook' ? 11 : 6);
+      if(kind === 'upper' || kind === 'hook') slam(P.name.toUpperCase() + '!');
+      if(Math.random() < .35) call(kind === 'jab' ? 'Sharp jab.' : kind === 'combo' ? 'One-two!' : 'Big ' + P.name.toLowerCase() + '!');
+      chant('R', F.you.period.split(' ')[0].toUpperCase() + '!');
+    }
+    F.them.hp -= dmg;
+    hud(); checkDown();
+  }, P.wind);
+}
+
+function fireSuper(){
+  if(!F || F.over || F.meter.you < 100) return;
+  F.meter.you = 0; F.busyUntil = performance.now() + 1500;
+  slam(METER_WORD + '!'); speedlines(true); F.slow = .35; setShot('low');
+  call('It is hurt!', 2200);
+  let n = 0;
+  const hit = setInterval(()=>{
+    if(!F || F.over) return clearInterval(hit);
+    const factor = elementFactor(F.you.elements, F.them.elements);
+    F.them.hp -= Math.max(3, Math.round(F.you.power * .5 * factor / 3));
+    flash(); blip('thud'); shake(14); hud();
+    if(++n >= 5){ clearInterval(hit); speedlines(false); F.slow = 1; setShot('shoulder'); checkDown(); }
+  }, 170);
+}
+
+/* ---------- its turn ---------- */
+function theirWindup(){
+  const tier = F.round <= 1 ? 1 : F.round <= 2 ? 2 : 3;
+  const tell = [1150, 880, 700][tier - 1] * F.them.style.tellScale;
+  const lean = Math.random() < .5 ? 'left' : 'right';
+  const feint = tier > 1 && Math.random() < F.them.style.feint;
+  F.swing = {lean, hits:feint ? (lean === 'left' ? 'right' : 'left') : lean, feint,
+             at:performance.now() + tell, taken:false};
+  F.guard = null;
+  blip('whoosh');
+  cue(lean);
+  if(Math.random() < .5) voice(F.them.period, F.them.taunt.t);
+}
+
+function cue(side){
+  const e = $('r3-c' + (side === 'left' ? 'l' : 'r'));
+  const q = document.createElement('div');
+  q.className = 'cue ' + (side === 'left' ? 'L' : 'R'); q.innerHTML = '<b>' + (side === 'left' ? '◀' : '▶') + '</b>';
+  $('r3').appendChild(q); setTimeout(()=>q.remove(), 700);
+}
+
+function resolveTheirSwing(){
+  const sw = F.swing; F.swing = null;
+  const safe = sw.hits === 'left' ? 'right' : 'left';
+  const g = F.guard;
+  const factor = elementFactor(F.them.elements, F.you.elements);
+  const raw = Math.max(3, Math.round(F.them.power * factor / 2.4) - Math.round(F.you.guard / 3));
+  if(g === safe){
+    F.stars.you = Math.min(3, F.stars.you + 1);
+    F.meter.you = Math.min(100, F.meter.you + 9);
+    call(sw.feint ? 'Read the feint!' : 'Slipped it!'); blip('ding');
+    chant('R', 'SLIP!');
+  } else if(g === 'block'){
+    F.you.hp -= Math.max(1, Math.round(raw * .4)); call('Blocked it'); blip('whoosh'); shake(4);
+  } else {
+    F.you.hp -= raw; flash(); blip('thud'); shake(12);
+    F.meter.them = Math.min(100, F.meter.them + 14);
+    if(F.you.hp / F.you.maxHp < .35) slam('HURT!');
+    chant('L', F.them.period.split(' ')[0].toUpperCase() + '!');
+  }
+  hurt(Math.max(0, .55 - F.you.hp / F.you.maxHp * .55));
+  hud();
+  if(!checkDown()) F.theirNext = performance.now() + (700 + Math.random() * 900);
+}
+
+/* Its taunt, with replies — one names its weakness. */
+function openReply(){
+  F.replyOpen = true; F.lastTaunt = performance.now();
+  const r = tauntRound(F.them, PERIODS.map(p=>p.n), Math.random);
+  F.reply = r;
+  voice(F.them.period, r.line);
+  $('r3-replies').innerHTML = r.options.map((o, i)=>
+    `<button data-reply="${i}">${esc(o)}</button>`).join('');
+  $('r3-replies').classList.add('on');
+}
+function answerReply(i){
+  if(!F.replyOpen) return;
+  F.replyOpen = false;
+  $('r3-replies').classList.remove('on'); $('r3-replies').innerHTML = '';
+  if(i === F.reply.answerIndex){
+    const factor = elementFactor(F.you.elements, F.them.elements);
+    const dmg = Math.max(4, Math.round(F.you.power * .8 * factor / 2));
+    F.them.hp -= dmg; F.meter.you = Math.min(100, F.meter.you + 18);
+    slam('NAMED IT!'); flash(); blip('ding'); shake(10);
+    call('Straight through the guard.'); chant('R', 'YES!');
+  } else {
+    F.you.hp -= Math.max(3, Math.round(F.them.power * .6));
+    call('Wrong read — ' + F.reply.answer, 2400); blip('thud'); shake(7);
+  }
+  hud(); checkDown();
+}
+
+/* ---------- knockdowns and the end ---------- */
+function shake(n){ if(F) F.shake = Math.max(F.shake, n); }
+
+function checkDown(){
+  if(!F || F.over) return false;
+  const who = F.them.hp <= 0 ? 'them' : F.you.hp <= 0 ? 'you' : null;
+  if(!who) return false;
+  F[who].hp = 0; F.downs[who]++;
+  F.phase = 'down'; F.downWho = who; F.count = 0;
+  setShot('low'); F.slow = .4; speedlines(true);
+  slam('DOWN!'); blip('down');
+  if(who === 'them') R3.ok && (R3.S.them.group.rotation.x = -1.2);
+  else R3.ok && (R3.S.you.group.rotation.x = 1.2);
+  countOn();
+  return true;
+}
+function countOn(){
+  F.countTimer = setTimeout(()=>{
+    if(!F || F.phase !== 'down') return;
+    F.count++;
+    $('r3-count').textContent = F.count;
+    $('r3-count').classList.remove('go'); void $('r3-count').offsetWidth; $('r3-count').classList.add('go');
+    blip('bell');
+    if(F.count >= 10) return endFight(F.downWho === 'you' ? 'them' : 'you', 'by knockout');
+    if(F.downWho === 'them' && F.count >= 4 && F.downs.them < 2) return riseUp('them');
+    countOn();
+  }, 750);
+}
+function riseUp(who){
+  clearTimeout(F.countTimer);
+  F[who].hp = Math.round(F[who].maxHp / 3);
+  if(R3.ok){ R3.S[who === 'them' ? 'them' : 'you'].group.rotation.x = 0; }
+  F.phase = 'live'; F.slow = 1; speedlines(false); hurt(0);
+  $('r3-count').textContent = '';
+  call(who === 'you' ? 'Up at ' + F.count + '!' : 'It beats the count.');
+  F.theirNext = performance.now() + 1200; setShot('shoulder'); hud();
+}
+function endFight(winner, how){
+  clearTimeout(F.countTimer);
+  F.over = {winner, how}; F.phase = 'over'; F.slow = 1; speedlines(false);
+  $('r3').classList.add('over');
+  setShot('house');
+  $('r3-count').textContent = '';
+  slam(winner === 'you' ? 'WINNER' : 'DOWN. NOT OUT.');
+  call((winner === 'you' ? F.you.period : F.them.period) + ' — ' + how, 6000);
+  voice(winner === 'you' ? 'Corner' : F.them.period,
+        winner === 'you' ? 'That is how it is done.' : 'Same time tomorrow.');
+  blip(winner === 'you' ? 'ding' : 'down');
+  $('r3-replies').classList.remove('on');
+  $('r3-replies').innerHTML = `<button data-again="1">Again</button><button data-quit="1">Leave</button>`;
+  $('r3-replies').classList.add('on');
+  hud();
+}
+
+/* ---------- between rounds ---------- */
+function endRound(){
+  if(F.round >= F.rounds){
+    return endFight(F.you.hp / F.you.maxHp >= F.them.hp / F.them.maxHp ? 'you' : 'them', 'on points');
+  }
+  F.phase = 'corner'; blip('bell'); setShot('shoulder');
+  call('End of round ' + F.round);
+  voice('Corner', F.you.gift.replace(/\.$/, '') + '. Use it.');
+  $('r3-corner').hidden = false;
+}
+function cornerChoice(kind){
+  if(F.phase !== 'corner') return;
+  $('r3-corner').hidden = true;
+  if(kind === 'water'){ F.you.hp = Math.min(F.you.maxHp, F.you.hp + Math.round(F.you.maxHp * .12)); call('Water. Some of it back.'); }
+  if(kind === 'towel'){ F.stars.you = Math.min(3, F.stars.you + 1); call('Towel. Head clear — a star.'); }
+  if(kind === 'word'){ F.meter.you = Math.min(100, F.meter.you + 25); call('A word. ' + METER_WORD + ' builds.'); }
+  hurt(0);
+  F.round++; F.clock = 90; F.phase = 'live';
+  F.theirNext = performance.now() + 1500; setShot('shoulder');
+  blip('bell'); call('Round ' + F.round);
+  hud();
+}
+
+/* ---------- the frame ---------- */
+let lastT = 0;
+function loop(t){
+  raf = requestAnimationFrame(loop);
+  if(!F) return;
+  const dt = Math.min(0.05, (t - lastT) / 1000 || 0); lastT = t;
+
+  if(F.phase === 'live'){
+    F.clock -= dt * F.slow;
+    if(F.clock <= 0){ F.clock = 0; hud(); return endRound(); }
+    const now = performance.now();
+    if(F.swing && !F.swing.taken && now >= F.swing.at){ F.swing.taken = true; resolveTheirSwing(); }
+    else if(!F.swing && !F.replyOpen && now >= F.theirNext){
+      if(now - F.lastTaunt > 14000 && Math.random() < .5) openReply();
+      else theirWindup();
+    }
+    if(Math.floor(F.clock) % 30 === 0 && Math.random() < .01) chant('L', F.them.period.split(' ')[0].toUpperCase() + '!');
+  }
+  hud();
+  drawRing(dt);
+}
+
+function drawRing(dt){
+  if(!R3.ok || !R3.S) return;
+  const T = window.THREE, S = R3.S, now = performance.now();
+
+  /* camera easing, drag offset and shake */
+  if(R3.want){
+    R3.camPos = R3.camPos || R3.want.p.slice(); R3.camLook = R3.camLook || R3.want.l.slice();
+    for(let i = 0; i < 3; i++){
+      R3.camPos[i] += (R3.want.p[i] - R3.camPos[i]) * 0.06;
+      R3.camLook[i] += (R3.want.l[i] - R3.camLook[i]) * 0.08;
+    }
+  }
+  const yaw = (R3.yaw || 0);
+  const px = R3.camPos[0] * Math.cos(yaw) - R3.camPos[2] * Math.sin(yaw);
+  const pz = R3.camPos[0] * Math.sin(yaw) + R3.camPos[2] * Math.cos(yaw);
+  const k = F && F.shake ? F.shake / 100 : 0;
+  S.camera.position.set(px + (Math.random()-.5) * k, R3.camPos[1] + (Math.random()-.5) * k, pz + (Math.random()-.5) * k);
+  S.camera.lookAt(R3.camLook[0], R3.camLook[1], R3.camLook[2]);
+  if(F && F.shake) F.shake = Math.max(0, F.shake - dt * 60);
+
+  /* the opponent's lean on its tell, and both fighters' idle sway */
+  const sway = Math.sin(now / 420) * .045;
+  S.them.group.position.x = (F && F.swing ? (F.swing.lean === 'left' ? -.46 : .46) : 0) + sway;
+  S.you.group.position.x = -0.78 - sway;
+  S.them.group.position.y = Math.abs(Math.sin(now / 300)) * .03;
+
+  /* arms: guard, or thrown */
+  const throwing = F && F.youSwingUntil && now < F.youSwingUntil;
+  const arm = F && F.youArm === 'L' ? S.you.armL : S.you.armR;
+  [S.you.armL, S.you.armR].forEach(a=>{ a.rotation.x += ((-1.15) - a.rotation.x) * .2; });
+  if(throwing) arm.rotation.x += ((-2.55) - arm.rotation.x) * .55;
+  const theyThrow = F && F.swing && now > F.swing.at - 130;
+  [S.them.armL, S.them.armR].forEach(a=>{ a.rotation.x += ((-1.15) - a.rotation.x) * .2; });
+  if(theyThrow){ const ta = F.swing.hits === 'left' ? S.them.armR : S.them.armL; ta.rotation.x += ((-2.5) - ta.rotation.x) * .5; }
+
+  /* the backlight pulses when it is winding up */
+  if(S.back) S.back.intensity = 6.4 + (F && F.swing ? 3.4 * Math.max(0, 1 - (F.swing.at - now) / 900) : Math.sin(now/700) * .5);
+  S.crowd.rotation.y += dt * .012;
+  S.renderer.render(S.scene, S.camera);
+}
+
+/* ---------- input ---------- */
+function wireFight(){
+  const root = $('r3');
+  root.addEventListener('click', e=>{
+    const t = e.target;
+    if(t.id === 'r3-exit' || t.dataset.quit){ closeFight(); showTab('tab-game'); renderGame(); return; }
+    if(t.dataset.again){ const y = F.youP, m = F.themP; closeFight(); openFight(y, m); return; }
+    if(t.id === 'r3-super') return fireSuper();
+    if(t.dataset.p) return youPunch(t.dataset.p);
+    if(t.dataset.d) return setGuard(t.dataset.d);
+    if(t.dataset.c) return cornerChoice(t.dataset.c);
+    if(t.dataset.reply !== undefined) return answerReply(+t.dataset.reply);
+  });
+  /* drag to swing the camera */
+  let down = null;
+  const xy = e => (e.touches ? e.touches[0].clientX : e.clientX);
+  root.addEventListener('pointerdown', e=>{ if(e.target.closest('button')) return; down = xy(e); });
+  addEventListener('pointermove', e=>{ if(down === null) return; R3.yaw = (R3.yaw || 0) + (xy(e) - down) * .006; down = xy(e); });
+  addEventListener('pointerup', ()=>{ down = null; });
+  root.addEventListener('keydown', e=>e.stopPropagation());
+}
+function setGuard(dir){
+  if(!F || F.phase !== 'live') return;
+  F.guard = dir;
+  const b = document.querySelector('[data-d="' + dir + '"]');
+  if(b){ b.classList.add('held'); setTimeout(()=>b.classList.remove('held'), 260); }
+  if(!F.swing) blip('whoosh');
+}
+addEventListener('keydown', e=>{
+  if(!F || F.over) return;
+  const k = e.key.toLowerCase();
+  if(k === 'arrowleft') setGuard('left');
+  else if(k === 'arrowright') setGuard('right');
+  else if(k === 'arrowdown' || k === ' '){ e.preventDefault(); setGuard('block'); }
+  else if(k === 'j') youPunch('jab');
+  else if(k === 'k') youPunch('combo');
+  else if(k === 'l') youPunch('hook');
+  else if(k === 'u') youPunch('upper');
+  else if(k === 'enter') fireSuper();
+  else if(k === 'escape') { closeFight(); showTab('tab-game'); renderGame(); }
+});
+
+/* ---------- entry ---------- */
+function fightSetupHTML(){
+  const opts = PEOPLE.slice().sort((a,b)=>a.name.localeCompare(b.name))
+    .map(p=>`<option value="${p.id}">${esc(p.name)} — ${findPeriod(p.month,p.day).n}</option>`).join('');
+  return `<div class="game">
+    <h2>The fight</h2>
+    <p class="sub2">Three rounds. You throw the punches; it winds up with a lean before it swings, so slip the other way.
+    It taunts you with what its period is good at — one reply names what it is bad at.</p>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr">
+      <div><label for="fy">You</label><select id="fy"><option value="">Random period</option>${opts}</select></div>
+      <div><label for="ft">Opponent</label><select id="ft"><option value="">Random period</option>${opts}</select></div>
+    </div>
+    <div class="actions"><button class="btn primary" id="f-bell">Ring the bell</button>
+      <button class="btn ghost" id="f-back">Back</button></div>
+    <p class="note" style="margin-top:14px">Keys: J jab · K one-two · L hook · U uppercut · ← → dodge · space block · Enter ${METER_WORD}</p>
+  </div>`;
+}
+function randomPeriodProfile(){
+  const p = PERIODS[Math.floor(Math.random() * PERIODS.length)];
+  return profileOf({name:p.n, month:p.sm, day:p.sd, year:null});
+}
+$('game-box').addEventListener('click', e=>{
+  const t = e.target;
+  if(t.id === 'g-fight'){ $('game-box').innerHTML = fightSetupHTML(); return; }
+  if(t.id === 'f-back'){ return renderGame(); }
+  if(t.id === 'f-bell'){
+    const byId = id => { const p = PEOPLE.find(x=>x.id === id); return p ? profileOf(p) : randomPeriodProfile(); };
+    const y = byId($('fy').value), m = byId($('ft').value);
+    openFight(y, m); F.youP = y; F.themP = m;
   }
 });
 

@@ -23,7 +23,8 @@ const NAMES = ['PERIODS','LORE','NUMBERS','TAROT','EL_REL','Q_REL','SIGNS','ELEM
                'isLeap','parseBirthday','parseBulkLine','renderCrest','renderReading','renderPath','renderPair',
                'parseCSV','parseContactsCSV','parseVCF','parseContacts','parseContactDate',
                'WELLBEING','SIGN_BODY','SIGN_SWATCH','PLANET_LORE','BIRTHSTONE','DESTINY',
-               'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT'];
+               'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT',
+               'TAUNTS','STYLE','RING_ELEMENT','elementFactor','fighterFrom','tauntRound'];
 const ctx = vm.createContext({console});
 vm.runInContext(engine + `\n;globalThis.__api = {${NAMES.join(',')}};`, ctx, {filename:'index.html:engine'});
 const api = ctx.__api;
@@ -34,7 +35,8 @@ const {PERIODS, LORE, NUMBERS, TAROT, EL_REL, Q_REL, SIGNS, ELEMENTS, QUALITIES,
        parseBirthday, parseBulkLine, renderCrest, renderReading, renderPath, renderPair,
        parseCSV, parseContactsCSV, parseVCF, parseContacts, parseContactDate,
        WELLBEING, SIGN_BODY, SIGN_SWATCH, PLANET_LORE, BIRTHSTONE, DESTINY,
-       makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT} = api;
+       makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT,
+       TAUNTS, STYLE, RING_ELEMENT, elementFactor, fighterFrom, tauntRound} = api;
 
 let failures = 0, checks = 0;
 function ok(label){ checks++; console.log('  ✓ ' + label); }
@@ -279,10 +281,101 @@ shown.length ? bad('every portrait is rendered into its reading', shown.map(p=>p
              : ok('every portrait is rendered into its reading');
 
 /* ---------------------------------------------------------- */
+group('The fight');
+
+/* Seeded, so any failure is reproducible. */
+function seeded(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+const tauntGaps = [];
+PERIODS.forEach(p=>{
+  const T = TAUNTS[p.n];
+  if(!T) return tauntGaps.push(`no taunt for ${p.n}`);
+  if(!T.t || T.t.length < 10) tauntGaps.push(`${p.n}: taunt too short`);
+  if(!T.c || T.c.length < 10) tauntGaps.push(`${p.n}: counter too short`);
+});
+Object.keys(TAUNTS).forEach(k=>{ if(!PERIODS.some(p=>p.n === k)) tauntGaps.push(`orphan taunt "${k}"`); });
+tauntGaps.length ? bad('every period has a taunt and a counter', tauntGaps.join('\n      '))
+                 : ok('all 48 periods have a taunt and a counter');
+is(new Set(PERIODS.map(p=>TAUNTS[p.n].t)).size, 48, 'all 48 taunts are distinct');
+is(new Set(PERIODS.map(p=>TAUNTS[p.n].c)).size, 48, 'all 48 counters are distinct — the right reply is never ambiguous');
+
+/* The elemental wheel must be a cycle: each beats exactly one and loses to one. */
+const wheel = ['Fire','Earth','Air','Water'];
+const wheelBad = [];
+wheel.forEach(a=>{
+  const beats = wheel.filter(b=>a !== b && elementFactor([a],[b]) > 1);
+  const loses = wheel.filter(b=>a !== b && elementFactor([a],[b]) < 1);
+  if(beats.length !== 1) wheelBad.push(`${a} beats ${beats.length} elements`);
+  if(loses.length !== 1) wheelBad.push(`${a} loses to ${loses.length} elements`);
+  if(elementFactor([a],[a]) !== 1) wheelBad.push(`${a} is not neutral against itself`);
+});
+wheelBad.length ? bad('the elemental wheel is a clean cycle', wheelBad.join(', '))
+                : ok('the elemental wheel is a clean cycle — each beats one, loses to one, neutral twice');
+
+/* Every period must make a usable fighter, built from its own data. */
+const statBad = [];
+PERIODS.forEach(p=>{
+  const f = fighterFrom(profileOf({name:'S', month:p.sm, day:p.sd, year:null}));
+  if(!(f.maxHp > 0 && f.hp === f.maxHp)) statBad.push(`${p.n}: bad health`);
+  if(!(f.power > 0 && f.guard > 0)) statBad.push(`${p.n}: bad power or guard`);
+  if(!f.ring || !f.ring.colour || !/^#[0-9a-f]{6}$/i.test(f.ring.colour)) statBad.push(`${p.n}: no ring colour`);
+  if(!f.taunt || !f.taunt.t || !f.taunt.c) statBad.push(`${p.n}: no taunt on the fighter`);
+  if(f.style !== STYLE[f.quality]) statBad.push(`${p.n}: style does not follow its quality`);
+  if(f.ring !== RING_ELEMENT[f.elements[0]]) statBad.push(`${p.n}: ring does not follow its element`);
+});
+statBad.length ? bad('every period makes a usable fighter', statBad.slice(0,4).join('\n      '))
+               : ok('all 48 periods make a fighter — style from quality, ring from element, taunt from the period');
+
+const fixedF = fighterFrom(profileOf({name:'F', month:8, day:1, year:null}));    // Leo I, Fixed
+const cardF  = fighterFrom(profileOf({name:'C', month:3, day:28, year:null}));   // Aries I, Cardinal
+(fixedF.guard > cardF.guard && cardF.power > fixedF.power)
+  ? ok('Fixed guards harder, Cardinal hits harder')
+  : bad('Fixed guards harder, Cardinal hits harder', `guard ${fixedF.guard}/${cardF.guard}, power ${cardF.power}/${fixedF.power}`);
+(STYLE.Mutable.feint > STYLE.Cardinal.feint && STYLE.Fixed.block > STYLE.Mutable.block)
+  ? ok('Mutable feints most, Fixed blocks most')
+  : bad('Mutable feints most, Fixed blocks most');
+
+/* Each element has its own ring colour, so no two look the same. */
+is(new Set(Object.values(RING_ELEMENT).map(r=>r.colour)).size, 4, 'each element lights the ring a different colour');
+
+/* The taunt round: three replies, exactly one right, always this opponent's. */
+let tauntBad = [];
+const allNames = PERIODS.map(p=>p.n);
+PERIODS.forEach((p, i)=>{
+  const f = fighterFrom(profileOf({name:'X', month:p.sm, day:p.sd, year:null}));
+  for(let sd = 1; sd <= 6; sd++){
+    const r = tauntRound(f, allNames, seeded(i * 13 + sd));
+    if(r.line !== TAUNTS[p.n].t) tauntBad.push(`${p.n}: wrong line`);
+    if(r.options.length !== 3) tauntBad.push(`${p.n}: ${r.options.length} options`);
+    if(new Set(r.options).size !== 3) tauntBad.push(`${p.n}: duplicate options`);
+    if(r.options[r.answerIndex] !== TAUNTS[p.n].c) tauntBad.push(`${p.n}: answerIndex is wrong`);
+    if(r.options.filter(o=>o === TAUNTS[p.n].c).length !== 1) tauntBad.push(`${p.n}: right answer appears twice`);
+  }
+});
+tauntBad.length ? bad('every taunt round has three replies and exactly one right one', tauntBad.slice(0,4).join('\n      '))
+                : ok('288 taunt rounds: three replies, exactly one right, always this opponent\'s counter');
+
+/* The page must actually ship Three.js and reference it. */
+const hasVendor = fs.existsSync(path.join(ROOT, 'three.min.js'));
+hasVendor ? ok('three.min.js is vendored beside index.html') : bad('three.min.js is vendored beside index.html');
+html.includes('src="three.min.js"') ? ok('index.html loads the vendored Three.js, not a CDN')
+                                    : bad('index.html loads the vendored Three.js, not a CDN');
+/^\/\*\*\s*\n \* @license/.test(fs.readFileSync(path.join(ROOT, 'three.min.js'), 'utf8').slice(0, 40))
+  ? ok('the vendored Three.js keeps its MIT licence header')
+  : bad('the vendored Three.js keeps its MIT licence header');
+
+/* ---------------------------------------------------------- */
 group('The quiz');
 
-/* Seeded, so a failure is reproducible. */
-function seeded(seed){
+/* seeded() is defined in the fight group above. */
+function _unusedSeeded(seed){
   return function(){
     seed |= 0; seed = seed + 0x6D2B79F5 | 0;
     let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
