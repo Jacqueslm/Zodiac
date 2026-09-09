@@ -219,6 +219,9 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 .tally div{background:rgba(0,0,0,.24); border:1px solid var(--line2); border-radius:11px; padding:11px 15px; font-size:13px}
 
 
+
+.layer.two.stub .layer-body{padding:18px 20px}
+.layer.two.stub p{margin-bottom:12px; color:var(--dim); font-size:15px}
 .journey{display:grid; grid-template-columns:1fr auto 1fr; gap:14px; align-items:stretch; margin:6px 0 4px}
 @media(max-width:640px){.journey{grid-template-columns:1fr; gap:8px}}
 .journey > div{background:rgba(0,0,0,.26); border:1px solid var(--line2); border-radius:12px; padding:15px}
@@ -1362,6 +1365,30 @@ function ordinal(d){
 /* ============================================================
    LAYER III — the derived life path
    ============================================================ */
+/* Layer II needs two people, so a single reading can only point at it.
+   Without this the reading runs I then III and looks like a gap. */
+function renderPairStub(P){
+  const n = esc(firstName(P.person.name));
+  const saved = PEOPLE.some(x=>x.name.toLowerCase() === P.person.name.trim().toLowerCase()
+                            && x.month === P.person.month && x.day === P.person.day);
+  return `
+  <div class="layer two stub">
+    <h3>Layer II — The Pair <small>what happens when this period meets another</small></h3>
+    <div class="layer-body">
+      <p>This layer takes two people rather than one, so it lives in <strong>Pair</strong>.
+      ${saved
+        ? `${n} is saved — open Pair and choose ${n} alongside someone else.`
+        : `Save ${n} first, then open Pair and choose ${n} alongside someone else.`}
+      It reads the two periods together: their elemental and quality currents, love, friendship,
+      work and family, and a two-card spread.</p>
+      <div class="actions" style="margin-top:2px">
+        <button class="btn ghost tiny" id="go-pair">Open Pair</button>
+        ${saved ? '' : '<button class="btn ghost tiny" id="go-save">Save ' + n + '</button>'}
+      </div>
+    </div>
+  </div>`;
+}
+
 function renderPath(P){
   const n = esc(firstName(P.person.name));
   const D = P.dest;
@@ -1589,12 +1616,16 @@ function doRead(){
   const r = currentInput();
   if(r.err){ $('err').textContent = r.err; $('result').innerHTML = ''; return null; }
   const P = profileOf(r.person);
-  $('result').innerHTML = renderCrest(P) + renderReading(P) + renderPath(P);
+  $('result').innerHTML = renderCrest(P) + renderReading(P) + renderPairStub(P) + renderPath(P);
   writeHash(r.person);
   $('result').scrollIntoView({behavior:'smooth', block:'start'});
   return P;
 }
 $('btn-read').addEventListener('click', doRead);
+$('result').addEventListener('click', e=>{
+  if(e.target.id === 'go-save'){ $('btn-save').click(); doRead(); }
+  if(e.target.id === 'go-pair'){ showTab('tab-pair'); }
+});
 $('f-name').addEventListener('keydown', e=>{ if(e.key === 'Enter') doRead(); });
 $('f-year').addEventListener('keydown', e=>{ if(e.key === 'Enter') doRead(); });
 
