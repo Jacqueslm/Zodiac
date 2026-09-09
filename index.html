@@ -223,6 +223,16 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 .layer.two.stub .layer-body{padding:18px 20px}
 .layer.two.stub p{margin-bottom:12px; color:var(--dim); font-size:15px}
 
+
+/* ---------- the fight briefing ---------- */
+.brief{margin:18px 0 4px; padding:14px 16px; background:rgba(255,255,255,.03);
+  border:1px solid var(--line); border-left-width:3px; border-radius:0 var(--r) var(--r) 0}
+.brief .bl{margin-bottom:9px}
+.brief .bl small{display:block; font-size:10px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--dimmer); margin-bottom:2px}
+.brief .bl span{font-family:var(--serif); font-size:16px; color:var(--ink)}
+.brief .note{margin:12px 0 0}
+
 .game{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:26px 22px}
 .game h2{font-family:var(--serif); font-weight:500; font-size:27px; margin:0 0 8px}
 .game .qbar{display:flex; justify-content:space-between; align-items:center; font-size:12px;
@@ -916,6 +926,7 @@ const LORE = {
   pur:"to bring at least one vision all the way down to the ground where people can stand on it"}
 };
 
+
 /* ============================================================
    PORTRAITS — the substance of a reading. One per period, written
    to be specific to that period rather than to its element or
@@ -1498,6 +1509,141 @@ function renderPath(P){
 }
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const lower = s => s.charAt(0).toLowerCase() + s.slice(1);
+
+/* ============================================================
+   THE FIGHT — each period taunts with its strength; the right
+   counter names its weakness. Original writing, one pair each.
+   ============================================================ */
+const TAUNTS = {
+"Pisces–Aries Cusp":{t:"I can start again from nothing.", c:"You start so you never have to finish."},
+"Aries I":{t:"I say the true thing first.", c:"You say it before you've aimed it."},
+"Aries II":{t:"Everyone in here is watching me.", c:"And there's nothing underneath it."},
+"Aries III":{t:"I go first. Always.", c:"And you always go alone."},
+"Aries–Taurus Cusp":{t:"I can carry more than you.", c:"You call leaning on people carrying."},
+"Taurus I":{t:"I finish everything I build.", c:"You stopped wanting it years ago."},
+"Taurus II":{t:"Let me explain this to you.", c:"Nobody asked you to."},
+"Taurus III":{t:"This comes easy to me.", c:"That's why you never got better."},
+"Taurus–Gemini Cusp":{t:"I can do all of it at once.", c:"And you finish none of it."},
+"Gemini I":{t:"Nothing holds me.", c:"Nothing holds you up either."},
+"Gemini II":{t:"I've got a word for what you are.", c:"Say it plainly. You can't."},
+"Gemini III":{t:"I'm still looking.", c:"Because arriving would end you."},
+"Gemini–Cancer Cusp":{t:"I've already seen how this ends.", c:"In your head. Not in here."},
+"Cancer I":{t:"I know exactly what you're feeling.", c:"You can't tell it from your own."},
+"Cancer II":{t:"I don't do it your way.", c:"You just do the opposite. That's not a way."},
+"Cancer III":{t:"I could talk you out of this.", c:"That's not talking. That's handling."},
+"Cancer–Leo Cusp":{t:"You never know which one you'll get.", c:"Neither do the people who love you."},
+"Leo I":{t:"I'm in charge in here.", c:"Nobody's argued with you in years."},
+"Leo II":{t:"I don't need to prove anything.", c:"So you never give it all. Ever."},
+"Leo III":{t:"They all follow me.", c:"Because you never let them lead."},
+"Leo–Virgo Cusp":{t:"I can see exactly what you are.", c:"And you say it only because you can."},
+"Virgo I":{t:"I built the system you're standing in.", c:"And you'd never tear it down."},
+"Virgo II":{t:"You don't know anything about me.", c:"Nobody does. That's the problem."},
+"Virgo III":{t:"I said exactly what I meant.", c:"And still missed what I meant."},
+"Virgo–Libra Cusp":{t:"Yours isn't good enough.", c:"Yours isn't finished. It never is."},
+"Libra I":{t:"I hold a higher line than you.", c:"And it's aimed at you first."},
+"Libra II":{t:"Everyone in this room is with me.", c:"Name one thing you think alone."},
+"Libra III":{t:"Watch how good this looks.", c:"There's nobody behind it."},
+"Libra–Scorpio Cusp":{t:"I can see every flaw you have.", c:"You've never made anything to be flawed."},
+"Scorpio I":{t:"I go all the way in.", c:"And burn out before the end."},
+"Scorpio II":{t:"I go deeper than you can follow.", c:"You've been down there too long."},
+"Scorpio III":{t:"Everybody likes me.", c:"Nobody is close to you."},
+"Scorpio–Sagittarius Cusp":{t:"I'll tear the whole thing down.", c:"And put what in its place?"},
+"Sagittarius I":{t:"I don't need anyone.", c:"You needed them. You said no."},
+"Sagittarius II":{t:"I made this first.", c:"And never finished it."},
+"Sagittarius III":{t:"I think bigger than you.", c:"You walked over people to do it."},
+"Sagittarius–Capricorn Cusp":{t:"I saw this coming years ago.", c:"And you've been bitter ever since."},
+"Capricorn I":{t:"I'll handle it.", c:"You call that care. It's control."},
+"Capricorn II":{t:"I'll outlast you.", c:"You never checked it was worth it."},
+"Capricorn III":{t:"I take the space I need.", c:"And everyone near you went quiet."},
+"Capricorn–Aquarius Cusp":{t:"You've no idea what I'm building.", c:"Neither has anyone. You never showed it."},
+"Aquarius I":{t:"I'm three steps ahead of you.", c:"And alone up there."},
+"Aquarius II":{t:"None of this touches me.", c:"Nothing ever has."},
+"Aquarius III":{t:"I accept everything.", c:"So you defend nothing."},
+"Aquarius–Pisces Cusp":{t:"I feel everything in this room.", c:"And it's already too much for you."},
+"Pisces I":{t:"There's more to this than you see.", c:"Your actual life is unattended."},
+"Pisces II":{t:"I don't need the room.", c:"The invitations stopped. You noticed."},
+"Pisces III":{t:"I can see the whole thing.", c:"None of it has a date on it."}
+};
+
+/* Element in the ring: colour, and what falls in it. */
+const RING_ELEMENT = {
+  Fire: {colour:'#f0894f', glow:'rgba(240,137,79,.42)', weather:'fire off the floor'},
+  Earth:{colour:'#8fd08a', glow:'rgba(143,208,138,.38)', weather:'dust and grit'},
+  Air:  {colour:'#8fc4f5', glow:'rgba(143,196,245,.38)', weather:'wind streaking across'},
+  Water:{colour:'#8f9cf5', glow:'rgba(143,156,245,.38)', weather:'rain that falls and splashes'}
+};
+
+/* Fighting style comes from the quality. */
+const STYLE = {
+  Cardinal:{name:'leads',   swings:3, feint:0.15, block:0.10, tellScale:0.85, power:1.15, guard:0.85},
+  Fixed:   {name:'holds',   swings:2, feint:0.10, block:0.35, tellScale:1.15, power:1.00, guard:1.30},
+  Mutable: {name:'switches',swings:4, feint:0.40, block:0.15, tellScale:0.95, power:0.90, guard:1.00}
+};
+
+/* Fire → Air → Earth → Water → Fire. Each beats one, loses to one. */
+const BEATS = {Fire:'Air', Air:'Earth', Earth:'Water', Water:'Fire'};
+function elementFactor(mine, theirs){
+  let best = 1;
+  mine.forEach(a=>theirs.forEach(b=>{
+    if(BEATS[a] === b) best = Math.max(best, 1.5);
+    else if(BEATS[b] === a) best = Math.min(best, 0.75);
+  }));
+  return best;
+}
+
+/* The ring itself is The Fight of Your Life's — fight.html, made from that
+   game's own ring3d.html by build-fight.js. Nothing here fights; it decides
+   who is in the ring, what the room looks like, and what the corner says.
+
+   The game reads four things off the address: boss (the opponent),
+   place (the room), fighter (which body you walk in as), rounds. */
+const PLACE_OF   = {Fire:'temple', Earth:'monastery', Air:'rooftop', Water:'tomb'};
+const PLACE_NAME = {temple:'The Temple', monastery:'The Monastery',
+                    rooftop:'The Rooftop', tomb:'The Tomb'};
+/* Which of the game's five fighters walks out of the blue corner as you. */
+const BODY_OF = {Fire:1, Air:2, Water:3, Earth:5};
+
+/* The slug build-fight.js keys its opponents by. Both sides derive it the
+   same way from the same period name, so they cannot drift apart. */
+function periodSlug(name){
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function fightURL(you, them, rounds){
+  const q = new URLSearchParams({
+    boss:    periodSlug(them.per.n),
+    place:   PLACE_OF[them.elements[0]],
+    fighter: String(BODY_OF[you.elements[0]] || 1),
+    rounds:  String(rounds || 6),
+    secs:    '30',
+    rest:    '14'
+  });
+  return 'fight.html?' + q.toString();
+}
+
+/* What the books say about the opponent, before the bell. Every line is a
+   reading of the period, not a rule of the game — the ring's rules are the
+   game's own and are the same whoever is in it. The one that carries into
+   the fight is the counter: it becomes what your corner shouts. */
+function fightBrief(you, them){
+  const el = them.elements[0], place = PLACE_OF[el];
+  return {
+    room:    PLACE_NAME[place],
+    weather: RING_ELEMENT[el].weather,
+    colour:  RING_ELEMENT[el].colour,
+    says:    TAUNTS[them.per.n].t,
+    answer:  TAUNTS[them.per.n].c,
+    holds:   STYLE[them.qualities[0]].name,
+    quality: them.qualities[0],
+    yours:   `${you.elements[0]} ${you.qualities[0]}`,
+    reading: elementFactor(you.elements, them.elements) > 1
+      ? `${you.elements[0]} puts out ${el}. On the page you have the better of it.`
+      : elementFactor(you.elements, them.elements) < 1
+      ? `${el} takes ${you.elements[0]}. On the page this one is above you.`
+      : `${you.elements[0]} against ${el} settles nothing either way.`
+  };
+}
+
 
 /* ============================================================
    QUIZ — questions generated from the same data the readings use.
@@ -2084,7 +2230,8 @@ function renderGame(){
       <p class="sub2">${QUIZ_LENGTH} questions drawn from the same data as the readings — periods, dates,
       tarot cards, elements, stones${PEOPLE.length >= 3 ? ', and the people you have saved' : ''}.</p>
       ${best ? `<p class="note" style="margin-bottom:18px">Your best so far: <strong>${best}/${QUIZ_LENGTH}</strong></p>` : ''}
-      <button class="btn primary" id="g-start">Start</button>
+      <div class="actions"><button class="btn primary" id="g-start">Start the quiz</button>
+      <button class="btn ghost" id="g-fight">The fight</button></div>
     </div>`;
     return;
   }
@@ -2140,6 +2287,90 @@ $('game-box').addEventListener('click', e=>{
     if(GAME.picked === GAME.qs[GAME.i].answerIndex) GAME.score++;
     renderGame();
   }
+});
+
+/* ============================================================
+   THE FIGHT — the entry to fight.html. The ring, the fighters,
+   the referee, the crowd, the cameras, the sound and every rule
+   in there belong to The Fight of Your Life; build-fight.js only
+   adds the 48 periods to its table of opponents. This screen
+   picks who walks out and hands the game the address.
+   ============================================================ */
+function randomPeriodProfile(){
+  const p = PERIODS[Math.floor(Math.random() * PERIODS.length)];
+  return profileOf({name:p.n, month:p.sm, day:p.sd, year:null});
+}
+
+/* Saved people first, then every period, so there is always an opponent
+   even on a fresh install. */
+function fightOptions(){
+  const saved = PEOPLE.slice().sort((a,b)=>a.name.localeCompare(b.name))
+    .map(p=>`<option value="p:${p.id}">${esc(p.name)} — ${findPeriod(p.month, p.day).n}</option>`).join('');
+  const all = PERIODS.map(p=>`<option value="z:${esc(p.n)}">${esc(p.n)} — ${esc(p.t)}</option>`).join('');
+  return (saved ? `<optgroup label="Saved">${saved}</optgroup>` : '') +
+         `<optgroup label="Every period">${all}</optgroup>`;
+}
+
+function fightPick(value){
+  if(!value) return randomPeriodProfile();
+  if(value.slice(0,2) === 'p:'){
+    const p = PEOPLE.find(x=>x.id === value.slice(2));
+    if(p) return profileOf(p);
+  }
+  const per = PERIODS.find(x=>x.n === value.slice(2));
+  return per ? profileOf({name:per.n, month:per.sm, day:per.sd, year:null}) : randomPeriodProfile();
+}
+
+function fightSetupHTML(){
+  const opts = fightOptions();
+  return `<div class="game">
+    <h2>The fight</h2>
+    <p class="sub2">Six rounds of thirty seconds in The Fight of Your Life's own ring. Pick who you
+    are and who you are in there with — the period you choose becomes the opponent, its element
+    picks the room, and the line that answers it becomes what your corner shouts.</p>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr">
+      <div><label for="fy">You</label><select id="fy"><option value="">Random period</option>${opts}</select></div>
+      <div><label for="ft">Opponent</label><select id="ft"><option value="">Random period</option>${opts}</select></div>
+    </div>
+    <div class="form-grid" style="grid-template-columns:1fr; margin-top:12px">
+      <div><label for="fr">Length</label><select id="fr">
+        <option value="3">Three rounds</option>
+        <option value="6" selected>Six rounds</option>
+      </select></div>
+    </div>
+    <div id="f-brief"></div>
+    <div class="actions"><button class="btn primary" id="f-bell">Ring the bell</button>
+      <button class="btn ghost" id="f-back">Back</button></div>
+  </div>`;
+}
+
+/* The briefing is a reading of the opponent, not a rule of the ring. Said so
+   in the note, because the fight plays the same whoever is in it. */
+function renderBrief(){
+  const box = $('f-brief'); if(!box) return;
+  const you = fightPick($('fy').value), them = fightPick($('ft').value);
+  const b = fightBrief(you, them);
+  box.innerHTML = `<div class="brief" style="border-left:3px solid ${b.colour}">
+    <div class="bl"><small>You</small><span>${esc(you.per.n)} — ${esc(b.yours)}</span></div>
+    <div class="bl"><small>The room</small><span>${esc(b.room)}, ${esc(b.weather)}</span></div>
+    <div class="bl"><small>It says</small><span>“${esc(b.says)}”</span></div>
+    <div class="bl"><small>Your corner answers</small><span>“${esc(b.answer)}”</span></div>
+    <div class="bl"><small>Under pressure it</small><span>${esc(b.holds)} — ${esc(b.quality)}</span></div>
+    <p class="note">${esc(b.reading)} That is the book talking; in the ring the rules are the
+    same for both of you.</p>
+  </div>`;
+}
+
+$('game-box').addEventListener('click', e=>{
+  const t = e.target;
+  if(t.id === 'g-fight'){ $('game-box').innerHTML = fightSetupHTML(); renderBrief(); return; }
+  if(t.id === 'f-back'){ return renderGame(); }
+  if(t.id === 'f-bell'){
+    location.href = fightURL(fightPick($('fy').value), fightPick($('ft').value), +$('fr').value || 6);
+  }
+});
+$('game-box').addEventListener('change', e=>{
+  if(['fy','ft'].includes(e.target.id)) renderBrief();
 });
 
 /* ============================================================
