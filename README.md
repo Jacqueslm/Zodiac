@@ -26,6 +26,16 @@ People are saved to the browser's `localStorage`. A **Matrix** tab reads every
 saved person against every other automatically, and **The 48** tab browses the
 whole year.
 
+The **Game** tab holds two things. A ten-question quiz drawn from the same
+tables as the readings, and **the fight** — two periods in a ring. The opponent
+taunts you with what its period is good at, and only one of three replies names
+what it is bad at. Then it winds up: it leans and glows to one side, and you
+slip the other way or block for half. A clean slip opens a counter. Elements
+run on a wheel (Fire beats Air beats Earth beats Water beats Fire), the quality
+sets the fighting style — Cardinal leads, Fixed holds, Mutable feints — and the
+day-number sets punching power. Six rounds, a knockdown you tap to rise from,
+and a ZODIAC meter that fills on clean work and spends itself on a flurry.
+
 ## Entering people
 
 Beyond one-at-a-time entry, the **People** tab takes a pasted list — one person
