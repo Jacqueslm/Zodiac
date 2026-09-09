@@ -224,6 +224,12 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 .layer.two.stub p{margin-bottom:12px; color:var(--dim); font-size:15px}
 
 
+/* ---------- summary + read aloud ---------- */
+.tools{display:flex; gap:8px; flex-wrap:wrap; margin:0 0 18px}
+.btn.sm{padding:7px 14px; font-size:13px}
+.btn.sm.on{border-color:var(--gold); color:var(--gold)}
+.simple .db{font-size:16.5px; line-height:1.8}
+
 /* ---------- the three books converging ---------- */
 .books{margin:0 0 16px; border:1px solid var(--line); border-radius:var(--r); overflow:hidden}
 .books>div{padding:11px 15px; border-bottom:1px solid var(--line)}
@@ -1419,11 +1425,25 @@ function renderDepth(P){
   if(!D) return '';
   const L = P.lore;
   const n = esc(firstName(P.person.name));
-  const box = (t, b) => `<div class="dp"><div class="dt">${t}</div><div class="db">${b}</div></div>`;
+  /* only render what has been written, so a period mid-rewrite shows no empty boxes */
+  const box = (t, b) => b ? `<div class="dp"><div class="dt">${t}</div><div class="db">${b}</div></div>` : '';
   return `
   <div class="layer deep">
-    <h3>The whole person <small>the two sides, health three ways, family, closeness, and the stages</small></h3>
+    <h3>The whole person <small>all of it &mdash; the good, the bad, and the parts nobody prints</small></h3>
     <div class="layer-body">
+      <div class="tools">
+        ${D.simple ? `<button class="btn ghost sm" id="btn-simple">Simple version</button>` : ''}
+        <button class="btn ghost sm" id="btn-speak">Read it to me</button>
+        <button class="btn ghost sm" id="btn-stop" hidden>Stop</button>
+      </div>
+      ${D.simple ? `<div class="simple" id="simple-box" hidden>
+        <h4>The short version</h4>
+        <div class="dp"><div class="dt">You</div><div class="db">${D.simple.self}</div></div>
+        <div class="dp"><div class="dt">You and other people</div><div class="db">${D.simple.others}</div></div>
+        <div class="dp"><div class="dt">Where you are going</div><div class="db">${D.simple.path}</div></div>
+        <p class="note">Same reading, plain words. The long version is underneath.</p>
+      </div>` : ''}
+      <div id="deep-full">
       <h4>Where the three books meet</h4>
       <div class="books">
         <div><small>Birthdays &mdash; who this is</small><span>${esc(P.per.n)}, ${esc(P.per.t.replace(/^The /,'the '))}. ${L.k}</span></div>
@@ -1441,6 +1461,15 @@ function renderDepth(P){
       <h4>The two sides</h4>
       ${box('At your best', D.strong)}
       ${box('At your worst', D.hard)}
+
+      <h4>All of it</h4>
+      ${box('Love', D.love)}
+      ${box('Anger', D.hate)}
+      ${box('Envy', D.envy)}
+      ${box('What you daydream about', D.fantasy)}
+      ${box('Fun', D.fun)}
+      ${box('The dark stretch', D.dark)}
+      ${box('Money', D.money)}
 
       <h4>Health, three ways</h4>
       ${box('Mind', D.mind)}
@@ -1468,6 +1497,7 @@ function renderDepth(P){
       </div>
       <p class="disclaim">Stages describe how this temperament tends to move through a life, not a schedule
       and not a prediction. Ages are rough and plenty of people run early or late.</p>
+      </div>
     </div>
   </div>`;
 }
@@ -1617,84 +1647,128 @@ const lower = s => s.charAt(0).toLowerCase() + s.slice(1);
 const DEPTH = {
 
 "Aries I":{
- hinge:"All three arrive at the same half second. Birthdays has you saying the true thing before you have aimed it; Destiny runs the path from saying it first toward saying it on purpose; and every pairing sounds the same note — people always know where they stand with you, and occasionally wish they had been asked before they found out. One gap between thought and mouth, described three ways.",
- tension:"They do not agree about it. Birthdays counts the directness as the reason people trust you. Destiny treats it as the thing that costs you people. Both are accurate, and that is the actual difficulty — the instruction was never to become careful, only to own the half second.",
- action:"Pick the conversation you keep replaying and go finish it out loud, this week, with the person who was there.",
+ hinge:"All three land on the same half second. Birthdays calls this the Week of the Child and means it exactly: unfiltered, fresh, and not yet trained. Destiny runs the path from saying it first toward saying it on purpose. Relationships puts you charged with Water and Earth, and the complaint is identical every time — nobody ever wonders where they stand with you, and nobody gets asked first either.",
+ tension:"Birthdays counts the directness as the reason people trust you. Destiny counts it as the thing that costs you people. Both true, which is the difficulty. Nobody wants you careful. They want the half second between the thought and the mouth to belong to you instead of to whatever you felt.",
+ strong:"You start. Everybody else is still weighing it up and you are already three steps in, and half the good things in your life exist because of that alone. You say the thing the whole room knew and would not touch, and you hand people back weeks of their life. You do not hold grudges, which is rarer than it sounds and makes you very easy to forgive.",
+ hard:"You are selfish in the specific way a child is selfish — not cruel, just genuinely not thinking about the other person until afterwards. You go off. You say the accurate, unnecessary thing and then feel wronged when somebody is hurt, because you did not mean it that way, and meaning it is the only part you track. You have a talent for being sorry that costs you nothing. The people around you have learned to wait it out. That is not the compliment it feels like.",
+ love:"You go all in fast and you go off it fast, and you are honestly baffled both times. What you want is the beginning: being wanted, the heat, the newness. What you are bad at is Tuesday. When you are loved steadily by somebody calm you get bored and call the boredom incompatibility. It usually is not.",
+ hate:"You blow. Loud, immediate, over in twenty minutes, and you have genuinely moved on while the other person is still shaking. You do not carry it. They do. That imbalance is the actual damage — not the shouting, the fact that you get to be finished and they do not. Then you are warm again and cannot see why it is not fine.",
+ envy:"You envy people who finished. Anyone with a body of work, a long marriage, a trade they got good at over twenty years. It stings because you know you had the start in you and not the middle. It shows up as dismissing what they made rather than admiring it.",
+ fantasy:"You daydream about starting again somewhere nobody knows you — new town, new work, clean slate, day one. It is a very old fantasy for you and it has a lie in it. Nothing that is hard about your life is hard because of where you are standing.",
+ fun:"Real fun, no irony. Physical, fast, loud, competitive, immediate. You are the best person to have at anything that requires somebody to jump first. You are terrible at anything that requires waiting for a turn, and you know it, and you will still complain about it.",
+ dark:"It comes as flatness rather than sadness. The drive goes and nothing is interesting, and because your whole identity runs on wanting things, having no want is frightening to you in a way you cannot easily name. You will try to burn it off with something new. It does not work and you will do it several more times before you believe that.",
+ money:"It moves through you. You spend on impulse, on generosity, on the thing you decided you needed at two in the afternoon. You are not greedy, you are just entirely present tense about it. Setting money aside where you cannot reach it is worth more to you than any amount of discipline you promise yourself you will find.",
+ mind:"The moment does not flatten you, the aftermath does. You go home replaying it, knowing something landed harder than you meant, and the room has long since moved on. That loop can run for days and nothing shows on the outside. The relief is not becoming careful — it is going back and saying the second sentence, the one about what you actually meant. People are waiting for it far more often than you think.",
+ body:"You run hot and you run out. Everything arrives as a surge and you spend all of it, then cannot work out why the next day is flat. Sleep is the first thing you drop and the last thing you will admit to. Aries traditionally rules the head, and yours is where the tension parks — jaw, temples, teeth. Most of your injuries come from starting before warming up, in the gym and elsewhere.",
+ spirit:"You need something worth going first for. Without it the drive has nowhere to go and picks fights with whatever is nearest. Anything that gives you a beginning you can repeat suits you: a morning practice, the same walk at the same hour, a room where you sit and say nothing. Beginning again is what you are naturally best at. It happens to also be a spiritual discipline.",
+ raised:"You were probably the one who said out loud what the family already knew, and got punished for it while everybody privately agreed. That teaches something crooked: that honesty is both your value and your fault. Some part of you is still braced for the reaction instead of interested in the answer.",
+ making:"Your house is loud, honest and safe, and children near you grow up unafraid of conflict, which is a real gift. The work is the repair. Saying sorry quickly matters more to the people you live with than never raising your voice, and it is the part you skip, because the moment passed for you long before it passed for them.",
+ close:"Easy to meet, hard to stay angry at, and you get further into people's lives in a month than most manage in a year. Depth arrives when you let somebody see you unsure. You are practised at strong and unpractised at asking. The people closest to you say they wish you needed them more visibly — that is not a request to be weaker, it is a request to be let in.",
+ direction:"From saying it first toward saying it on purpose. Nobody is asking you to soften. Own the half second.",
+ action:"Take the conversation you keep replaying and go finish it out loud this week, with the person who was actually there.",
  reflect:"When you say the true thing fast, who is it for?",
- strong:"At your best you are the one who says the thing everybody in the room already knew and nobody would start. That is not bluntness, it is nerve, and it is rarer than you think. People bring you problems they have been circling for weeks because they know you will not spend the first twenty minutes being careful. You give them back a whole afternoon.",
- hard:"At your worst the sentence is out before you have decided what you actually want from it. You are not trying to wound and you are often genuinely surprised at the damage, which is its own problem — it means you get to feel innocent while somebody else does the repairing. The pattern to watch is speed, not honesty. Honesty was never the part that cost anyone anything.",
- mind:"What flattens you is the aftermath, not the moment. You go home replaying a conversation, aware that something landed harder than you meant, and the room has long since moved on. That loop can run for days and it does not look like anything from outside — you seem fine, because the outside of you is fine. The relief is not becoming careful. It is going back and saying the second sentence: what you actually meant. Most people are waiting for it.",
- body:"You run hot and you run out. Energy arrives in a surge and you spend all of it, then wonder why the next day is flat. Sleep is usually the first thing to go and the last thing you will admit to. Watch for the injuries that come from starting before warming up — literally and otherwise. Head and jaw hold your tension. Nothing fancy is needed here, only stopping before empty rather than at it.",
- spirit:"You are reaching for something worth going first for. Without it the drive spins and picks fights with whatever is nearest. Anything that gives you a beginning you can repeat suits you — a morning practice, a walk you take at the same hour, a room you sit in and say nothing. Starting fresh is the thing you are naturally best at. Day one, again, is a spiritual practice and it happens to be your native one.",
- raised:"You were probably the one who said what everyone was thinking, and got in trouble for it in a family that already knew it was true. That teaches a strange lesson: that honesty is both your value and your fault. Some part of you is still braced for the reaction rather than interested in the answer.",
- making:"Your household is loud, honest and safe — people know where they stand, and children raised near you tend to grow up unafraid of conflict. The work is the repair afterwards. Saying sorry quickly is worth more to the people who live with you than never having raised your voice, and it is the thing you skip because the moment has passed for you long before it has passed for them.",
- close:"You are easy to meet and hard to stay angry at, which means you get further into people's lives than most in the first month. Depth arrives when you let someone see you unsure. You are practised at strong and unpractised at asking, and the people closest to you often say they wish you needed them more visibly. They are not asking you to be weaker. They are asking to be let in.",
- direction:"From saying it first toward saying it on purpose. The aim was never to soften you. It is the half second between the thought and the mouth, and what you choose to do with it.",
+ simple:{
+  self:"You say what you think, right away. You do not hide it. People always know where they stand with you, and that is good. But you speak before you aim. You hurt people by accident and then feel bad, and then you move on fast while they are still upset. You start things well. You do not finish many of them.",
+  others:"People like you quickly. You are warm and honest and you do not hold grudges. When you get angry you get loud, then it is over for you in twenty minutes. It is not over for them. That gap is the problem, not the shouting. You are good at being strong and bad at asking for help, so people feel shut out even though you are right there.",
+  path:"Your job is to go from saying it first to saying it on purpose. Nobody wants you quiet. Just take the half second before you speak, and make it yours. And go back to one person you were sharp with and tell them what you really meant."},
  stages:{
-  young:"Early on you are the child adults call a handful and other children follow anyway. You learn that you can move a room, before you learn what for.",
-  rising:"Through your twenties the directness opens doors fast, and shuts a few just as fast. You start things well. Finishing them is the argument of this decade, usually with yourself.",
-  middle:"Somewhere in the forties you notice you have begun things you never went back to, and that some of them mattered. This is the stretch where you either learn to stay or keep starting. Returning to one unfinished thing does more here than starting three new ones.",
-  later:"Later the nerve reads as steadiness. Younger people come to you for exactly the quality that used to get you in trouble, and you find you can give it without the heat behind it."}},
+  young:"Adults call you a handful and other children follow you anyway. You learn early that you can move a room. You do not learn what for.",
+  rising:"The twenties open doors fast and shut a few just as fast. You begin well. Finishing is the argument of this decade, mostly with yourself.",
+  middle:"In the forties you look back and see things you started and never returned to, and some of them mattered. This is the stretch where you either learn to stay or keep beginning. Going back to one unfinished thing is worth more here than three new ones.",
+  later:"Later the nerve reads as steadiness. Younger people come to you for exactly the quality that used to get you in trouble, and you can hand it over now without the heat attached."}},
 
 "Taurus II":{
- hinge:"All three land on one gesture: you explaining. Birthdays calls it patience, Destiny calls it the thing you reach for instead of asking, and in any pairing it surfaces as somebody feeling taught when they had wanted to be met. A gift, a habit and an effect, all the same act.",
- tension:"They pull hard against each other here. Birthdays is right that your patience is rare and genuinely worth something. Destiny is right that it is also how you avoid ever needing anything. So 'explain less' is useless advice. What you would want if you were not being useful is the harder question, and the one worth sitting in.",
+ hinge:"All three land on one act: you explaining. Birthdays calls this the Week of the Teacher and does not mean it entirely as a compliment. Destiny runs the path from holding it together toward being held. Relationships has you easy with Water, charged with Fire and Air, and the same thing surfaces in all of them — somebody feeling taught when they had wanted to be met.",
+ tension:"Birthdays is right that your patience is rare and worth something. Destiny is right that it is also how you avoid ever needing anything from anybody. So telling you to explain less is useless. What you would want if you were not being useful is the harder question, and you have never answered it.",
+ strong:"You will explain it a third time without a flicker, and that is a genuinely uncommon generosity. You make people feel capable instead of stupid. Whatever you have built — a skill, a house, a way of doing something — has depth in it, because you stayed long past the point where everybody else left.",
+ hard:"You are a know-all and you are usually right, which is what makes it unbearable. It arrives dressed as help and lands as correction, and the closer somebody is the more of it they get. You cannot let a wrong fact go. You will interrupt a story to fix a date. You have driven people away this way and told yourself they could not take honesty, when what they could not take was being taught at their own kitchen table.",
+ love:"You are steady, loyal and physically warm, and you pick people who need something. That is not an accident. Being needed is how you know where you stand, so you end up in relationships where you are the strong one, then quietly resent it for years without saying a word. You will stay far too long in something that stopped working, because leaving would mean admitting the effort was not repaid.",
+ hate:"You go silent and you go stubborn, and it can last months. You do not explode, you close, and there is no door. The person on the other side keeps talking to a wall that used to be warm. When you finally say it, it comes out as a list, in order, going back years — because you were keeping one.",
+ envy:"You envy people who are enjoyed. Not respected, not admired — enjoyed. The ones who are fun to have around and are not carrying anything. It lands as thinking they are lightweight. Sometimes they are. Sometimes you just wish somebody wanted your company rather than your help.",
+ fantasy:"You daydream about somebody taking over. Just for a while — the money, the arrangements, the decisions, all of it lifted, while you go somewhere quiet and are not responsible for anything. You have never asked for a version of this. Nobody knows you want it.",
+ fun:"Slow and physical. Food, weather, the garden, the workshop, the long meal that goes on too long. You are hopeless at spontaneous and excellent at the thing you have been looking forward to for three weeks. You laugh harder than people expect, and mostly only where you are comfortable.",
+ dark:"It is heavy rather than sharp, and it arrives as tiredness you work straight through, because working is what you do with feeling. You will notice that you are the useful one in every relationship and not sure you are the wanted one, usually late at night. You will not tell anybody. You will get up and do the jobs.",
+ money:"You are careful and you are quietly proud of it, and you should be. The risk is the other one: hanging onto something past all sense because letting go feels like loss — a job, a house, an arrangement that stopped paying years ago. You count what you have given people, and they have no idea a ledger exists.",
+ mind:"What weighs on you is being needed and not wanted. The question is not what else you can do for them. It is who in your life knows what you are like when you are not being useful, and if the answer is nobody, that is the actual finding, not a mood. You will want to fix it by doing more. That is the exact wrong direction.",
+ body:"You hold on. Weight, tension, the same ache in the same shoulder for eleven months. Your tolerance for a low-grade problem is enormous and you will tolerate it right up until it becomes a real one. Taurus traditionally rules the throat and neck, and yours is where it sits. Book the appointment you have been meaning to make since spring, and find one thing you do for your body that is pleasure and not maintenance.",
+ spirit:"You are steadied by what does not need arguing about. Growing things, cooking properly, working with your hands, sitting in a building older than you. Faith for you was never going to be a debate you win — it is a practice you keep, and keeping things is precisely what you were built for.",
+ raised:"You were the reliable one, the one who could be left in charge. That gets rewarded and it gets used, and nobody thinks to ask whether the reliable one is alright, because the reliable one is always alright. You may still be waiting for somebody to ask.",
+ making:"You make a home people want to be in, and you are the reason it works — the arrangements, the food, the repairs, the remembering. The trap is doing all of it and counting silently. Say what you want out loud, plainly, early, before it hardens into a resentment nobody was given the chance to prevent.",
+ close:"You go deep slowly and then you stay, and very few of your friendships are recent. What blocks the last layer is that you arrive already competent. You would far rather carry somebody's problem than hand over one of yours. Until somebody is allowed to carry something of yours, it is not mutual, and that swap is the whole remaining distance.",
+ direction:"From holding it together toward being held. Not less capable. Available to be looked after by people who have wanted to for years.",
  action:"Ask one person what they want from you, before you decide what they need.",
  reflect:"Who in your life knows what you are like when you are not being useful?",
- strong:"At your best you are the person who will explain it a third time without a flicker of impatience, and that is a genuinely uncommon kind of generosity. You make people feel capable rather than slow. Whatever you have built — a skill, a home, a way of doing something — has depth in it, because you stayed long enough to reach the part most people leave before.",
- hard:"At your worst you are teaching people who did not ask to be taught. It comes out as help and lands as correction, and the closer somebody is to you the more of it they get, because you care more about them getting it right. They hear that you think they are not managing. That is not what you mean, and it is reliably what arrives.",
- mind:"What weighs on you is being needed and not wanted. You will notice, usually late at night, that you are the useful one in most of your relationships and not sure you are the enjoyed one. It can settle into a low, heavy stretch that you will keep working straight through, because working is what you do with feeling. The question that actually helps is not what else can I do for them. It is: who here knows what I am like when I am not being useful?",
- body:"You hold on. Weight, tension, the same ache in the same shoulder for eleven months — you have a very high tolerance for a low-grade problem, and you will tolerate it right up to the point where it becomes a real one. The throat and neck are where yours tends to sit. You do not need a dramatic overhaul; you need the appointment you have been meaning to make since spring, and one thing you do for your body that is pleasure rather than maintenance.",
- spirit:"You are steadied by things that do not need explaining. Growing something, cooking properly, working with your hands, sitting in a building older than you — anywhere the sense of meaning comes through the body rather than the argument. Faith for you is unlikely to be a debate you win. It is a practice you keep, and keeping it is the part you were built for.",
- raised:"You were likely the reliable one, the one who could be left in charge. That gets rewarded and it also gets used, and nobody thinks to ask whether the reliable one is alright, because the reliable one is always alright. You may still be waiting for somebody to ask.",
- making:"You make a home people want to be in, and you are the reason it works — the standing arrangements, the food, the repairs, the remembering. The trap is doing it all and quietly counting. Nobody in your house knows the ledger exists. Say what you want out loud, plainly, before it turns into resentment nobody had the chance to prevent.",
- close:"You go deep slowly and you stay. Very few of your relationships are recent. What blocks the last layer is that you arrive already competent — you would rather help with somebody's problem than hand over one of yours. Somebody has to be allowed to carry something of yours before it is actually mutual, and that swap is the whole distance for you.",
- direction:"From holding it together toward being held. Not less capable. Available to be looked after by the people who have wanted to for years.",
+ simple:{
+  self:"You are patient and you finish things. You will explain something three times and not get annoyed. People trust you because you are steady. But you also teach people who did not ask to be taught. You correct them. You mean it as help and it lands as you thinking they are not coping. And you never ask anybody for anything.",
+  others:"People lean on you. You like that, and then you get tired of it, and you do not say so. You keep score in your head and nobody else knows there is a score. When you are hurt you go quiet, not loud, and the quiet can last months. Your friends are old friends. You do not make new ones fast.",
+  path:"Your job is to let people carry something of yours. Not less strong. Just let somebody help you for once. Ask one person what they actually want from you instead of deciding for them. And work out who knows you when you are not being useful."},
  stages:{
-  young:"Early on you are steady in a way adults find restful and other children find slightly boring. You are already the one who finishes things.",
-  rising:"Your twenties and thirties build the base — the work, the home, the standing. This is where your patience compounds and where you can also quietly disappear into being useful.",
-  middle:"The forties bring the question of whether what you built is what you wanted, and it usually arrives as tiredness rather than doubt. Changing one thing on purpose here is worth more than enduring another decade well.",
-  later:"Later you are the fixed point in a lot of people's lives. Your value stops needing to be demonstrated, which is the rest you have been owed since you were about nine."}},
+  young:"You are steady in a way adults find restful and other children find a bit dull. You are already the one who finishes what he starts.",
+  rising:"The twenties and thirties build the base — work, home, standing. Your patience compounds here, and this is also where you can quietly vanish into being useful to everybody.",
+  middle:"The forties bring the question of whether what you built is what you wanted, and it turns up as tiredness rather than doubt. Changing one thing deliberately here is worth more than enduring another decade well.",
+  later:"Later you are the fixed point in a lot of people's lives. Your worth stops needing to be demonstrated, which is the rest you have been owed since you were about nine."}},
 
 "Gemini II":{
- hinge:"Language is the hinge in all three. Birthdays gives you the word nobody else had; Destiny runs from naming it toward meaning it; and every pairing turns on whether the person across from you comes away feeling described or feeling understood, which are not the same experience. One talent seen from three sides.",
- tension:"The contradiction is real and worth naming. Birthdays treats your phrasing as the gift. Destiny asks you to trade the good version for the plain one. That is a genuine loss, not a trick — the plain version is less impressive, and it is the one that arrives.",
- action:"Say the plain version first this week, and let it sit there without improving it.",
- reflect:"What would you have to feel if you stopped narrating it?",
- strong:"At your best you cut through a stalled argument in one line and everybody breathes out. You are fast without being cruel, which is a much rarer pairing than fast. Friends bring you tangled situations because half an hour near you leaves them holding something they can act on instead of something they have to keep hauling around.",
- hard:"At your worst the phrase becomes the point. You reach for the version that lands rather than the version that is accurate, and you can feel the difference in your mouth as you say it. Used on someone you are close to, that skill stops being description and starts being a weapon with a very good aim. You will win and you will not feel better.",
- mind:"The exhausting part is the running commentary. You narrate your own life while living it, which means you are rarely all the way inside anything, and the noise gets loudest when you are alone and unoccupied. That is often when the drinking or scrolling or whatever the reach is happens — not out of misery, out of the need to turn the volume down. Anything that puts you in your body and out of the description helps more than another attempt to think your way quiet.",
- body:"You forget you have one. Meals get skipped because you were mid-thought, sleep goes late because the mind is still going, and you can run on nervous energy for a surprisingly long time before it falls over. Yours tends to sit in the breath and the hands — shallow breathing, restlessness. The single most useful physical habit for you is the dull one: eating at roughly the same times, in a chair, without a screen.",
- spirit:"Silence is your practice and your least favourite thing, which is usually how you know. You reach for meaning through language and there is a point past which language will not go. Anything wordless — breath, walking, music you do not analyse, prayer where you stop talking — takes you where the next clever formulation cannot. Expect to be bad at it for a while. Being bad at it is not a sign you are doing it wrong.",
- raised:"You were probably the one who could talk their way out, and the family got used to that being how things resolved. Somewhere in there you learned that being quick was safer than being upset. That is a good trick for a child in a difficult room and a poor one for an adult who needs to be understood.",
- making:"Your family gets a house full of ideas, jokes and things named accurately, which is a genuinely good place to grow up. The thing to watch is winning arguments with people you live with. Your partner and your children are not going to out-phrase you, and if the fight is about being right you will always take it and always lose something. Ask what they meant before you tell them what they said.",
- close:"People feel understood by you early and known by you slowly. You can describe someone with uncanny accuracy and still not have let them near — the description is a way of holding the thing at a workable distance. Being close to you means being allowed to see you without a formulation ready. The people who last are the ones who wait through your silence rather than accepting your summary.",
+ hinge:"Language is the hinge in all three. Birthdays calls this the Week of New Language and hands you the word nobody else had. Destiny runs from naming it toward meaning it. Relationships puts you charged with Water and Earth, and every one of those pairings turns on whether the person opposite came away feeling described or feeling understood, which are not the same experience at all.",
+ tension:"Birthdays treats the phrasing as the gift. Destiny asks you to trade the good version for the plain one. That is a real loss and not a trick — the plain version is less impressive, and it is the only one that arrives.",
+ strong:"You cut through a stalled argument in one line and the whole room breathes out. Fast without being cruel is a far rarer pairing than fast. People bring you tangled situations because half an hour near you leaves them holding something they can act on instead of something they have to keep hauling around.",
+ hard:"You are cutting, and you are cutting on purpose more often than you admit. You reach for the version that lands rather than the one that is accurate, and you can feel the difference in your mouth as you say it. Turned on somebody close to you it stops being description and becomes a weapon with very good aim. You will win. You will not feel better. You are also, quietly, a bit of a liar — not big lies, just improvements, and you have made them for so long that you cannot always locate the original.",
+ love:"You fall for minds. Somebody who can keep up is more attractive to you than almost anything physical, and boredom is the only dealbreaker you actually enforce. You talk your way into relationships and then talk your way around the parts that need feeling. When it goes wrong you will explain, at length, brilliantly, rather than sit in it for ten minutes.",
+ hate:"You do it with words and you do it precisely. You know the sentence that will land and you say it, and then you are appalled at yourself an hour later. It is over quickly for you because you have already reframed it. The other person is still holding the sentence. They will hold it for years.",
+ envy:"You envy people who are believed. The plodders, the sincere ones nobody suspects of angles. You are quick and quickness makes people wonder what you are up to, even when you are up to nothing, and the unfairness of that eats at you more than you let on.",
+ fantasy:"You daydream about being completely understood without having to say a word — somebody who just gets it, no explaining, no performance, no translation. It is a strange fantasy for somebody whose whole gift is words, and that is exactly why it is the true one.",
+ fun:"Talk. Jokes, arguments, the good pub table, six people going till two in the morning. You are the funniest person most of your friends know. Nothing bores you faster than a conversation that has stopped going anywhere, and you will burn a room down for entertainment rather than sit in a flat one.",
+ dark:"It is the running commentary that does it. You narrate your own life while living it, so you are never all the way inside anything, and the noise gets loudest when you are alone with nothing to do. That is usually when the reaching happens — the drink, the scroll, the phone, whatever turns the volume down. It is not misery. It is noise, and it wears through you.",
+ money:"Erratic. You are clever about it in theory and inattentive in practice, and you will have three ideas about earning more before dealing with the thing already in front of you. You are generous when you have it and vague when you do not. Boring, automatic arrangements will do more for you than any plan you find interesting.",
+ mind:"Anything that puts you in your body and out of the description helps more than another attempt to think your way quiet. You have tried the thinking. It is the one tool you have and it does not work on this. You have known for a long time what sits underneath the noise, which is precisely why the noise has never once been allowed to stop.",
+ body:"You forget you have one. Meals skipped mid-thought, sleep late because the mind is still going, and you can run on nervous energy for a surprisingly long time before it drops out from under you. Gemini traditionally rules the hands, arms and lungs, and yours shows in shallow breathing and restlessness. The most useful habit for you is the dullest one: eating at roughly the same time, sitting down, no screen.",
+ spirit:"Silence is your practice and your least favourite thing, which is how you know. You reach for meaning through language and there is a point past which language will not go. Anything wordless takes you where the next good formulation cannot. You will be bad at it for a long time. Being bad at it is not evidence you picked wrong.",
+ raised:"You were the one who could talk their way out, and the family got used to that being how things ended. Somewhere in there you learned that being quick was safer than being upset. Good trick for a child in a difficult room. Poor one for an adult who needs to be understood.",
+ making:"Your household gets ideas, jokes and things named accurately, and that is a genuinely good place to grow up. What to watch is winning arguments with people you live with. Your partner and your children will not out-phrase you, and if the fight is about being right you will take it every time and lose something each time. Ask what they meant before you tell them what they said.",
+ close:"People feel understood by you early and known by you slowly. You can describe somebody with uncanny accuracy and still not have let them near — the description holds the thing at a workable distance. Being close to you means being allowed to see you without a formulation ready. The people who last are the ones who wait through your silence instead of accepting your summary.",
  direction:"From naming it toward meaning it. Same talent, aimed at the plainest true version instead of the best one.",
+ action:"Say the plain version first this week, and leave it there without improving it.",
+ reflect:"What would you have to feel if you stopped narrating it?",
+ simple:{
+  self:"You are quick and you are good with words. You find the right way to say a thing and people remember it. But you also use words to win, and to hide. You say the clever version instead of the true one. You shade things to sound better. You have done it so long you cannot always tell what the plain truth was.",
+  others:"People feel understood by you fast. You can describe them well. But describing someone is not the same as knowing them. And it is not the same as letting them know you. When you fight, you say the one thing that will hurt most. You are sorry an hour later. They keep it for years.",
+  path:"Your job is to go from naming it to meaning it. Say the plain version. It is less impressive. It is the one that gets through. And be quiet sometimes, even though you hate it, because there are things words will not reach."},
  stages:{
-  young:"Early on you are the quick one, and quickness gets you approval before anybody checks whether you are alright. You learn the trick young.",
-  rising:"Through your twenties and thirties the words carry you — work, friendships, rooms you should not have been in. It is also the decade where people closest to you start saying they cannot reach you.",
-  middle:"The forties tend to bring a stretch where nothing you say sounds like the truth to you, and that is not decline. It is the point where description has run out and something plainer is required.",
-  later:"Later you get short. The sentences come down to the size of the thing, and people find you clearer than you have ever been. What you say now tends to be the thing they keep."}},
+  young:"You are the quick one, and quickness gets you approval long before anybody checks whether you are alright. You learn the trick young and you keep it.",
+  rising:"The twenties and thirties are carried by words — work, friendships, rooms you had no business being in. It is also the decade where the people closest to you start saying they cannot reach you.",
+  middle:"The forties often bring a stretch where nothing you say sounds true to you any more. That is not decline. That is description running out, and something plainer being required.",
+  later:"Later you get short. Sentences come down to the size of the thing, and people find you clearer than you have ever been. What you say now is what they keep."}},
 
 "Scorpio III":{
- hinge:"All three reach the same hinge from different directions. Birthdays says charm. Destiny runs the path from admired toward known. And every pairing ends in the same place — people feel close to you early and then stop getting closer. One gap, described three ways: the distance between being liked and being known.",
- tension:"They disagree about what to do with it. Birthdays counts the charm as the gift; Destiny counts it as the thing to release. Both hold. You are not being asked to be less warm — warmth is real and it is yours. You are being asked to stop using it as the exit.",
- action:"Let somebody see you tired or unsure this week without covering it in the same breath.",
+ hinge:"All three books circle the same thing and not one of them flatters you about it. Birthdays calls this the Week of Charm. Destiny runs the path from magnetism you operate at will toward being known by a few instead of admired by many. Relationships puts you easy with Water and charged with Fire and Air, and in every one of those pairings the same complaint turns up sooner or later. Three books, one finding: you are liked a great deal and known by almost nobody.",
+ tension:"They flatly disagree about what to do with the charm. Birthdays files it as your gift. Destiny files it as the thing you have to put down. Both are correct and that is precisely why this is hard. Nobody is asking you to be colder. They are asking you to stop using warmth as a door you shut behind yourself.",
+ strong:"You are the best in the room at making somebody feel noticed for the first time in weeks. You clock the person standing on their own and you go and get them. You remember the name nobody else remembered. That is real, it costs you something, and people carry it for years. Aimed on purpose at somebody who needs it and cannot pay you back, it is close to the best thing a person can do.",
+ hard:"You manipulate. Say it flat, because the books say it flat. You work out what somebody needs to hear and hand them that instead of what is true, then file it under kindness. It was not kindness, it was easier. Everyone who has loved you can name the moment they realised they had been handled, and most never said so, because you are pleasant and raising it felt petty. You are not misunderstood. You are understood exactly, by two or three people who decided to let it go.",
+ love:"You want the ones who do not want you. Someone mildly bored by you is worth ten who adore you, because adoration is the thing you can manufacture and boredom is not. That is the pattern and it will run the length of your life if you leave it alone. Loved plainly, by somebody steady, you go restless and start finding faults, and the fault is usually that they are too easy to keep.",
+ hate:"You do not rage. You go warm and you go away, and the other person never gets the fight they needed. It is a colder punishment than shouting and you know it. You can be finished with somebody for eight months and still ask after their mother. When you do go for someone you go straight at the thing they are ashamed of, because you have been filing it since the night they told you.",
+ envy:"Not money, not looks. You envy people who are loved without doing anything — the blunt ones, the awkward ones who never learned a single trick and got adored anyway. It sits badly because it suggests the whole apparatus was never necessary. You will notice it as a flat, uncharitable feeling toward somebody who has done nothing to you.",
+ fantasy:"You imagine being found out and kept anyway. Not caught. Found out — somebody sees the calculation, the editing, how tired you are, and stays in the chair. You have run that scene many times. It has never once occurred to you to simply start it, because in the fantasy they choose it and in life you would have to go first.",
+ fun:"You are excellent company and enjoy it least when it is going best, because that is when you are working hardest. Your real fun is smaller and you will not admit to it: food, water, a long drive, one friend, no audience. You are funny in a way people underrate, because you use humour to steer rather than to play. Playing is the harder skill and you are worse at it than you think.",
+ dark:"It arrives after the good nights, not the bad ones. You get home from something that went well and there is nothing there, and you cannot report it to anybody because from outside your life looks enviable. You will keep going and keep being charming right through it, which is the dangerous part, because nobody catches it. It shows up first as not answering messages from people who like you.",
+ money:"Money is a costume. You will spend on what is seen — the round bought, the good coat, the table by the window — and go strangely careless about the boring parts nobody witnesses. Generous in public, vague in private. Whether that generosity is generosity or advertising is a question only you can answer, and you have been avoiding it.",
+ mind:"What grinds you down is being liked for a version of yourself that took work to build. Not loneliness exactly — the specific tiredness of being on. The gap widens quietly for years and the low stretches come out of it. There is no clever fix and you have been hunting for one, because hunting is more comfortable than the answer, which is one person, unedited, regularly, including the days you would rather not.",
+ body:"You maintain how you come across far better than how you feel. You will turn up polished on a day you should have stayed in bed. The signals you override are the slow ones: sleep sliding later, appetite gone strange, tension you stopped noticing years ago. Nothing dramatic happens, so nothing gets dealt with. Scorpio traditionally rules the parts nobody discusses at dinner, which suits you, and is exactly why you will leave something far too long. Book the appointment.",
+ spirit:"You want to be known without performing, and that is a spiritual want rather than a social one. Anything with no audience does you good and you will dodge all of it — walking without your phone, prayer, sitting still, work with your hands. Expect the hardest twenty minutes of your week. The difficulty is the point. If it goes pleasant immediately, you have found another stage and stepped onto it.",
+ raised:"You learned early that reading the room kept it calm. There was a mood behind you that everybody tracked, and you got good at tracking it first: heading it off, smoothing it, being the easy one. Nobody thanked you because it looked like good behaviour. You were not being good. You were working, and you have not stopped since.",
+ making:"You are warm and properly present with your own, and you still run more of it than you will admit. You decide what people can handle and give them the edited version, and you call that care. Your family would rather have you worried out loud. Children raised near this learn to read you instead of talk to you, which is the thing to actually watch, because that is how the whole pattern gets handed down intact.",
+ close:"Plenty of people would call you a close friend. Very few would you ring at three in the morning. It is not coldness blocking it, it is competence — you are so good at the first three levels that neither of you notices you never went to the fourth. It takes somebody stubborn, who stays while you are not being charming, before you find out that the version you were certain would disappoint people is the one that keeps them.",
+ direction:"From admired toward known. The charm stays, because it is real and it is yours. It stops being the exit.",
+ simple:{
+  self:"You are good with people. You can tell what someone wants to hear, and you say it. That is a real skill and not everyone has it. But you also use it to hide. You give people the nice version of you, not the true one. So a lot of people like you, and almost nobody knows you.",
+  others:"People feel close to you fast. Then they stop getting closer. You keep them at a warm distance. When you are angry you do not shout. You go nice and you go away. That hurts more than shouting. The people who love you can tell when you are acting, but they do not say it, because you are kind and it feels rude to bring up.",
+  path:"Your job is to go from being liked to being known. Keep the charm. It is real and it is yours. Just stop using it to hide behind. Let one person see you when you are tired or sad or no fun at all. That is the whole job. It sounds small. It is not."},
+ action:"Let one person see you tired or unsure this week, and do not cover it in the same breath.",
  reflect:"Who has seen you on a day you were not worth watching?",
- strong:"At your best you are the reason a room relaxes. You notice who has not spoken and bring them in, you read what a person needs and hand it over before they have had to ask for it. That is a real skill and not everyone has it. The attention people remember from you was genuine, even when it was also deliberate — both of those can be true.",
- hard:"At your worst you run the room instead of being in it. The warmth goes automatic and you lose track of the line between liking someone and handling them. Under strain it hardens into something specific: charming and unreachable at once, so the people who love you find themselves talking to something very pleasant that is not you, and cannot say what is wrong.",
- mind:"What wears you down is not being disliked. It is being liked for a version of yourself that took effort to produce. You can leave a night where everybody was glad you came and feel empty in the car, and that gap is usually where the low stretches begin — after the good nights rather than the bad ones, which makes them confusing and easy to hide. The answer is not less charm. It is one person who gets the unedited version regularly, on the days you do not feel like it especially.",
- body:"You maintain how you come across more carefully than how you actually feel. Tiredness gets covered rather than rested and you will turn up looking fine on a day you should have stayed home. The signals you tend to override are the slow ones — sleep sliding later, appetite going strange, tension you have stopped noticing. Because nothing dramatic happens, nothing gets dealt with. Book the appointment you keep meaning to book.",
- spirit:"What you are actually after is being known without effort. Anything with no audience does you good — walking without your phone, praying, sitting still, work with your hands, any place where there is nobody to read and no impression to run. That may be the hardest twenty minutes of your week. The difficulty is the point, not a sign you have picked the wrong thing.",
- raised:"You likely learned early that reading the room kept it calm. There was a mood somewhere behind you that everybody tracked, and you got good at tracking it first — heading it off, smoothing it over, being the easy one. That is heavy work for a child, and it usually goes unthanked because it looks like good behaviour.",
- making:"You are warm and very present with your own family, and you still manage more than you let on. The risk is running the household's weather instead of living inside it — deciding what people can handle and giving them the edited version. The people you live with would rather have you worried out loud than protected quietly.",
- close:"You have a lot of people who would call you a close friend and few you would call at three in the morning. What blocks it is not coldness, it is competence: you are so good at the first three levels that neither of you notices you never went to the fourth. It usually takes somebody stubborn — who stays while you are not being charming — before you find out that the version you were sure would disappoint people is the one that keeps them.",
- direction:"From admired toward known. Not away from the charm, which is real. Toward using it to open the door and then actually walking through it.",
  stages:{
-  young:"Early on the charm arrives before you know what it is for. You are popular and adaptable and quietly lonely inside that, without the words for why. Adults call you mature, which often just means convenient.",
-  rising:"Through your twenties and thirties it works — socially, at work, romantically. This is the stretch where the skill pays, and therefore the stretch where it goes unexamined. Relationships that end here often end with somebody saying they never quite reached you.",
-  middle:"Somewhere in the forties the returns thin. Being liked stops being enough and there is often a flat patch nobody around you can see, because from outside your life looks good. That is the real turn, and it usually announces itself as boredom rather than crisis.",
-  later:"Later you get to be warm without needing anything back, which is when people find you easiest to be near. The ones who stayed through the middle stretch are the ones who know you, and by then you have stopped auditioning."}}
+  young:"The charm arrives before you know what it is for. Popular, adaptable, and quietly on your own inside it with no words for why. Adults call you mature. Mostly they mean convenient.",
+  rising:"Through the twenties and thirties it works — socially, at work, in bed. This is when the skill pays and therefore when nobody examines it, you least of all. Relationships that end here end with somebody saying they never quite got to you.",
+  middle:"In the forties the returns thin. Being liked stops being enough. There is often a flat stretch nobody around you can see, because from outside the life looks good, and it announces itself as boredom rather than crisis. This is the real turn and plenty of people walk straight past it.",
+  later:"Later you can be warm without needing anything back, and that is when people find you easiest to be near. The ones who stayed through the middle are the ones who know you. By then you have stopped auditioning, and it turns out nobody was ever scoring."}}
 
 };
 
@@ -2583,6 +2657,70 @@ $('game-box').addEventListener('click', e=>{
 $('game-box').addEventListener('change', e=>{
   if(['fy','ft'].includes(e.target.id)) renderBrief();
 });
+
+/* ---------- the summary toggle, and reading it aloud ----------
+   Speech uses the browser's own voice, so nothing is downloaded and it works
+   offline. Not every browser has one; if it does not, the button says so
+   rather than doing nothing. */
+let SPEAKING = false;
+function speechOK(){ return typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined'; }
+
+function readableText(){
+  const simpleBox = $('simple-box'), full = $('deep-full');
+  const src = (simpleBox && !simpleBox.hidden) ? simpleBox : full;
+  if(!src) return '';
+  /* Headings become short pauses so it does not run every section together. */
+  return [...src.querySelectorAll('h4, .dt, .db, p')]
+    .filter(e=>!e.classList.contains('disclaim') && !e.classList.contains('note'))
+    .map(e=>e.textContent.trim()).filter(Boolean).join('. ')
+    .replace(/\.\s*\./g, '.').replace(/\s+/g, ' ');
+}
+
+function stopSpeaking(){
+  if(speechOK()) speechSynthesis.cancel();
+  SPEAKING = false;
+  const b = $('btn-speak'), st = $('btn-stop');
+  if(b) b.textContent = 'Read it to me';
+  if(st) st.hidden = true;
+}
+
+function speakReading(){
+  if(!speechOK()){ const b = $('btn-speak'); if(b) b.textContent = 'This browser has no voice'; return; }
+  if(SPEAKING) return stopSpeaking();
+  const text = readableText();
+  if(!text) return;
+  speechSynthesis.cancel();
+  /* Long text is split, because several browsers cut off a single long one. */
+  const chunks = text.match(/[^.!?]+[.!?]*/g) || [text];
+  let buf = '', queue = [];
+  chunks.forEach(c=>{ if((buf + c).length > 220){ queue.push(buf); buf = c; } else buf += c; });
+  if(buf.trim()) queue.push(buf);
+  queue.forEach((part, i)=>{
+    const u = new SpeechSynthesisUtterance(part.trim());
+    u.rate = .95; u.pitch = 1;
+    if(i === queue.length - 1) u.onend = stopSpeaking;
+    speechSynthesis.speak(u);
+  });
+  SPEAKING = true;
+  $('btn-speak').textContent = 'Pause';
+  $('btn-stop').hidden = false;
+}
+
+document.addEventListener('click', e=>{
+  const t = e.target;
+  if(t.id === 'btn-simple'){
+    const box = $('simple-box'), full = $('deep-full');
+    if(!box || !full) return;
+    stopSpeaking();
+    const showSimple = box.hidden;
+    box.hidden = !showSimple; full.hidden = showSimple;
+    t.textContent = showSimple ? 'Long version' : 'Simple version';
+    t.classList.toggle('on', showSimple);
+  }
+  if(t.id === 'btn-speak') speakReading();
+  if(t.id === 'btn-stop') stopSpeaking();
+});
+addEventListener('beforeunload', stopSpeaking);
 
 /* ============================================================
    MATRIX — every saved person against every other, automatically

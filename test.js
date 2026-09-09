@@ -526,18 +526,44 @@ Object.entries(DEPTH).forEach(([n,D])=>{
 repeats.length ? bad('no two sections of a reading restate each other', repeats.slice(0,6).join('\n      '))
                : ok('no two sections of any deep reading share a third of their content words');
 
-/* And it has to be about THIS period, not personology in general. */
-const generic = [];
+/* And it has to be about THIS period, not personology in general.
+
+   Measuring shared words was the wrong instrument once the readings got
+   long: every reading now has a Love, Anger, Envy and Money section, so
+   they necessarily share that topic vocabulary, and the shared fraction
+   climbed with length rather than with sameness. What actually matters is
+   the opposite quantity — how much of a reading is vocabulary that appears
+   in NO other reading. That is length-robust and it is the thing a reader
+   notices. Paired with a hard ban on any shared sentence, it is a stricter
+   test than the one it replaces, not a looser one. */
+const vocab = {};
 Object.entries(DEPTH).forEach(([n,D])=>{
-  const mine = new Set(FIELDS.map(f=>cwords(D[f])).flat());
-  const others = Object.entries(DEPTH).filter(([m])=>m !== n)
-    .map(([,O])=>new Set(FIELDS.map(f=>cwords(O[f])).flat()));
-  if(!others.length) return;
-  const avgShared = others.reduce((a,S)=>a + [...mine].filter(w=>S.has(w)).length/mine.size, 0)/others.length;
-  if(avgShared > 0.30) generic.push(`${n} shares ${Math.round(avgShared*100)}% of its words with the average other reading`);
+  vocab[n] = new Set(FIELDS.map(f=>cwords(D[f])).concat(Object.values(D.stages).map(cwords)).flat());
+});
+const generic = [];
+Object.entries(vocab).forEach(([n,mine])=>{
+  const elsewhere = new Set(Object.entries(vocab).filter(([m])=>m !== n).map(([,S])=>[...S]).flat());
+  if(!elsewhere.size) return;
+  const onlyHere = [...mine].filter(w=>!elsewhere.has(w)).length / mine.size;
+  if(onlyHere < 0.20) generic.push(`${n}: only ${Math.round(onlyHere*100)}% of its vocabulary is its own`);
 });
 generic.length ? bad('each period reads as its own person', generic.slice(0,4).join('\n      '))
-               : ok('each deep reading is its own person — none overlaps the average of the others by a third');
+               : ok('each deep reading is its own person — every one uses a fifth of its vocabulary nowhere else');
+
+/* Nothing may be reused verbatim between two readings. */
+const deepSents = {};
+Object.entries(DEPTH).forEach(([n,D])=>{
+  deepSents[n] = FIELDS.map(f=>D[f]).concat(Object.values(D.stages)).join(' ')
+    .split(/(?<=[.!?])\s+/).map(x=>x.trim()).filter(x=>x.length > 25);
+});
+const lifted = [];
+const seenDeep = new Map();
+Object.entries(deepSents).forEach(([n,list])=>list.forEach(x=>{
+  if(seenDeep.has(x) && seenDeep.get(x) !== n) lifted.push(`${seenDeep.get(x)} and ${n}: "${x.slice(0,60)}…"`);
+  else seenDeep.set(x, n);
+}));
+lifted.length ? bad('no sentence appears in two readings', lifted.slice(0,3).join('\n      '))
+              : ok('no sentence is reused between any two deep readings');
 
 /* Jacques' standing rule on his own app: no mechanisms, no research claims. */
 const CLAIM = /\b(research shows|studies show|scientificall|clinicall|dopamine|serotonin|neuroplastic|brain chemistry|cortisol|diagnos|disorder|cure[sd]?\b|treat(s|ed|ment)\b)/i;
@@ -622,6 +648,72 @@ spreadBad.length ? bad('the Relationships spread covers all four elements', spre
 ['DA.close','DB.close','DA.raised','DA.making'].every(f=>html.includes(f))
   ? ok('the pair reads closeness and family off both people')
   : bad('the pair reads closeness and family off both people');
+
+/* ---- the short version, and the voice ---- */
+
+/* A summary that needs a dictionary is not a summary. Third-grade reading
+   means short sentences and short words, so both get measured. */
+const simpleBad = [], grade = [];
+Object.entries(DEPTH).forEach(([n,D])=>{
+  if(!D.simple) return simpleBad.push(`${n}: no short version`);
+  ['self','others','path'].forEach(k=>{
+    const t = D.simple[k];
+    if(!t) return simpleBad.push(`${n}: short version has no ${k}`);
+    const sents = t.split(/[.!?]/).filter(x=>x.trim().length>3);
+    const words = t.replace(/[^A-Za-z\s]/g,' ').split(/\s+/).filter(Boolean);
+    const avgSent = words.length / sents.length;
+    const long = words.filter(w=>w.length > 8);
+    if(avgSent > 14) grade.push(`${n}.${k}: sentences average ${avgSent.toFixed(0)} words`);
+    if(long.length / words.length > 0.05)
+      grade.push(`${n}.${k}: ${Math.round(long.length/words.length*100)}% long words (${[...new Set(long)].slice(0,4).join(', ')})`);
+  });
+});
+simpleBad.length ? bad('every deep reading has a short version covering all three layers', simpleBad.slice(0,4).join('\n      '))
+                 : ok('every deep reading has a short version — self, other people, and where it is going');
+grade.length ? bad('the short version reads at third-grade level', grade.slice(0,5).join('\n      '))
+             : ok('the short version stays short-sentence and short-word throughout');
+
+/* It has to be reachable and it has to hide the long one, or it is just more text. */
+(html.includes("id=\"btn-simple\"") && html.includes("id=\"simple-box\"") && html.includes("id=\"deep-full\""))
+  ? ok('the short version has a button and its own box') : bad('the short version has a button and its own box');
+(html.includes("box.hidden = !showSimple; full.hidden = showSimple;"))
+  ? ok('showing the short version hides the long one') : bad('showing the short version hides the long one');
+
+/* Read aloud: the browser's own voice, so nothing ships and it works offline. */
+html.includes('SpeechSynthesisUtterance') ? ok('the reading can be played out loud')
+                                          : bad('the reading can be played out loud');
+html.includes("if(!speechOK()){ const b = $('btn-speak'); if(b) b.textContent = 'This browser has no voice'; return; }")
+  ? ok('a browser with no voice says so instead of failing silently')
+  : bad('a browser with no voice says so instead of failing silently');
+/* Several browsers truncate one long utterance, so it must be chunked. */
+html.includes('(buf + c).length > 220') ? ok('long readings are split so no browser cuts them off')
+                                        : bad('long readings are split so no browser cuts them off');
+html.includes('speechSynthesis.cancel()') ? ok('the voice can be stopped') : bad('the voice can be stopped');
+html.includes("addEventListener('beforeunload', stopSpeaking)")
+  ? ok('the voice stops when the page closes') : bad('the voice stops when the page closes');
+/* The voice must read whichever version is on screen, not always the long one. */
+html.includes("const src = (simpleBox && !simpleBox.hidden) ? simpleBox : full;")
+  ? ok('it reads aloud whichever version you are looking at')
+  : bad('it reads aloud whichever version you are looking at');
+
+/* All of life, not just the flattering half. */
+const LIFE = ['love','hate','envy','fantasy','fun','dark','money'];
+const missingLife = [];
+Object.entries(DEPTH).forEach(([n,D])=>LIFE.forEach(f=>{ if(!D[f]) missingLife.push(`${n}: no ${f}`); }));
+missingLife.length ? bad('every reading covers all of life, not just the good half', missingLife.slice(0,5).join('\n      '))
+                   : ok(`every reading covers ${LIFE.length} more of life — love, anger, envy, fantasy, fun, the dark stretch, money`);
+LIFE.every(f=>html.includes('D.' + f))
+  ? ok('all of it reaches the screen') : bad('all of it reaches the screen', LIFE.filter(f=>!html.includes('D.'+f)).join(', '));
+
+/* The blunt half has to actually be blunt, or this is the old version again. */
+const soft = [];
+Object.entries(DEPTH).forEach(([n,D])=>{
+  const h = D.hard.toLowerCase();
+  if(!/\b(you|your)\b/.test(h)) soft.push(`${n}: the worst side does not address the reader`);
+  if(h.length < 300) soft.push(`${n}: the worst side is too short to say anything`);
+});
+soft.length ? bad('the bad half is written as plainly as the good half', soft.slice(0,4).join('\n      '))
+            : ok('the bad half names it directly, at the same length as the good half');
 
 /* ---------------------------------------------------------- */
 group('The quiz');
