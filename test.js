@@ -737,6 +737,69 @@ soft.length ? bad('the bad half is written as plainly as the good half', soft.sl
             : ok('the bad half names it directly, at the same length as the good half');
 
 /* ---------------------------------------------------------- */
+group('The name, and the share card');
+
+is((html.match(/<title>([^<]*)<\/title>/) || [,''])[1], "Life's Zodiacs", 'the page is called Life’s Zodiacs');
+/<h1>Life&#8217;s Zodiacs<\/h1>|<h1>Life's Zodiacs<\/h1>/.test(html)
+  ? ok('the heading carries the same name as the tab')
+  : bad('the heading carries the same name as the tab');
+
+/* Without these a shared link arrives as a bare URL: no name, no blurb, no
+   picture. Each one is read by something different, so all of them matter. */
+const SHARE = [
+  ['og:title','the name in the card'],
+  ['og:description','the blurb'],
+  ['og:image','the picture'],
+  ['og:url','the address it points at'],
+  ['og:type','the kind of thing it is'],
+  ['og:site_name','the site name'],
+  ['og:image:width','the picture width, so it is not cropped'],
+  ['og:image:height','the picture height'],
+  ['twitter:card','the wide card on X'],
+  ['twitter:title','the name on X'],
+  ['twitter:description','the blurb on X'],
+  ['twitter:image','the picture on X']
+];
+const shareGaps = SHARE.filter(([p])=>!new RegExp(`(property|name)="${p}"`).test(html));
+shareGaps.length ? bad('the share card carries everything a chat app looks for', shareGaps.map(x=>x[1]).join(', '))
+                 : ok(`all ${SHARE.length} share tags are present — name, blurb, picture and size`);
+
+/* The name and blurb must actually agree with each other across the tags. */
+const tagVal = p => (html.match(new RegExp(`(?:property|name)="${p}" content="([^"]*)"`)) || [,''])[1];
+(tagVal('og:title') === "Life's Zodiacs" && tagVal('twitter:title') === "Life's Zodiacs")
+  ? ok('the name is the same in every tag') : bad('the name is the same in every tag');
+(tagVal('og:description') === tagVal('twitter:description') && tagVal('og:description').length > 60)
+  ? ok('the blurb is the same in every tag and says something')
+  : bad('the blurb agrees across the tags');
+tagVal('og:image') === tagVal('twitter:image')
+  ? ok('the same picture is used everywhere') : bad('the same picture is used everywhere');
+/^https:\/\//.test(tagVal('og:image'))
+  ? ok('the picture is an absolute address, which is what chat apps require')
+  : bad('the picture is an absolute address', tagVal('og:image'));
+
+/* The picture has to exist, and be the size the tags claim. */
+const cardPath = path.join(ROOT, 'share.png');
+if(!fs.existsSync(cardPath)){
+  bad('the share picture exists', 'share.png is missing');
+}else{
+  const buf = fs.readFileSync(cardPath);
+  const w = buf.readUInt32BE(16), h = buf.readUInt32BE(20);
+  is(`${w}x${h}`, '1200x630', 'the share picture is 1200x630, the size every chat app crops to');
+  (String(w) === tagVal('og:image:width') && String(h) === tagVal('og:image:height'))
+    ? ok('the tags state the picture’s real size') : bad('the tags state the picture’s real size');
+  buf.length < 900 * 1024 ? ok(`the share picture is ${Math.round(buf.length/1024)}KB, small enough to fetch`)
+                          : bad('the share picture is small enough', `${Math.round(buf.length/1024)}KB`);
+}
+
+/* An icon for the home screen, drawn rather than fetched, so it works offline. */
+(html.includes('rel="icon"') && html.includes('rel="apple-touch-icon"'))
+  ? ok('there is an icon for the browser tab and for a phone home screen')
+  : bad('there is an icon for the tab and the home screen');
+/rel="icon" href="data:image\/svg\+xml/.test(html)
+  ? ok('the icon is drawn inline, so it needs no second file')
+  : bad('the icon is drawn inline');
+
+/* ---------------------------------------------------------- */
 group('How to use this');
 
 (html.includes('id="btn-help"') && html.includes('id="help-box"'))

@@ -1,4 +1,4 @@
-# Zodiac
+# Life's Zodiacs
 
 A self-contained personology birthday index. Open `index.html` in a browser —
 no server, no build step, no dependencies.
@@ -126,6 +126,21 @@ Cardinal, which three signs make up Autumn — alongside periods, dates, cards,
 stones and body regions, plus questions about the people you have saved once
 there are three or more. Every answer comes back with the reasoning rather
 than a tick, because the explanation is where the learning happens.
+
+## Sharing it
+
+`share.png` is the card that appears when the link is sent — 1200×630, the
+wheel with the twelve signs coloured by element. It is drawn by
+`build-card.js` rather than by hand:
+
+```
+node build-card.js
+```
+
+The head carries the Open Graph and Twitter tags that WhatsApp, Messenger,
+iMessage, Slack, LinkedIn and X read. Without them a shared link arrives as a
+bare URL with no name, blurb or picture. The tab and home-screen icons are
+inline SVG, so nothing extra is fetched.
 
 ## Entering people
 
