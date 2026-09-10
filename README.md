@@ -25,18 +25,28 @@ stone, sign and planet colours, metal, day of the week, flower and body zone.
 ### The day
 
 Above all of it sits the day itself — a named profile for each of the 366 days,
-supplied as *The Secret Language of Days* and inserted verbatim: the name of
-the day, an opening, then love, money, family, emotions, friendships, mind,
-body, spirit, work, risk and outlook, strengths and weaknesses, advice, and a
-closing line.
+from *The Secret Language of Days*: the name of the day, an opening, then love,
+money, family, emotions, friendships, mind, body, spirit, work, risk and
+outlook, strengths and weaknesses, advice, and a closing line. The writing is
+unchanged. Two things were regenerated.
 
-The astrology shown beside it is the app's own, not that source's. The two
-disagree on 25 days, and in each case the source contradicts its own pattern:
-six of its cusps end on the 22nd while its other six run to the 24th or 25th,
-and the 30th of every month draws The Hanged Man where its own rule for all
-other days gives The Empress. The period table is generated from README.md and
-checked for full-year coverage, so it is the one that governs. The prose is the
-source's, unchanged.
+**The header line** under each name is rebuilt for all 366 days from the period
+table, which is generated from this README and checked for full-year coverage.
+As supplied it disagreed on fourteen days: six of its cusps ended on the 22nd
+while its other six ran to the 24th or 25th, handing the last days of
+Taurus–Gemini, Gemini–Cancer, Leo–Virgo, Virgo–Libra, Libra–Scorpio and
+Scorpio–Sagittarius to the following week. It also gave the 30th of each month
+The Hanged Man, card twelve, where its own rule everywhere else — add the
+digits once, which gives Justice on the 29th and The Emperor on the 31st —
+gives The Empress. Every header now comes from one place, and a test compares
+all 366 against it.
+
+**Six pairs of days shared a name.** One of each was renamed from its own text
+— 12 February, 8 May, 18 May, 15 July, 14 August and 10 November. All 366 are
+now distinct, and a collision fails the build.
+
+The corrected source sits in `days/`, one Markdown file per month plus
+`days.json`.
 
 ### The whole person
 

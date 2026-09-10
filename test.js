@@ -459,7 +459,7 @@ left.length ? bad('the rebuilt ring is not shipped alongside the real one', 'sti
 /* ---------------------------------------------------------- */
 group('The day — all 366 profiles');
 
-const DAY_FIELDS = ['t','d','lo','mo','fa','em','fr','mi','bo','sp','wk','ri','ou','st','we','ad','cl'];
+const DAY_FIELDS = ['t','m','d','lo','mo','fa','em','fr','mi','bo','sp','wk','ri','ou','st','we','ad','cl'];
 is(Object.keys(DAYS).length, 366, 'a profile exists for all 366 days, leap day included');
 
 /* Every real date must resolve, and nothing else may be in the table. */
@@ -481,6 +481,7 @@ DAYS['2-29'] ? ok('29 February has its own profile') : bad('29 February has its 
 const thinDay = [];
 Object.entries(DAYS).forEach(([k, D])=>{
   DAY_FIELDS.forEach(f=>{ if(!D[f]) thinDay.push(`${k}: no ${f}`); });
+  if(D.m && D.m.split('·').length !== 5) thinDay.push(`${k}: header is not five fields`);
   /* Four of them use a different grammar — "The Day the Tower Falls" — which
      is the source's own wording, so the shape allowed is the wider one. */
   if(D.t && !/^The Day\b/.test(D.t)) thinDay.push(`${k}: title is not a Day`);
@@ -490,20 +491,14 @@ thinDay.length ? bad('every day profile is complete', thinDay.slice(0,6).join('\
                : ok(`all 366 day profiles carry every one of the ${DAY_FIELDS.length} fields`);
 
 /* The titles are the point of this layer — they must be distinct. */
-/* Six pairs of days share a name in the source as supplied. That is a defect
-   in the source rather than in the parse, and it is left as it arrived rather
-   than quietly renamed. Pinned so a seventh would fail rather than slip in. */
-const KNOWN_DUPES = ['The Day of the Changed Mind','The Day of the Deep Ground',
-  'The Day of the Deep Turn','The Day of the Read Balance',
-  'The Day of the Set Foundation','The Day of the Strong Pull'];
+/* Every day must have its own name. Six pairs shared one as supplied; each
+   was renamed from its own text, and a new collision must fail rather than
+   be discovered by a reader. */
 const titleCount = {};
 Object.values(DAYS).forEach(D=>{ titleCount[D.t] = (titleCount[D.t] || 0) + 1; });
-const dupes = Object.keys(titleCount).filter(t=>titleCount[t] > 1).sort();
-const tripled = Object.keys(titleCount).filter(t=>titleCount[t] > 2);
-(dupes.join('|') === KNOWN_DUPES.join('|') && !tripled.length)
-  ? ok(`day names are distinct but for the six pairs the source shipped with (${360} unique of 366)`)
-  : bad('the set of repeated day names has changed',
-        'now: ' + dupes.join(', ') + (tripled.length ? ' | tripled: ' + tripled.join(', ') : ''));
+const dupes = Object.keys(titleCount).filter(x=>titleCount[x] > 1);
+dupes.length ? bad('every day has its own name', dupes.map(x=>`${x} (${titleCount[x]}x)`).join(', '))
+             : is(Object.keys(titleCount).length, 366, 'all 366 day names are distinct');
 
 /* Strengths and weaknesses are dot-separated lists, and must not be the same list. */
 const tagBad = [];
@@ -525,9 +520,35 @@ const bleed = Object.entries(DAYS).filter(([, D])=>
 bleed.length ? bad('no page header bled into the text', bleed.slice(0,4).map(x=>x[0]).join(', '))
              : ok('no running header or page number bled into any profile');
 
+/* The header line is regenerated, not taken from the source. Every one of the
+   366 must match what the app's period table produces for that date — that is
+   the whole point of regenerating them, and the check that keeps it true. */
+const headBad = [];
+Object.entries(DAYS).forEach(([k, D])=>{
+  const [m, d] = k.split('-').map(Number);
+  const P = profileOf({name:'x', month:m, day:d, year:null});
+  const want = `${P.per.n} — ${P.per.t} · ${P.elements.join('/')} · ${P.qualities.join('/')} · ` +
+               `${P.num} ${P.planet.replace(/^the /,'')} · ${P.tarot.n}`;
+  if(D.m !== want) headBad.push(`${k}\n        stored: ${D.m}\n        table:  ${want}`);
+});
+headBad.length ? bad('every day header matches the app\'s own table', headBad.slice(0,3).join('\n      '))
+               : ok('all 366 day headers are regenerated from the period table and match it exactly');
+
+/* The fourteen days the source put in the following week, and the card it got
+   wrong on every 30th. Named explicitly so a regression is unmistakable. */
+const MOVED = [[5,23],[5,24],[6,23],[6,24],[8,23],[8,24],[8,25],
+               [9,23],[9,24],[10,23],[10,24],[10,25],[11,23],[11,24]];
+const movedBad = MOVED.filter(([m,d])=>!/Cusp/.test(DAYS[m+'-'+d].m.split(' — ')[0]));
+movedBad.length ? bad('the fourteen contested days sit in their cusp', movedBad.map(x=>x.join('/')).join(', '))
+                : ok('all fourteen contested days are back in the cusp README.md puts them in');
+const thirtieths = Object.keys(DAYS).filter(k=>k.endsWith('-30'));
+const cardBad = thirtieths.filter(k=>!DAYS[k].m.endsWith('The Empress'));
+cardBad.length ? bad('the 30th draws The Empress in every month', cardBad.join(', '))
+               : ok(`the 30th draws The Empress in all ${thirtieths.length} months that have one`);
+
 /* The layer must reach the screen, and it must show the app's astrology
    rather than the source's, which disagrees on 25 days. */
-const dayShown = ['D.t','D.d','D.lo','D.mo','D.fa','D.em','D.fr','D.mi','D.bo','D.sp','D.wk',
+const dayShown = ['D.t','D.m','D.d','D.lo','D.mo','D.fa','D.em','D.fr','D.mi','D.bo','D.sp','D.wk',
                   'D.ri','D.ou','D.st','D.we','D.ad','D.cl'];
 /* Some are printed raw, some through esc(), some behind a guard. */
 const dayUnshown = dayShown.filter(f=>
@@ -537,9 +558,9 @@ dayUnshown.length ? bad('every field of the day profile is rendered', dayUnshown
                   : ok(`all ${dayShown.length} fields of the day profile reach the screen`);
 html.includes('renderDay(P)') ? ok('the day layer is rendered first, above the period')
                               : bad('the day layer is rendered');
-(html.includes('${esc(P.per.n)}') && html.includes('${P.num} ${esc(P.planet)}'))
-  ? ok("the day shows the app's own period, number and card, not the source's")
-  : bad("the day shows the app's own period, number and card");
+html.includes('${esc(D.m)}')
+  ? ok("the day shows the regenerated header, not the source's")
+  : bad('the day shows the regenerated header');
 
 /* Spot-check that the app's own table still governs the two places the source
    disagreed with it: cusp end dates, and the 30th of the month. */
