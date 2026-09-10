@@ -22,6 +22,32 @@ Each reading also carries a **state of mind**, a **body and wellbeing** note
 a **correspondences** panel: birthstone for the birth month, the planetary
 stone, sign and planet colours, metal, day of the week, flower and body zone.
 
+### The day
+
+Above all of it sits the day itself — a named profile for each of the 366 days,
+from *The Secret Language of Days*: the name of the day, an opening, then love,
+money, family, emotions, friendships, mind, body, spirit, work, risk and
+outlook, strengths and weaknesses, advice, and a closing line. The writing is
+unchanged. Two things were regenerated.
+
+**The header line** under each name is rebuilt for all 366 days from the period
+table, which is generated from this README and checked for full-year coverage.
+As supplied it disagreed on fourteen days: six of its cusps ended on the 22nd
+while its other six ran to the 24th or 25th, handing the last days of
+Taurus–Gemini, Gemini–Cancer, Leo–Virgo, Virgo–Libra, Libra–Scorpio and
+Scorpio–Sagittarius to the following week. It also gave the 30th of each month
+The Hanged Man, card twelve, where its own rule everywhere else — add the
+digits once, which gives Justice on the 29th and The Emperor on the 31st —
+gives The Empress. Every header now comes from one place, and a test compares
+all 366 against it.
+
+**Six pairs of days shared a name.** One of each was renamed from its own text
+— 12 February, 8 May, 18 May, 15 July, 14 August and 10 November. All 366 are
+now distinct, and a collision fails the build.
+
+The corrected source sits in `days/`, one Markdown file per month plus
+`days.json`.
+
 ### The whole person
 
 Under that sits the deep reading — all 48 periods, written for this app. Each
@@ -54,36 +80,25 @@ People are saved to the browser's `localStorage`. A **Matrix** tab reads every
 saved person against every other automatically, and **The 48** tab browses the
 whole year.
 
-The **Game** tab holds two things. A ten-question quiz drawn from the same
-tables as the readings, and **the fight**.
+The **Learn** tab teaches the system rather than just testing it.
 
-### The fight
+Astrology is a small system, not a long list: twelve signs built from four
+elements and three qualities, laid out across four seasons. Four study screens
+lay that out — **the wheel** (all twelve at once, and why each sits where it
+does), **the four elements** (what a person is made of, at their best and
+their worst, and how to spot each one), **the three qualities** (Cardinal,
+Fixed and Mutable — which are not personality words but positions in a season:
+the sign that opens it, the one that holds its middle, the one that ends it
+and hands over), and **one sign in full**, including the weeks inside it and
+any of your saved people born under it.
 
-The ring is not a rebuild. `fight.html` is *The Fight of Your Life* — the boxing
-game from the Some Day / Day One recovery app — with its own ring, referee,
-crowd, cameras, walk-ins, animation and sound untouched. `build-fight.js` makes
-it from that game's `ring3d.html` by adding the 48 periods to its table of
-opponents. Nothing else in the file changes:
-
-```
-node build-fight.js path/to/ring3d.html
-```
-
-What the periods supply is who you fight and what is said:
-
-- the **opponent** is a period, announced by name in the red corner
-- what it says between exchanges is its **taunt** — the thing its period is
-  good at
-- your corner answers with the **counter** — the thing it is bad at
-- its **element** picks the room: Fire → the Temple, Earth → the Monastery,
-  Air → the Rooftop, Water → the Tomb, and lights it in that element's colour
-- your own element picks which of the game's five fighters walks out as you
-
-Six rounds of thirty seconds, fourteen in the corner. Before the bell the app
-shows a briefing on the period you picked — the room, its taunt, the answer to
-it, and how its quality holds under pressure. That briefing is a reading of the
-period, not a rule of the ring: the fight itself plays by the game's own rules,
-which are the same whoever is in there.
+Then a **quiz** of ten questions drawn from 24 generators. Fourteen of them
+are on the elements, the qualities, the seasons and how they combine — which
+sign opens Summer, what Fixed actually means, which sign is Water and
+Cardinal, which three signs make up Autumn — alongside periods, dates, cards,
+stones and body regions, plus questions about the people you have saved once
+there are three or more. Every answer comes back with the reasoning rather
+than a tick, because the explanation is where the learning happens.
 
 ## Entering people
 
