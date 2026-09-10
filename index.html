@@ -230,6 +230,36 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 .btn.sm.on{border-color:var(--gold); color:var(--gold)}
 .simple .db{font-size:16.5px; line-height:1.8}
 
+/* ---------- learning the wheel ---------- */
+.menu{display:grid; gap:10px}
+.mbtn{display:block; width:100%; text-align:left; font:inherit; cursor:pointer;
+  background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:var(--r);
+  padding:13px 16px; color:var(--ink)}
+.mbtn:hover{border-color:var(--gold)}
+.mbtn b{display:block; font-family:var(--serif); font-size:17px; font-weight:500; margin-bottom:2px}
+.mbtn span{font-size:13.5px; color:var(--dim)}
+.wheel{display:grid; gap:12px; margin:6px 0 16px}
+@media(min-width:760px){ .wheel{grid-template-columns:1fr 1fr} }
+.season{border:1px solid var(--line); border-radius:var(--r); overflow:hidden}
+.sh{padding:9px 14px; background:rgba(255,255,255,.04); border-bottom:1px solid var(--line)}
+.sh b{font-family:var(--serif); font-size:16px}
+.sh small{display:block; font-size:11.5px; color:var(--dimmer); margin-top:1px}
+.srow{display:grid; grid-template-columns:22px 1.3fr .9fr .9fr 1.2fr; gap:6px; align-items:center;
+  padding:7px 14px; font-size:13px; border-bottom:1px solid rgba(255,255,255,.05)}
+.srow:last-child{border-bottom:0}
+.sg{font-size:15px} .sn{font-weight:600} .sq{color:var(--dim)} .sp{color:var(--dimmer); font-size:12px}
+.lcard{border:1px solid var(--line); border-left:3px solid var(--line); border-radius:0 var(--r) var(--r) 0;
+  padding:14px 17px; margin:0 0 14px}
+.lh{margin-bottom:8px}
+.lh b{font-family:var(--serif); font-size:19px; font-weight:500}
+.lh small{display:block; font-size:12px; color:var(--dimmer); margin-top:1px}
+.two{display:grid; gap:10px; margin:10px 0}
+@media(min-width:620px){ .two{grid-template-columns:1fr 1fr} }
+.plist div{padding:7px 0; border-bottom:1px solid rgba(255,255,255,.06); font-size:14px}
+.plist b{color:var(--ink)} .plist span{color:var(--dimmer)} .plist em{color:var(--dim); font-style:normal}
+.el-b-Fire{border-left-color:#f0894f} .el-b-Earth{border-left-color:#8fd08a}
+.el-b-Air{border-left-color:#8fc4f5} .el-b-Water{border-left-color:#8f9cf5}
+
 /* ---------- the day ---------- */
 .layer.day .dayname{font-family:var(--serif); font-size:26px; font-weight:500; margin:0 0 4px; color:var(--gold)}
 .layer.day .dayline{font-size:12.5px; letter-spacing:.04em; color:var(--dimmer); margin:0 0 16px}
@@ -258,15 +288,6 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 .db{font-size:15.5px; line-height:1.72; color:var(--ink)}
 .stages .dp{border-left-color:var(--dimmer)}
 @media(min-width:720px){ .stages{display:grid; grid-template-columns:1fr 1fr; gap:0 14px} }
-
-/* ---------- the fight briefing ---------- */
-.brief{margin:18px 0 4px; padding:14px 16px; background:rgba(255,255,255,.03);
-  border:1px solid var(--line); border-left-width:3px; border-radius:0 var(--r) var(--r) 0}
-.brief .bl{margin-bottom:9px}
-.brief .bl small{display:block; font-size:10px; letter-spacing:.16em; text-transform:uppercase;
-  color:var(--dimmer); margin-bottom:2px}
-.brief .bl span{font-family:var(--serif); font-size:16px; color:var(--ink)}
-.brief .note{margin:12px 0 0}
 
 .game{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:26px 22px}
 .game h2{font-family:var(--serif); font-weight:500; font-size:27px; margin:0 0 8px}
@@ -328,7 +349,7 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
   <button role="tab" id="tab-people" aria-selected="false" data-panel="panel-people">People <span id="count"></span></button>
   <button role="tab" id="tab-pair"   aria-selected="false" data-panel="panel-pair">Pair</button>
   <button role="tab" id="tab-matrix" aria-selected="false" data-panel="panel-matrix">Matrix</button>
-  <button role="tab" id="tab-game"   aria-selected="false" data-panel="panel-game">Game</button>
+  <button role="tab" id="tab-game"   aria-selected="false" data-panel="panel-game">Learn</button>
   <button role="tab" id="tab-wheel"  aria-selected="false" data-panel="panel-wheel">The 48</button>
 </nav>
 
@@ -569,6 +590,118 @@ const TAROT = {
   21:{r:'XXI',  n:'The World',           line:'Completion and scope. This card asks you to close the circle before you start a wider one.'},
   22:{r:'XXII', n:'The Fool',            line:'The leap without a guarantee. This card asks for the beginning nobody has authorised.'}
 };
+
+/* ============================================================
+   SEASONS — the frame the whole wheel is built on, and the one
+   thing that makes the qualities make sense rather than being
+   three words to memorise.
+
+   Each season holds exactly three signs, in the same order every
+   time: the Cardinal sign opens it, the Fixed sign holds its
+   middle, the Mutable sign breaks it up and hands over. That is
+   what Cardinal, Fixed and Mutable actually mean — where in a
+   season you stand — and it is why Aries, Cancer, Libra and
+   Capricorn all begin something, and why they begin four
+   different things.
+   ============================================================ */
+const SEASONS = {
+  Spring:{signs:['Aries','Taurus','Gemini'],       starts:'Aries',       opens:'20 March',
+          arc:'from bare ground to full leaf', mood:'appetite, noise, everything at once'},
+  Summer:{signs:['Cancer','Leo','Virgo'],          starts:'Cancer',      opens:'21 June',
+          arc:'from the longest day to the first harvest', mood:'warmth, display, and the first counting of it'},
+  Autumn:{signs:['Libra','Scorpio','Sagittarius'], starts:'Libra',       opens:'22 September',
+          arc:'from the balance point into the dark', mood:'weighing, stripping back, letting go'},
+  Winter:{signs:['Capricorn','Aquarius','Pisces'], starts:'Capricorn',   opens:'21 December',
+          arc:'from the longest night back toward light', mood:'structure, distance, and dissolving'}
+};
+
+/* Where in its season a sign stands. This is the whole of the qualities. */
+const SEASON_PLACE = {Cardinal:'opens the season', Fixed:'holds the middle of it',
+                      Mutable:'breaks it up and hands over'};
+/* The same fact as a verb, for building a sentence around a season's name. */
+const SEASON_VERB  = {Cardinal:'opens', Fixed:'holds the middle of', Mutable:'ends'};
+
+const SIGN_SEASON = {};
+Object.entries(SEASONS).forEach(([s, v]) => v.signs.forEach(n => SIGN_SEASON[n] = s));
+
+function seasonOf(signName){ return SIGN_SEASON[signName]; }
+
+/* The three signs of a season, in order, as a teaching line. */
+function seasonLine(season){
+  const v = SEASONS[season];
+  return v.signs.map((n, i) => `${n} ${['opens','holds','ends'][i]}`).join(', ');
+}
+
+/* ============================================================
+   LEARNING THE WHEEL — what the four elements and three
+   qualities actually mean, written to be taught rather than
+   looked up. Every claim here is structural: it follows from
+   where a sign sits in the year, not from anything invented.
+   ============================================================ */
+const ELEMENT_LORE = {
+  Fire: {signs:['Aries','Leo','Sagittarius'], word:'ignition', temp:'hot and dry',
+    is:'Fire is what starts and what carries. It supplies drive, faith and the nerve to go before the evidence is in.',
+    good:'Courage, warmth, momentum. Fire people make things happen and make other people braver.',
+    bad:'Burns fuel it has not got. Impatient, blunt, and gone before the boring part.',
+    tell:'Watch for speed. A Fire person answers before you have finished asking.',
+    beats:'Air', beatenBy:'Water'},
+  Earth: {signs:['Taurus','Virgo','Capricorn'], word:'weight', temp:'cold and dry',
+    is:'Earth is what holds. It turns intention into an object, a routine, a building, a bank balance.',
+    good:'Reliability, patience, craft. Earth people finish and what they finish lasts.',
+    bad:'Stubborn, slow to change, and suspicious of anything it cannot touch.',
+    tell:'Watch for the practical question. An Earth person asks what it costs and who is doing it.',
+    beats:'Water', beatenBy:'Air'},
+  Air: {signs:['Gemini','Libra','Aquarius'], word:'circulation', temp:'hot and wet',
+    is:'Air is what connects. It names, compares, argues and carries a thing from one head into another.',
+    good:'Perspective, fairness, wit. Air people can hold two sides at once and explain either.',
+    bad:'Lives above the neck. Detached, indecisive, talks the feeling instead of having it.',
+    tell:'Watch for the reframe. An Air person will tell you what you actually said.',
+    beats:'Earth', beatenBy:'Fire'},
+  Water:{signs:['Cancer','Scorpio','Pisces'], word:'absorption', temp:'cold and wet',
+    is:'Water is what receives. It takes in mood, memory and undercurrent, and it knows before it can say why.',
+    good:'Depth, loyalty, real empathy. Water people notice the person nobody else noticed.',
+    bad:'Floods. Moody, absorbing, holds on long after it should have let go.',
+    tell:'Watch for the pause. A Water person reads the room before answering it.',
+    beats:'Fire', beatenBy:'Earth'}
+};
+
+const QUALITY_LORE = {
+  Cardinal:{signs:['Aries','Cancer','Libra','Capricorn'], place:'opens the season', verb:'starts',
+    is:'Cardinal signs stand at the four turns of the year — the two equinoxes and the two solstices. Each one begins a season.',
+    does:'Starts. Takes the initiative, sets the direction, moves first.',
+    bad:'Starts more than it finishes, and can be pushy about the direction.',
+    tell:'The one who says right, here is what we are doing.',
+    when:'first three or four weeks of a season'},
+  Fixed:{signs:['Taurus','Leo','Scorpio','Aquarius'], place:'holds the middle', verb:'holds',
+    is:'Fixed signs sit in the deep middle of a season, when the weather has settled into what it is.',
+    does:'Holds. Sustains, concentrates, refuses to be moved off a position.',
+    bad:'Will not budge, even when the position stopped being right some years ago.',
+    tell:'The one still there when everybody else has drifted off.',
+    when:'the settled middle of a season'},
+  Mutable:{signs:['Gemini','Virgo','Sagittarius','Pisces'], place:'breaks it up and hands over', verb:'adapts',
+    is:'Mutable signs come at the end of a season, when it is already turning into the next one.',
+    does:'Adapts. Adjusts, distributes, translates one thing into another.',
+    bad:'Scatters. Hard to pin down, changes shape rather than hold a line.',
+    tell:'The one who has already moved on to the next thing.',
+    when:'the last weeks, as the season breaks'}
+};
+
+/* Element and quality together are the whole of a sign: there are twelve
+   pairings and each occurs exactly once. That is the design of the zodiac. */
+function signFrom(element, quality){
+  return Object.keys(SIGNS).find(n => SIGNS[n].e === element && SIGNS[n].q === quality) || null;
+}
+function describeSign(name){
+  const s = SIGNS[name], season = seasonOf(name);
+  return {
+    name, glyph:s.g, element:s.e, quality:s.q, season,
+    place: SEASON_PLACE[s.q],
+    line: `${name} is ${s.e} in a ${s.q} gear: it ${SEASON_VERB[s.q]} ${season}.`,
+    element_is: ELEMENT_LORE[s.e].is,
+    quality_is: QUALITY_LORE[s.q].does,
+    together: `${ELEMENT_LORE[s.e].word} that ${QUALITY_LORE[s.q].verb}`
+  };
+}
 
 /* ============================================================
    CORRESPONDENCES
@@ -3226,141 +3359,6 @@ const DEPTH = {
 };
 
 /* ============================================================
-   THE FIGHT — each period taunts with its strength; the right
-   counter names its weakness. Original writing, one pair each.
-   ============================================================ */
-const TAUNTS = {
-"Pisces–Aries Cusp":{t:"I can start again from nothing.", c:"You start so you never have to finish."},
-"Aries I":{t:"I say the true thing first.", c:"You say it before you've aimed it."},
-"Aries II":{t:"Everyone in here is watching me.", c:"And there's nothing underneath it."},
-"Aries III":{t:"I go first. Always.", c:"And you always go alone."},
-"Aries–Taurus Cusp":{t:"I can carry more than you.", c:"You call leaning on people carrying."},
-"Taurus I":{t:"I finish everything I build.", c:"You stopped wanting it years ago."},
-"Taurus II":{t:"Let me explain this to you.", c:"Nobody asked you to."},
-"Taurus III":{t:"This comes easy to me.", c:"That's why you never got better."},
-"Taurus–Gemini Cusp":{t:"I can do all of it at once.", c:"And you finish none of it."},
-"Gemini I":{t:"Nothing holds me.", c:"Nothing holds you up either."},
-"Gemini II":{t:"I've got a word for what you are.", c:"Say it plainly. You can't."},
-"Gemini III":{t:"I'm still looking.", c:"Because arriving would end you."},
-"Gemini–Cancer Cusp":{t:"I've already seen how this ends.", c:"In your head. Not in here."},
-"Cancer I":{t:"I know exactly what you're feeling.", c:"You can't tell it from your own."},
-"Cancer II":{t:"I don't do it your way.", c:"You just do the opposite. That's not a way."},
-"Cancer III":{t:"I could talk you out of this.", c:"That's not talking. That's handling."},
-"Cancer–Leo Cusp":{t:"You never know which one you'll get.", c:"Neither do the people who love you."},
-"Leo I":{t:"I'm in charge in here.", c:"Nobody's argued with you in years."},
-"Leo II":{t:"I don't need to prove anything.", c:"So you never give it all. Ever."},
-"Leo III":{t:"They all follow me.", c:"Because you never let them lead."},
-"Leo–Virgo Cusp":{t:"I can see exactly what you are.", c:"And you say it only because you can."},
-"Virgo I":{t:"I built the system you're standing in.", c:"And you'd never tear it down."},
-"Virgo II":{t:"You don't know anything about me.", c:"Nobody does. That's the problem."},
-"Virgo III":{t:"I said exactly what I meant.", c:"And still missed what I meant."},
-"Virgo–Libra Cusp":{t:"Yours isn't good enough.", c:"Yours isn't finished. It never is."},
-"Libra I":{t:"I hold a higher line than you.", c:"And it's aimed at you first."},
-"Libra II":{t:"Everyone in this room is with me.", c:"Name one thing you think alone."},
-"Libra III":{t:"Watch how good this looks.", c:"There's nobody behind it."},
-"Libra–Scorpio Cusp":{t:"I can see every flaw you have.", c:"You've never made anything to be flawed."},
-"Scorpio I":{t:"I go all the way in.", c:"And burn out before the end."},
-"Scorpio II":{t:"I go deeper than you can follow.", c:"You've been down there too long."},
-"Scorpio III":{t:"Everybody likes me.", c:"Nobody is close to you."},
-"Scorpio–Sagittarius Cusp":{t:"I'll tear the whole thing down.", c:"And put what in its place?"},
-"Sagittarius I":{t:"I don't need anyone.", c:"You needed them. You said no."},
-"Sagittarius II":{t:"I made this first.", c:"And never finished it."},
-"Sagittarius III":{t:"I think bigger than you.", c:"You walked over people to do it."},
-"Sagittarius–Capricorn Cusp":{t:"I saw this coming years ago.", c:"And you've been bitter ever since."},
-"Capricorn I":{t:"I'll handle it.", c:"You call that care. It's control."},
-"Capricorn II":{t:"I'll outlast you.", c:"You never checked it was worth it."},
-"Capricorn III":{t:"I take the space I need.", c:"And everyone near you went quiet."},
-"Capricorn–Aquarius Cusp":{t:"You've no idea what I'm building.", c:"Neither has anyone. You never showed it."},
-"Aquarius I":{t:"I'm three steps ahead of you.", c:"And alone up there."},
-"Aquarius II":{t:"None of this touches me.", c:"Nothing ever has."},
-"Aquarius III":{t:"I accept everything.", c:"So you defend nothing."},
-"Aquarius–Pisces Cusp":{t:"I feel everything in this room.", c:"And it's already too much for you."},
-"Pisces I":{t:"There's more to this than you see.", c:"Your actual life is unattended."},
-"Pisces II":{t:"I don't need the room.", c:"The invitations stopped. You noticed."},
-"Pisces III":{t:"I can see the whole thing.", c:"None of it has a date on it."}
-};
-
-/* Element in the ring: colour, and what falls in it. */
-const RING_ELEMENT = {
-  Fire: {colour:'#f0894f', glow:'rgba(240,137,79,.42)', weather:'fire off the floor'},
-  Earth:{colour:'#8fd08a', glow:'rgba(143,208,138,.38)', weather:'dust and grit'},
-  Air:  {colour:'#8fc4f5', glow:'rgba(143,196,245,.38)', weather:'wind streaking across'},
-  Water:{colour:'#8f9cf5', glow:'rgba(143,156,245,.38)', weather:'rain that falls and splashes'}
-};
-
-/* Fighting style comes from the quality. */
-const STYLE = {
-  Cardinal:{name:'leads',   swings:3, feint:0.15, block:0.10, tellScale:0.85, power:1.15, guard:0.85},
-  Fixed:   {name:'holds',   swings:2, feint:0.10, block:0.35, tellScale:1.15, power:1.00, guard:1.30},
-  Mutable: {name:'switches',swings:4, feint:0.40, block:0.15, tellScale:0.95, power:0.90, guard:1.00}
-};
-
-/* Fire → Air → Earth → Water → Fire. Each beats one, loses to one. */
-const BEATS = {Fire:'Air', Air:'Earth', Earth:'Water', Water:'Fire'};
-function elementFactor(mine, theirs){
-  let best = 1;
-  mine.forEach(a=>theirs.forEach(b=>{
-    if(BEATS[a] === b) best = Math.max(best, 1.5);
-    else if(BEATS[b] === a) best = Math.min(best, 0.75);
-  }));
-  return best;
-}
-
-/* The ring itself is The Fight of Your Life's — fight.html, made from that
-   game's own ring3d.html by build-fight.js. Nothing here fights; it decides
-   who is in the ring, what the room looks like, and what the corner says.
-
-   The game reads four things off the address: boss (the opponent),
-   place (the room), fighter (which body you walk in as), rounds. */
-const PLACE_OF   = {Fire:'temple', Earth:'monastery', Air:'rooftop', Water:'tomb'};
-const PLACE_NAME = {temple:'The Temple', monastery:'The Monastery',
-                    rooftop:'The Rooftop', tomb:'The Tomb'};
-/* Which of the game's five fighters walks out of the blue corner as you. */
-const BODY_OF = {Fire:1, Air:2, Water:3, Earth:5};
-
-/* The slug build-fight.js keys its opponents by. Both sides derive it the
-   same way from the same period name, so they cannot drift apart. */
-function periodSlug(name){
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
-
-function fightURL(you, them, rounds){
-  const q = new URLSearchParams({
-    boss:    periodSlug(them.per.n),
-    place:   PLACE_OF[them.elements[0]],
-    fighter: String(BODY_OF[you.elements[0]] || 1),
-    rounds:  String(rounds || 6),
-    secs:    '30',
-    rest:    '14'
-  });
-  return 'fight.html?' + q.toString();
-}
-
-/* What the books say about the opponent, before the bell. Every line is a
-   reading of the period, not a rule of the game — the ring's rules are the
-   game's own and are the same whoever is in it. The one that carries into
-   the fight is the counter: it becomes what your corner shouts. */
-function fightBrief(you, them){
-  const el = them.elements[0], place = PLACE_OF[el];
-  return {
-    room:    PLACE_NAME[place],
-    weather: RING_ELEMENT[el].weather,
-    colour:  RING_ELEMENT[el].colour,
-    says:    TAUNTS[them.per.n].t,
-    answer:  TAUNTS[them.per.n].c,
-    holds:   STYLE[them.qualities[0]].name,
-    quality: them.qualities[0],
-    yours:   `${you.elements[0]} ${you.qualities[0]}`,
-    reading: elementFactor(you.elements, them.elements) > 1
-      ? `${you.elements[0]} puts out ${el}. On the page you have the better of it.`
-      : elementFactor(you.elements, them.elements) < 1
-      ? `${el} takes ${you.elements[0]}. On the page this one is above you.`
-      : `${you.elements[0]} against ${el} settles nothing either way.`
-  };
-}
-
-
-/* ============================================================
    QUIZ — questions generated from the same data the readings use.
    Pure: every generator takes a random source, so tests can seed it.
    ============================================================ */
@@ -3472,6 +3470,128 @@ function peopleQuestion(people, rand){
     answer, wrong, `${answer} — ${per}, ${PERIODS.find(x=>x.n === per).t}.`, 'people');
 }
 
+/* ---- the teaching half of the quiz ----
+   These do not test whether a date was memorised. They test whether the wheel
+   is understood: what an element is, what a quality is, where a season puts
+   it, and what the two together produce. Every note explains the reasoning
+   rather than restating the answer, because the note is where the learning
+   actually happens. */
+const ELEMENT_NAMES = () => Object.keys(ELEMENT_LORE);
+const QUALITY_NAMES = () => Object.keys(QUALITY_LORE);
+const SEASON_NAMES  = () => Object.keys(SEASONS);
+
+Object.assign(QUIZ_KINDS, {
+
+  /* ---- seasons ---- */
+  season(rand){
+    const n = pick(SIGN_NAMES(), rand), s = seasonOf(n);
+    return assemble(`Which season does <strong>${n}</strong> belong to?`,
+      s, distractors(SEASON_NAMES(), s, 3, rand),
+      `${n} is one of the three signs of ${s} — ${seasonLine(s)}.`, 'season');
+  },
+  seasonOpens(rand){
+    const s = pick(SEASON_NAMES(), rand), a = SEASONS[s].starts;
+    return assemble(`Which sign <strong>opens ${s}</strong>?`,
+      a, distractors(SIGN_NAMES(), a, 3, rand),
+      `${a} is the Cardinal sign of ${s}, so it begins it, around ${SEASONS[s].opens}. Cardinal always means the sign that opens a season.`, 'seasonOpens');
+  },
+  seasonTrio(rand){
+    const s = pick(SEASON_NAMES(), rand);
+    const a = SEASONS[s].signs.join(', ');
+    const wrong = SEASON_NAMES().filter(x=>x !== s).map(x=>SEASONS[x].signs.join(', '));
+    return assemble(`Which three signs make up <strong>${s}</strong>?`,
+      a, wrong.slice(0, 3),
+      `Every season holds three: one Cardinal to open it, one Fixed to hold it, one Mutable to end it. ${s} runs ${SEASONS[s].arc}.`, 'seasonTrio');
+  },
+  seasonPlace(rand){
+    const n = pick(SIGN_NAMES(), rand), q = SIGNS[n].q, s = seasonOf(n);
+    const a = SEASON_VERB[q] + ' ' + s;
+    const wrong = QUALITY_NAMES().filter(x=>x !== q).map(x=>SEASON_VERB[x] + ' ' + s);
+    return assemble(`Where in its season does <strong>${n}</strong> sit?`,
+      a, wrong,
+      `${n} is ${q}, and ${q} means exactly this — it ${SEASON_PLACE[q]}. That is what the qualities are: a position in the season.`, 'seasonPlace');
+  },
+
+  /* ---- elements ---- */
+  elementIs(rand){
+    const e = pick(ELEMENT_NAMES(), rand), a = ELEMENT_LORE[e].word;
+    return assemble(`<strong>${e}</strong> is the element of what?`,
+      a, distractors(ELEMENT_NAMES().map(x=>ELEMENT_LORE[x].word), a, 3, rand),
+      `${ELEMENT_LORE[e].is}`, 'elementIs');
+  },
+  elementTrio(rand){
+    const e = pick(ELEMENT_NAMES(), rand), a = ELEMENT_LORE[e].signs.join(', ');
+    const wrong = ELEMENT_NAMES().filter(x=>x !== e).map(x=>ELEMENT_LORE[x].signs.join(', '));
+    return assemble(`Which three signs are <strong>${e}</strong>?`,
+      a, wrong,
+      `The four elements each take three signs, spaced evenly round the wheel. ${e} is ${ELEMENT_LORE[e].temp} — ${ELEMENT_LORE[e].word}.`, 'elementTrio');
+  },
+  elementShadow(rand){
+    const e = pick(ELEMENT_NAMES(), rand), a = ELEMENT_LORE[e].bad;
+    return assemble(`Which element goes wrong like this: <em>${ELEMENT_LORE[e].bad}</em>`,
+      e, distractors(ELEMENT_NAMES(), e, 3, rand),
+      `That is ${e} at its worst. At its best: ${ELEMENT_LORE[e].good}`, 'elementShadow');
+  },
+  elementSign(rand){
+    const n = pick(SIGN_NAMES(), rand), a = SIGNS[n].e;
+    return assemble(`Which element is <strong>${n}</strong>?`,
+      a, distractors(ELEMENT_NAMES(), a, 3, rand),
+      `${describeSign(n).line} ${ELEMENT_LORE[a].tell}`, 'elementSign');
+  },
+
+  /* ---- qualities ---- */
+  qualityIs(rand){
+    const q = pick(QUALITY_NAMES(), rand), a = QUALITY_LORE[q].place;
+    return assemble(`What does <strong>${q}</strong> mean, in terms of the season?`,
+      a, distractors(QUALITY_NAMES().map(x=>QUALITY_LORE[x].place), a, 2, rand),
+      `${QUALITY_LORE[q].is} So it ${QUALITY_LORE[q].does.toLowerCase()}`, 'qualityIs');
+  },
+  qualityGroup(rand){
+    const q = pick(QUALITY_NAMES(), rand), a = QUALITY_LORE[q].signs.join(', ');
+    const wrong = QUALITY_NAMES().filter(x=>x !== q).map(x=>QUALITY_LORE[x].signs.join(', '));
+    return assemble(`Which four signs are <strong>${q}</strong>?`,
+      a, wrong,
+      `One from each season — that is why there are four. ${QUALITY_LORE[q].tell}`, 'qualityGroup');
+  },
+  qualitySign(rand){
+    const n = pick(SIGN_NAMES(), rand), a = SIGNS[n].q;
+    return assemble(`Which quality is <strong>${n}</strong>?`,
+      a, distractors(QUALITY_NAMES(), a, 2, rand),
+      `${describeSign(n).line} ${QUALITY_LORE[a].tell}`, 'qualitySign');
+  },
+
+  /* ---- putting the two together, which is the whole point ---- */
+  combo(rand){
+    const n = pick(SIGN_NAMES(), rand), s = SIGNS[n];
+    return assemble(`Which sign is <strong>${s.e} + ${s.q}</strong>?`,
+      n, distractors(SIGN_NAMES(), n, 3, rand),
+      `Each of the twelve element-and-quality pairings happens once and only once. ${s.e} + ${s.q} is ${n}: ${describeSign(n).together}.`, 'combo');
+  },
+  build(rand){
+    const n = pick(SIGN_NAMES(), rand), s = SIGNS[n], a = `${s.e} ${s.q}`;
+    const all = [];
+    Object.keys(ELEMENT_LORE).forEach(e=>Object.keys(QUALITY_LORE).forEach(q=>all.push(`${e} ${q}`)));
+    return assemble(`<strong>${n}</strong> is which element and quality?`,
+      a, distractors(all, a, 3, rand),
+      `${describeSign(n).line}`, 'build');
+  },
+  meets(rand){
+    const a1 = pick(ELEMENT_NAMES(), rand), b1 = pick(ELEMENT_NAMES(), rand);
+    const rel = EL_REL[relKey(a1, b1)], a = rel.mode;
+    return assemble(`<strong>${a1}</strong> meeting <strong>${b1}</strong> &mdash; what kind of pairing is that?`,
+      a, distractors(['easy','complementary','charged'], a, 2, rand),
+      `${rel.line || ''} Same element is easy, next-door elements complement, opposite ones run charged.`.trim(), 'meets');
+  },
+  personSeason(rand, people){
+    if(!people || people.length < 3) return null;
+    const p = pick(people, rand);
+    const per = findPeriod(p.month, p.day), sign = per.signs[0], s = seasonOf(sign);
+    return assemble(`<strong>${esc(firstName(p.name))}</strong> was born in which season?`,
+      s, distractors(SEASON_NAMES(), s, 3, rand),
+      `${esc(firstName(p.name))} is ${per.n} — ${sign}, which ${SEASON_VERB[SIGNS[sign].q]} ${s}.`, 'personSeason');
+  }
+});
+
 function makeQuiz(people, count, rand){
   rand = rand || Math.random;
   const kinds = Object.keys(QUIZ_KINDS);
@@ -3480,7 +3600,7 @@ function makeQuiz(people, count, rand){
   while(out.length < count && guard++ < count * 40){
     let q;
     if(people && people.length >= 3 && rand() < 0.25) q = peopleQuestion(people, rand);
-    if(!q) q = QUIZ_KINDS[pick(kinds, rand)](rand);
+    if(!q) q = QUIZ_KINDS[pick(kinds, rand)](rand, people);
     if(!q || q.options.length < 3) continue;
     if(new Set(q.options).size !== q.options.length) continue;   // no repeated option
     if(out.some(o=>o.prompt === q.prompt)) continue;             // no repeated question
@@ -3959,17 +4079,137 @@ function bestScore(){
 }
 function setBest(n){ try{ localStorage.setItem(BEST_KEY, String(n)); }catch(e){} }
 
+/* ---- the study screens ----
+   The quiz can only test what somebody has had a chance to learn, so the
+   material comes first: the wheel as one picture, then the elements and the
+   qualities on their own, then any single sign in full. */
+let LEARN = null;
+
+function wheelTable(){
+  return `<div class="wheel">
+    ${Object.entries(SEASONS).map(([s, v])=>`
+      <div class="season s-${s}">
+        <div class="sh"><b>${s}</b><small>opens ${v.opens} &middot; ${v.arc}</small></div>
+        ${v.signs.map(n=>{
+          const d = describeSign(n);
+          return `<div class="srow">
+            <span class="sg">${d.glyph}</span>
+            <span class="sn">${n}</span>
+            <span class="se el-${d.element}">${d.element}</span>
+            <span class="sq">${d.quality}</span>
+            <span class="sp">${SEASON_VERB[d.quality]} it</span>
+          </div>`;}).join('')}
+      </div>`).join('')}
+  </div>`;
+}
+
+function learnWheel(){
+  return `<div class="game">
+    <h2>The wheel</h2>
+    <p class="sub2">Four seasons, three signs each. In every season the same order holds: one sign
+    opens it, one holds its middle, one ends it and hands over. That order <em>is</em> what Cardinal,
+    Fixed and Mutable mean — they are positions in a season, not personality words.</p>
+    ${wheelTable()}
+    <p class="note">Read down a column and you get the elements in the same rotation every time:
+    Fire, Earth, Air, Water, and round again. Twelve signs, four elements, three qualities —
+    each pairing occurring exactly once.</p>
+    <div class="actions"><button class="btn ghost" id="g-back">Back</button></div>
+  </div>`;
+}
+
+function learnElements(){
+  return `<div class="game">
+    <h2>The four elements</h2>
+    <p class="sub2">What a person is made of. Three signs each, spaced evenly round the wheel.</p>
+    ${Object.entries(ELEMENT_LORE).map(([e, v])=>`
+      <div class="lcard el-b-${e}">
+        <div class="lh"><b class="el-${e}">${e}</b><small>${v.temp} &middot; ${v.word} &middot; ${v.signs.join(', ')}</small></div>
+        <p>${v.is}</p>
+        <div class="two">
+          <div><div class="dt">At its best</div><div class="db">${v.good}</div></div>
+          <div><div class="dt">At its worst</div><div class="db">${v.bad}</div></div>
+        </div>
+        <p class="note"><strong>Spotting it:</strong> ${v.tell}</p>
+      </div>`).join('')}
+    <p class="note">They also relate to each other: same element is easy, next-door elements
+    complement, opposite ones run charged. That is the engine behind every pair reading in the app.</p>
+    <div class="actions"><button class="btn ghost" id="g-back">Back</button></div>
+  </div>`;
+}
+
+function learnQualities(){
+  return `<div class="game">
+    <h2>The three qualities</h2>
+    <p class="sub2">Not what a person is made of, but where in a season they stand — and therefore
+    what they do with what they are made of. Four signs each, one from every season.</p>
+    ${Object.entries(QUALITY_LORE).map(([q, v])=>`
+      <div class="lcard">
+        <div class="lh"><b>${q}</b><small>${v.place} &middot; ${v.when} &middot; ${v.signs.join(', ')}</small></div>
+        <p>${v.is}</p>
+        <div class="two">
+          <div><div class="dt">What it does</div><div class="db">${v.does}</div></div>
+          <div><div class="dt">Where it goes wrong</div><div class="db">${v.bad}</div></div>
+        </div>
+        <p class="note"><strong>Spotting it:</strong> ${v.tell}</p>
+      </div>`).join('')}
+    <div class="actions"><button class="btn ghost" id="g-back">Back</button></div>
+  </div>`;
+}
+
+function learnSign(name){
+  const d = describeSign(name);
+  const periods = PERIODS.filter(p=>p.signs.includes(name));
+  const mine = PEOPLE.filter(p=>findPeriod(p.month, p.day).signs.includes(name));
+  const opts = SIGN_NAMES().map(n=>`<option value="${n}"${n === name ? ' selected' : ''}>${SIGNS[n].g} ${n}</option>`).join('');
+  return `<div class="game">
+    <h2>Learn a sign</h2>
+    <div class="form-grid" style="grid-template-columns:1fr"><div>
+      <label for="g-sign">Sign</label><select id="g-sign">${opts}</select></div></div>
+    <div class="lcard el-b-${d.element}" style="margin-top:18px">
+      <div class="lh"><b>${d.glyph} ${name}</b><small>${d.element} &middot; ${d.quality} &middot; ${d.season}</small></div>
+      <p class="lead">${d.line}</p>
+      <div class="two">
+        <div><div class="dt">Its element, ${d.element}</div><div class="db">${d.element_is}</div></div>
+        <div><div class="dt">Its quality, ${d.quality}</div><div class="db">${d.quality_is}</div></div>
+      </div>
+      <p><strong>Together:</strong> ${d.together}. ${ELEMENT_LORE[d.element].tell}</p>
+      <p class="note">Same element, so easy with: ${ELEMENT_LORE[d.element].signs.filter(x=>x !== name).join(' and ')}.
+      Charged with ${d.element === 'Fire' ? 'Water' : d.element === 'Water' ? 'Fire' : d.element === 'Air' ? 'Earth' : 'Air'} signs.
+      Shares its quality with ${QUALITY_LORE[d.quality].signs.filter(x=>x !== name).join(', ')}.</p>
+    </div>
+    <h4 style="margin-top:20px">The weeks inside it</h4>
+    <div class="plist">${periods.map(p=>`<div><b>${esc(p.n)}</b> <span>${esc(p.r)}</span> <em>${esc(p.t)}</em></div>`).join('')}</div>
+    ${mine.length ? `<h4 style="margin-top:18px">Your people born under it</h4>
+      <p>${mine.map(p=>esc(p.name)).join(', ')}</p>` : ''}
+    <div class="actions"><button class="btn ghost" id="g-back">Back</button></div>
+  </div>`;
+}
+
 function renderGame(){
   const box = $('game-box');
+  if(LEARN === 'wheel')     { box.innerHTML = learnWheel();     return; }
+  if(LEARN === 'elements')  { box.innerHTML = learnElements();  return; }
+  if(LEARN === 'qualities') { box.innerHTML = learnQualities(); return; }
+  if(LEARN && LEARN.sign)   { box.innerHTML = learnSign(LEARN.sign); return; }
   if(!GAME){
     const best = bestScore();
     box.innerHTML = `<div class="game">
-      <h2>Guess the period</h2>
-      <p class="sub2">${QUIZ_LENGTH} questions drawn from the same data as the readings — periods, dates,
-      tarot cards, elements, stones${PEOPLE.length >= 3 ? ', and the people you have saved' : ''}.</p>
+      <h2>Learn the wheel</h2>
+      <p class="sub2">Astrology is a small system, not a long list. Twelve signs built from four
+      elements and three qualities, laid out across four seasons. Learn those seven words and every
+      sign explains itself &mdash; including the sign of anybody you have just met.</p>
+      <div class="menu">
+        <button class="mbtn" id="g-wheel"><b>The wheel</b><span>All twelve at once, and why they sit where they do</span></button>
+        <button class="mbtn" id="g-elements"><b>The four elements</b><span>Fire, Earth, Air, Water &mdash; what a person is made of</span></button>
+        <button class="mbtn" id="g-qualities"><b>The three qualities</b><span>Cardinal, Fixed, Mutable &mdash; and the seasons that explain them</span></button>
+        <button class="mbtn" id="g-onesign"><b>Learn one sign</b><span>Everything about a single sign, in one screen</span></button>
+      </div>
+      <h4 style="margin-top:22px">Then test it</h4>
+      <p class="sub2">${QUIZ_LENGTH} questions on the elements, the qualities, the seasons and how they
+      combine &mdash; plus periods, dates, cards and stones${PEOPLE.length >= 3 ? ', and the people you have saved' : ''}.
+      Every answer explains itself.</p>
       ${best ? `<p class="note" style="margin-bottom:18px">Your best so far: <strong>${best}/${QUIZ_LENGTH}</strong></p>` : ''}
-      <div class="actions"><button class="btn primary" id="g-start">Start the quiz</button>
-      <button class="btn ghost" id="g-fight">The fight</button></div>
+      <div class="actions"><button class="btn primary" id="g-start">Start the quiz</button></div>
     </div>`;
     return;
   }
@@ -4011,9 +4251,21 @@ function renderGame(){
   </div>`;
 }
 
+$('game-box').addEventListener('change', e=>{
+  if(e.target.id === 'g-sign'){ LEARN = {sign:e.target.value}; renderGame(); }
+});
+
 $('game-box').addEventListener('click', e=>{
-  const t = e.target;
+  /* the menu buttons hold their own markup, so a click lands on the inner
+     <b> or <span> rather than the button itself */
+  const t = e.target.closest('button') || e.target;
+  if(t.id === 'g-wheel')    { LEARN = 'wheel';     return renderGame(); }
+  if(t.id === 'g-elements') { LEARN = 'elements';  return renderGame(); }
+  if(t.id === 'g-qualities'){ LEARN = 'qualities'; return renderGame(); }
+  if(t.id === 'g-onesign')  { LEARN = {sign:'Aries'}; return renderGame(); }
+  if(t.id === 'g-back')     { LEARN = null; return renderGame(); }
   if(t.id === 'g-start' || t.id === 'g-again'){
+    LEARN = null;
     GAME = {qs:makeQuiz(PEOPLE, QUIZ_LENGTH), i:0, score:0, picked:null};
     return renderGame();
   }
@@ -4025,90 +4277,6 @@ $('game-box').addEventListener('click', e=>{
     if(GAME.picked === GAME.qs[GAME.i].answerIndex) GAME.score++;
     renderGame();
   }
-});
-
-/* ============================================================
-   THE FIGHT — the entry to fight.html. The ring, the fighters,
-   the referee, the crowd, the cameras, the sound and every rule
-   in there belong to The Fight of Your Life; build-fight.js only
-   adds the 48 periods to its table of opponents. This screen
-   picks who walks out and hands the game the address.
-   ============================================================ */
-function randomPeriodProfile(){
-  const p = PERIODS[Math.floor(Math.random() * PERIODS.length)];
-  return profileOf({name:p.n, month:p.sm, day:p.sd, year:null});
-}
-
-/* Saved people first, then every period, so there is always an opponent
-   even on a fresh install. */
-function fightOptions(){
-  const saved = PEOPLE.slice().sort((a,b)=>a.name.localeCompare(b.name))
-    .map(p=>`<option value="p:${p.id}">${esc(p.name)} — ${findPeriod(p.month, p.day).n}</option>`).join('');
-  const all = PERIODS.map(p=>`<option value="z:${esc(p.n)}">${esc(p.n)} — ${esc(p.t)}</option>`).join('');
-  return (saved ? `<optgroup label="Saved">${saved}</optgroup>` : '') +
-         `<optgroup label="Every period">${all}</optgroup>`;
-}
-
-function fightPick(value){
-  if(!value) return randomPeriodProfile();
-  if(value.slice(0,2) === 'p:'){
-    const p = PEOPLE.find(x=>x.id === value.slice(2));
-    if(p) return profileOf(p);
-  }
-  const per = PERIODS.find(x=>x.n === value.slice(2));
-  return per ? profileOf({name:per.n, month:per.sm, day:per.sd, year:null}) : randomPeriodProfile();
-}
-
-function fightSetupHTML(){
-  const opts = fightOptions();
-  return `<div class="game">
-    <h2>The fight</h2>
-    <p class="sub2">Six rounds of thirty seconds in The Fight of Your Life's own ring. Pick who you
-    are and who you are in there with — the period you choose becomes the opponent, its element
-    picks the room, and the line that answers it becomes what your corner shouts.</p>
-    <div class="form-grid" style="grid-template-columns:1fr 1fr">
-      <div><label for="fy">You</label><select id="fy"><option value="">Random period</option>${opts}</select></div>
-      <div><label for="ft">Opponent</label><select id="ft"><option value="">Random period</option>${opts}</select></div>
-    </div>
-    <div class="form-grid" style="grid-template-columns:1fr; margin-top:12px">
-      <div><label for="fr">Length</label><select id="fr">
-        <option value="3">Three rounds</option>
-        <option value="6" selected>Six rounds</option>
-      </select></div>
-    </div>
-    <div id="f-brief"></div>
-    <div class="actions"><button class="btn primary" id="f-bell">Ring the bell</button>
-      <button class="btn ghost" id="f-back">Back</button></div>
-  </div>`;
-}
-
-/* The briefing is a reading of the opponent, not a rule of the ring. Said so
-   in the note, because the fight plays the same whoever is in it. */
-function renderBrief(){
-  const box = $('f-brief'); if(!box) return;
-  const you = fightPick($('fy').value), them = fightPick($('ft').value);
-  const b = fightBrief(you, them);
-  box.innerHTML = `<div class="brief" style="border-left:3px solid ${b.colour}">
-    <div class="bl"><small>You</small><span>${esc(you.per.n)} — ${esc(b.yours)}</span></div>
-    <div class="bl"><small>The room</small><span>${esc(b.room)}, ${esc(b.weather)}</span></div>
-    <div class="bl"><small>It says</small><span>“${esc(b.says)}”</span></div>
-    <div class="bl"><small>Your corner answers</small><span>“${esc(b.answer)}”</span></div>
-    <div class="bl"><small>Under pressure it</small><span>${esc(b.holds)} — ${esc(b.quality)}</span></div>
-    <p class="note">${esc(b.reading)} That is the book talking; in the ring the rules are the
-    same for both of you.</p>
-  </div>`;
-}
-
-$('game-box').addEventListener('click', e=>{
-  const t = e.target;
-  if(t.id === 'g-fight'){ $('game-box').innerHTML = fightSetupHTML(); renderBrief(); return; }
-  if(t.id === 'f-back'){ return renderGame(); }
-  if(t.id === 'f-bell'){
-    location.href = fightURL(fightPick($('fy').value), fightPick($('ft').value), +$('fr').value || 6);
-  }
-});
-$('game-box').addEventListener('change', e=>{
-  if(['fy','ft'].includes(e.target.id)) renderBrief();
 });
 
 /* ---------- the summary toggle, and reading it aloud ----------

@@ -24,8 +24,7 @@ const NAMES = ['PERIODS','LORE','NUMBERS','TAROT','EL_REL','Q_REL','SIGNS','ELEM
                'parseCSV','parseContactsCSV','parseVCF','parseContacts','parseContactDate',
                'WELLBEING','SIGN_BODY','SIGN_SWATCH','PLANET_LORE','BIRTHSTONE','DESTINY',
                'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT','DEPTH','renderDepth','relSpread','DAYS','renderDay',
-               'TAUNTS','STYLE','RING_ELEMENT','elementFactor',
-               'PLACE_OF','PLACE_NAME','BODY_OF','periodSlug','fightURL','fightBrief'];
+               'SEASONS','SEASON_PLACE','SEASON_VERB','seasonOf','seasonLine','ELEMENT_LORE','QUALITY_LORE','signFrom','describeSign'];
 const ctx = vm.createContext({console, URLSearchParams});
 vm.runInContext(engine + `\n;globalThis.__api = {${NAMES.join(',')}};`, ctx, {filename:'index.html:engine'});
 const api = ctx.__api;
@@ -37,8 +36,8 @@ const {PERIODS, LORE, NUMBERS, TAROT, EL_REL, Q_REL, SIGNS, ELEMENTS, QUALITIES,
        parseCSV, parseContactsCSV, parseVCF, parseContacts, parseContactDate,
        WELLBEING, SIGN_BODY, SIGN_SWATCH, PLANET_LORE, BIRTHSTONE, DESTINY,
        makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT, DEPTH, renderDepth, relSpread, DAYS, renderDay,
-       TAUNTS, STYLE, RING_ELEMENT, elementFactor,
-       PLACE_OF, PLACE_NAME, BODY_OF, periodSlug, fightURL, fightBrief} = api;
+       SEASONS, SEASON_PLACE, SEASON_VERB, seasonOf, seasonLine, ELEMENT_LORE, QUALITY_LORE,
+       signFrom, describeSign} = api;
 
 let failures = 0, checks = 0;
 function ok(label){ checks++; console.log('  ✓ ' + label); }
@@ -289,172 +288,6 @@ dupPortrait.size === 0 ? ok('no sentence is reused between any two portraits')
 const shown = PERIODS.filter(p=>!renderReading(profileOf({name:'X', month:p.sm, day:p.sd, year:1990})).includes(PORTRAIT[p.n]));
 shown.length ? bad('every portrait is rendered into its reading', shown.map(p=>p.n).join(', '))
              : ok('every portrait is rendered into its reading');
-
-/* ---------------------------------------------------------- */
-group('The fight');
-
-/* Seeded, so any failure is reproducible. */
-function seeded(seed){
-  return function(){
-    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
-    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-
-const tauntGaps = [];
-PERIODS.forEach(p=>{
-  const T = TAUNTS[p.n];
-  if(!T) return tauntGaps.push(`no taunt for ${p.n}`);
-  if(!T.t || T.t.length < 10) tauntGaps.push(`${p.n}: taunt too short`);
-  if(!T.c || T.c.length < 10) tauntGaps.push(`${p.n}: counter too short`);
-});
-tauntGaps.length ? bad('all 48 periods have a taunt and a counter', tauntGaps.slice(0,4).join('\n      '))
-                 : ok('all 48 periods have a taunt and a counter');
-is(new Set(PERIODS.map(p=>TAUNTS[p.n].t)).size, 48, 'all 48 taunts are distinct');
-is(new Set(PERIODS.map(p=>TAUNTS[p.n].c)).size, 48, 'all 48 counters are distinct — the right reply is never ambiguous');
-
-/* The elemental wheel must be a cycle: each beats exactly one and loses to one. */
-const wheel = ['Fire','Earth','Air','Water'];
-const wheelBad = [];
-wheel.forEach(a=>{
-  const beats = wheel.filter(b=>a !== b && elementFactor([a],[b]) > 1);
-  const loses = wheel.filter(b=>a !== b && elementFactor([a],[b]) < 1);
-  if(beats.length !== 1) wheelBad.push(`${a} beats ${beats.length} elements`);
-  if(loses.length !== 1) wheelBad.push(`${a} loses to ${loses.length} elements`);
-  if(elementFactor([a],[a]) !== 1) wheelBad.push(`${a} is not neutral against itself`);
-});
-wheelBad.length ? bad('the elemental wheel is a clean cycle', wheelBad.join(', '))
-                : ok('the elemental wheel is a clean cycle — each beats one, loses to one, neutral twice');
-
-/* Each element has its own ring colour, so no two rooms look the same. */
-is(new Set(Object.values(RING_ELEMENT).map(r=>r.colour)).size, 4, 'each element lights the ring a different colour');
-
-/* ---- the address the app hands the game ---- */
-
-/* Slugs are the join between index.html and fight.html. If two periods
-   collided, one of them could never be fought. */
-const slugs = PERIODS.map(p=>periodSlug(p.n));
-is(new Set(slugs).size, 48, 'all 48 periods slug to a distinct key');
-slugs.every(s=>/^[a-z0-9]+(-[a-z0-9]+)*$/.test(s))
-  ? ok('every slug is safe in a query string')
-  : bad('every slug is safe in a query string', slugs.filter(s=>!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(s)).join(', '));
-
-is(new Set(Object.values(BODY_OF)).size, 4, 'each element walks out as a different one of the five fighters');
-Object.values(BODY_OF).every(n=>n >= 1 && n <= 5)
-  ? ok('every body is one the game actually has (1–5)')
-  : bad('every body is one the game actually has (1–5)');
-is(new Set(Object.values(PLACE_OF)).size, 4, 'each element brings its own room');
-Object.values(PLACE_OF).every(p=>PLACE_NAME[p])
-  ? ok('every room has a name to show') : bad('every room has a name to show');
-
-/* The address must carry the whole matchup, and the rules must be the
-   thirty-second six-rounder the real game is played at. */
-const urlBad = [];
-PERIODS.forEach(p=>{
-  const them = profileOf({name:'T', month:p.sm, day:p.sd, year:null});
-  const you  = profileOf({name:'Y', month:3, day:28, year:null});   // Aries I, Fire
-  const q = new URLSearchParams(fightURL(you, them, 6).split('?')[1]);
-  if(q.get('boss') !== periodSlug(p.n)) urlBad.push(`${p.n}: wrong boss`);
-  if(q.get('place') !== PLACE_OF[them.elements[0]]) urlBad.push(`${p.n}: room does not follow its element`);
-  if(q.get('secs') !== '30') urlBad.push(`${p.n}: rounds are not thirty seconds`);
-  if(q.get('rest') !== '14') urlBad.push(`${p.n}: rest is not fourteen seconds`);
-  if(q.get('fighter') !== '1') urlBad.push(`${p.n}: your body does not follow your element`);
-});
-urlBad.length ? bad('the address carries the whole matchup', urlBad.slice(0,4).join('\n      '))
-              : ok('all 48 periods make a complete address — opponent, room, body, six rounds of thirty seconds');
-fightURL(profileOf({name:'Y', month:3, day:28, year:null}),
-         profileOf({name:'T', month:8, day:1, year:null}), 3).includes('rounds=3')
-  ? ok('a three-round fight asks the game for three rounds')
-  : bad('a three-round fight asks the game for three rounds');
-
-/* The briefing is the reading. The counter must be the line that reaches the
-   ring, because build-fight.js puts it in the corner's mouth. */
-const briefBad = [];
-PERIODS.forEach(p=>{
-  const them = profileOf({name:'T', month:p.sm, day:p.sd, year:null});
-  const you  = profileOf({name:'Y', month:6, day:20, year:null});
-  const b = fightBrief(you, them);
-  if(b.answer !== TAUNTS[p.n].c) briefBad.push(`${p.n}: corner does not answer its taunt`);
-  if(b.says !== TAUNTS[p.n].t) briefBad.push(`${p.n}: briefing quotes the wrong taunt`);
-  if(!b.room || !b.weather || !b.holds || !b.reading) briefBad.push(`${p.n}: briefing has a hole in it`);
-  if(!/^#[0-9a-f]{6}$/i.test(b.colour)) briefBad.push(`${p.n}: no colour for the room`);
-});
-briefBad.length ? bad('every period briefs completely', briefBad.slice(0,4).join('\n      '))
-                : ok('all 48 periods brief completely — room, taunt, the answer to it, and how it holds');
-new Set(PERIODS.map(p=>fightBrief(profileOf({name:'Y', month:3, day:28, year:null}),
-        profileOf({name:'T', month:p.sm, day:p.sd, year:null})).holds)).size === 3
-  ? ok('the three qualities give three different ways of holding')
-  : bad('the three qualities give three different ways of holding');
-
-/* ---- fight.html: the real game, with the periods added ---- */
-
-const FIGHT = path.join(ROOT, 'fight.html');
-if(!fs.existsSync(FIGHT)){
-  bad('fight.html is built', 'run: node build-fight.js <path to ring3d.html>');
-}else{
-  const fight = fs.readFileSync(FIGHT, 'utf8');
-  ok(`fight.html is built (${(fight.length / 1024 / 1024).toFixed(1)}MB)`);
-
-  /* It has to still be the real game, not something regenerated. These are
-     the game's own, and nothing in this repository writes them. */
-  const OWN = [
-    ["function faceOff()", "the game's own facing"],
-    ["const PLACES={temple:", "the game's own rooms"],
-    ["function tellMs()", "the game's own tell"],
-    ["function temptLine()", "the game's own talking"],
-    ["const ADDICTIONS=", "the game's own table of opponents"],
-    ["ROUND_SECS=+Q.get('secs')||30", "the game's own thirty-second round"]
-  ];
-  const ownGaps = OWN.filter(([f])=>!fight.includes(f));
-  ownGaps.length ? bad('fight.html is The Fight of Your Life itself', ownGaps.map(g=>'missing ' + g[1]).join('\n      '))
-                 : ok(`fight.html is the real game — all ${OWN.length} of its own parts are still in it`);
-
-  /* Nothing loads from outside: it has to work from a file, offline. */
-  /<script[^>]+\bsrc=/.test(fight) ? bad('fight.html pulls nothing in from outside', 'it has a script src')
-                                   : ok('fight.html pulls nothing in from outside — one file, opens offline');
-
-  /* The only change: the 48 periods are opponents. */
-  const at = fight.indexOf('const ZODIAC = ');
-  if(at < 0){ bad('the 48 periods are added as opponents', 'no ZODIAC table'); }
-  else{
-    const table = JSON.parse(fight.slice(at + 15, fight.indexOf(';\n(function()', at)));
-    is(Object.keys(table).length, 48, 'all 48 periods are in fight.html as opponents');
-    const zBad = [];
-    PERIODS.forEach(p=>{
-      const z = table[periodSlug(p.n)];
-      if(!z) return zBad.push(`${p.n} is not in the ring`);
-      if(z.n !== p.n) zBad.push(`${p.n}: wrong name on the card`);
-      if(z.lines[0] !== TAUNTS[p.n].t) zBad.push(`${p.n}: does not open with its own taunt`);
-      if(z.c !== TAUNTS[p.n].c) zBad.push(`${p.n}: the corner does not have its counter`);
-      const want = parseInt(RING_ELEMENT[SIGNS[p.signs[0]].e].colour.slice(1), 16);
-      if(z.g !== want) zBad.push(`${p.n}: glows the wrong element`);
-    });
-    zBad.length ? bad('every period arrives in the ring intact', zBad.slice(0,4).join('\n      '))
-                : ok('every period arrives with its own name, taunt, counter and element colour');
-  }
-  fight.includes('Object.assign(LINES, window.__ZLINES')
-    ? ok("the period's lines are merged into the game's own")
-    : bad("the period's lines are merged into the game's own");
-  fight.includes('SUPPORT.push(window.__ZCOUNTER')
-    ? ok('your corner shouts the line that answers the period')
-    : bad('your corner shouts the line that answers the period');
-
-  /* The app must open it, and open it with a real address. */
-  html.includes("'fight.html?' + q.toString()")
-    ? ok('the app opens the real ring') : bad('the app opens the real ring');
-}
-
-/* The rebuilt ring and everything it needed is gone: the real game carries
-   its own models, audio and Three.js inside the one file. */
-const GONE = ['three.min.js','GLTFLoader.js','SkeletonUtils.js','fighter1.glb','fighter4.glb','ring.glb','audio'];
-const left = GONE.filter(f=>fs.existsSync(path.join(ROOT, f)));
-left.length ? bad('the rebuilt ring is not shipped alongside the real one', 'still here: ' + left.join(', '))
-            : ok('the rebuilt ring and its assets are gone — the real game carries its own');
-/(r3-canvas|new THREE\.WebGLRenderer|function playClip)/.test(html)
-  ? bad('index.html no longer draws a ring of its own')
-  : ok('index.html no longer draws a ring of its own');
 
 /* ---------------------------------------------------------- */
 group('The day — all 366 profiles');
@@ -841,10 +674,142 @@ soft.length ? bad('the bad half is written as plainly as the good half', soft.sl
             : ok('the bad half names it directly, at the same length as the good half');
 
 /* ---------------------------------------------------------- */
+group('Elements, qualities and seasons');
+
+/* The whole teaching claim rests on this: a quality IS a position in a
+   season. If that ever stopped being true the lessons would be wrong. */
+const seasonBad = [];
+Object.entries(SEASONS).forEach(([s, v])=>{
+  if(v.signs.length !== 3) seasonBad.push(`${s} has ${v.signs.length} signs`);
+  const qs = v.signs.map(n=>SIGNS[n].q).join('/');
+  if(qs !== 'Cardinal/Fixed/Mutable') seasonBad.push(`${s} runs ${qs}`);
+  if(SIGNS[v.starts].q !== 'Cardinal') seasonBad.push(`${s} is opened by a non-Cardinal sign`);
+  if(seasonOf(v.starts) !== s) seasonBad.push(`${s} is opened by a sign from another season`);
+});
+seasonBad.length ? bad('each season runs Cardinal, Fixed, Mutable', seasonBad.join(', '))
+                 : ok('all four seasons run Cardinal then Fixed then Mutable, in order');
+is(Object.values(SEASONS).reduce((n, v)=>n + v.signs.length, 0), 12, 'the four seasons hold all twelve signs');
+is(new Set(Object.values(SEASONS).map(v=>v.signs).flat()).size, 12, 'no sign appears in two seasons');
+Object.keys(SIGNS).every(n=>seasonOf(n)) ? ok('every sign resolves to a season')
+                                         : bad('every sign resolves to a season');
+
+/* Three signs of a season are three different elements, and the elements
+   rotate in the same order all the way round. */
+const rotBad = Object.entries(SEASONS).filter(([, v])=>
+  new Set(v.signs.map(n=>SIGNS[n].e)).size !== 3).map(([s])=>s);
+rotBad.length ? bad('no season repeats an element', rotBad.join(', '))
+              : ok('each season holds three different elements');
+
+/* Four elements x three qualities = twelve signs, each pairing exactly once.
+   That is the design, and signFrom relies on it being true. */
+const pairMiss = [], pairDupe = [];
+Object.keys(ELEMENT_LORE).forEach(e=>Object.keys(QUALITY_LORE).forEach(q=>{
+  const hits = Object.keys(SIGNS).filter(n=>SIGNS[n].e === e && SIGNS[n].q === q);
+  if(!hits.length) pairMiss.push(`${e}+${q}`);
+  if(hits.length > 1) pairDupe.push(`${e}+${q} -> ${hits.join(', ')}`);
+  if(hits.length === 1 && signFrom(e, q) !== hits[0]) pairMiss.push(`${e}+${q} resolves wrong`);
+}));
+(pairMiss.length || pairDupe.length)
+  ? bad('every element and quality pairing lands on one sign', [...pairMiss, ...pairDupe].join(', '))
+  : ok('all twelve element-and-quality pairings land on exactly one sign each');
+
+/* The lore tables must agree with the sign table rather than drift from it. */
+const loreBad = [];
+Object.entries(ELEMENT_LORE).forEach(([e, v])=>{
+  const real = Object.keys(SIGNS).filter(n=>SIGNS[n].e === e);
+  if(v.signs.join() !== real.join()) loreBad.push(`${e} lists ${v.signs.join('/')}, table says ${real.join('/')}`);
+  if(v.signs.length !== 3) loreBad.push(`${e} does not have three signs`);
+  if(ELEMENT_LORE[v.beats].beatenBy !== e) loreBad.push(`${e} beats ${v.beats}, which does not agree`);
+});
+Object.entries(QUALITY_LORE).forEach(([q, v])=>{
+  const real = Object.keys(SIGNS).filter(n=>SIGNS[n].q === q);
+  if(v.signs.join() !== real.join()) loreBad.push(`${q} lists ${v.signs.join('/')}, table says ${real.join('/')}`);
+  if(v.signs.length !== 4) loreBad.push(`${q} does not have four signs`);
+  if(new Set(v.signs.map(seasonOf)).size !== 4) loreBad.push(`${q} is not one sign per season`);
+});
+loreBad.length ? bad('the teaching tables agree with the sign table', loreBad.slice(0,4).join('\n      '))
+               : ok('the element and quality tables match the sign table exactly, and each quality takes one sign per season');
+
+/* describeSign must build a sentence that is true for all twelve. */
+const descBad = Object.keys(SIGNS).filter(n=>{
+  const d = describeSign(n);
+  return !d.line.includes(d.element) || !d.line.includes(d.quality) ||
+         !d.line.includes(d.season) || /of it of|undefined/.test(d.line) ||
+         !d.together || /undefined/.test(d.together);
+});
+descBad.length ? bad('every sign describes itself correctly', descBad.join(', '))
+               : ok('all twelve signs produce a correct one-line description and a combined phrase');
+
+/* ---------------------------------------------------------- */
+group('The quiz teaches');
+
+const TEACH = ['season','seasonOpens','seasonTrio','seasonPlace','elementIs','elementTrio',
+               'elementShadow','elementSign','qualityIs','qualityGroup','qualitySign',
+               'combo','build','meets'];
+const missingKind = TEACH.filter(k=>!QUIZ_KINDS[k]);
+missingKind.length ? bad('the quiz covers elements, qualities and seasons', missingKind.join(', '))
+                   : ok(`the quiz has ${TEACH.length} question types on the elements, qualities and seasons`);
+Object.keys(QUIZ_KINDS).length >= 20
+  ? ok(`${Object.keys(QUIZ_KINDS).length} question types in all`)
+  : bad('enough question types', String(Object.keys(QUIZ_KINDS).length));
+
+/* Every teaching question must be answerable and must explain itself. Run
+   each kind many times so a rare bad draw is caught rather than shipped. */
+const qBad = [];
+TEACH.forEach(k=>{
+  for(let i = 0; i < 60; i++){
+    const q = QUIZ_KINDS[k](seeded(i * 31 + 7));
+    if(!q){ qBad.push(`${k}: produced nothing`); break; }
+    if(q.options.length < 3) qBad.push(`${k}: only ${q.options.length} options`);
+    if(new Set(q.options).size !== q.options.length) qBad.push(`${k}: a repeated option`);
+    if(q.options[q.answerIndex] !== q.answer) qBad.push(`${k}: answerIndex is wrong`);
+    if(!q.note || q.note.length < 30) qBad.push(`${k}: the note does not explain anything`);
+    if(q.note === q.answer) qBad.push(`${k}: the note just restates the answer`);
+    if(/undefined|\[object/.test(q.prompt + q.options.join() + q.note)) qBad.push(`${k}: undefined leaked in`);
+  }
+});
+qBad.length ? bad('every teaching question is sound', [...new Set(qBad)].slice(0,5).join('\n      '))
+            : ok(`all ${TEACH.length} teaching types produce sound questions across 60 draws each`);
+
+/* The notes are the lesson, so they must carry the reasoning. */
+const shallow = TEACH.filter(k=>{
+  const notes = [];
+  for(let i = 0; i < 20; i++) notes.push(QUIZ_KINDS[k](seeded(i * 17 + 3)).note);
+  return notes.every(n=>n.length < 60);
+});
+shallow.length ? bad('the explanations teach rather than confirm', shallow.join(', '))
+               : ok('every teaching answer comes back with a reason, not just a tick');
+
+/* And the study screens have to exist and be reachable. */
+['learnWheel','learnElements','learnQualities','learnSign','wheelTable','describeSign']
+  .forEach(f=>html.includes('function ' + f) ? ok(`${f}() is there`) : bad(`${f}() is there`));
+['g-wheel','g-elements','g-qualities','g-onesign','g-back','g-sign']
+  .every(id=>html.includes(id))
+  ? ok('the study menu, its four screens and the sign picker are all wired')
+  : bad('the study menu is wired');
+html.includes("const t = e.target.closest('button') || e.target;")
+  ? ok('a click on a menu button counts wherever inside it lands')
+  : bad('a click on a menu button counts wherever inside it lands');
+
+/* ---------------------------------------------------------- */
+group('The fight is gone');
+
+['fight.html','build-fight.js'].forEach(f=>
+  fs.existsSync(path.join(ROOT, f)) ? bad(`${f} is removed`) : ok(`${f} is removed`));
+const fightLeft = ['fightURL','fightBrief','PLACE_OF','BODY_OF','periodSlug','RING_ELEMENT',
+                   'TAUNTS','renderBrief','g-fight','f-bell','fightSetupHTML']
+  .filter(x=>html.includes(x));
+fightLeft.length ? bad('nothing of the fight is left in the app', fightLeft.join(', '))
+                 : ok('no fight code, data or markup remains in index.html');
+/* The read-aloud handlers sat next to the fight and must have survived it. */
+(html.includes('function speakReading') && html.includes('function stopSpeaking'))
+  ? ok('read-aloud survived the removal') : bad('read-aloud survived the removal');
+
+/* ---------------------------------------------------------- */
 group('The quiz');
 
-/* seeded() is defined in the fight group above. */
-function _unusedSeeded(seed){
+/* Seeded, so any failure is reproducible. */
+function seeded(seed){
   return function(){
     seed |= 0; seed = seed + 0x6D2B79F5 | 0;
     let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
@@ -875,12 +840,27 @@ for(let seed = 1; seed <= 200; seed++){
 quizFails.length ? bad(`200 seeded rounds all produce valid questions`, quizFails.slice(0,5).join('\n      '))
                  : ok(`200 seeded rounds produce ${generated} valid questions, one correct answer each`);
 
-/* Every generator must be exercised and must be answerable from the app's own data. */
-const kindsSeen = new Set();
-for(let seed = 1; seed <= 400; seed++) makeQuiz([], 6, seeded(seed)).forEach(q=>kindsSeen.add(q.kind));
-const missingKinds = Object.keys(QUIZ_KINDS).filter(k=>!kindsSeen.has(k));
-missingKinds.length ? bad('every question type gets generated', missingKinds.join(', '))
-                    : ok(`every question type gets generated (${kindsSeen.size} types)`);
+/* Every generator must be exercised and must be answerable from the app's own
+   data. Two of them need saved people to have anything to ask about, so the
+   sweep runs both ways: without people every other kind must still appear,
+   and with people the person-dependent ones must appear as well. */
+const PERSONAL = ['people','personSeason'];
+const seenAlone = new Set(), seenWithPeople = new Set();
+const someFolk = [{id:'1',name:'Ana',month:4,day:1},{id:'2',name:'Bo',month:11,day:12},
+                  {id:'3',name:'Cy',month:8,day:1},{id:'4',name:'Di',month:1,day:20}];
+for(let seed = 1; seed <= 400; seed++){
+  makeQuiz([], 6, seeded(seed)).forEach(q=>seenAlone.add(q.kind));
+  makeQuiz(someFolk, 6, seeded(seed)).forEach(q=>seenWithPeople.add(q.kind));
+}
+const missingAlone = Object.keys(QUIZ_KINDS).filter(k=>!PERSONAL.includes(k) && !seenAlone.has(k));
+const leakedAlone  = PERSONAL.filter(k=>seenAlone.has(k));
+const missingWith  = Object.keys(QUIZ_KINDS).filter(k=>!seenWithPeople.has(k));
+missingAlone.length ? bad('every impersonal question type gets generated with nobody saved', missingAlone.join(', '))
+                    : ok(`every question type that needs no saved people gets generated (${seenAlone.size} types)`);
+leakedAlone.length ? bad('no person question appears when nobody is saved', leakedAlone.join(', '))
+                   : ok('no person question appears when nobody is saved');
+missingWith.length ? bad('every question type gets generated once people are saved', missingWith.join(', '))
+                   : ok(`every one of the ${seenWithPeople.size} question types gets generated once people are saved`);
 
 /* Correctness of the answers themselves, not just their shape. */
 const factFails = [];
