@@ -23,7 +23,7 @@ const NAMES = ['PERIODS','LORE','NUMBERS','TAROT','EL_REL','Q_REL','SIGNS','ELEM
                'isLeap','parseBirthday','parseBulkLine','renderCrest','renderReading','renderPath','renderPair',
                'parseCSV','parseContactsCSV','parseVCF','parseContacts','parseContactDate',
                'WELLBEING','SIGN_BODY','SIGN_SWATCH','PLANET_LORE','BIRTHSTONE','DESTINY',
-               'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT',
+               'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT','DEPTH','renderDepth','relSpread',
                'TAUNTS','STYLE','RING_ELEMENT','elementFactor',
                'PLACE_OF','PLACE_NAME','BODY_OF','periodSlug','fightURL','fightBrief'];
 const ctx = vm.createContext({console, URLSearchParams});
@@ -36,7 +36,7 @@ const {PERIODS, LORE, NUMBERS, TAROT, EL_REL, Q_REL, SIGNS, ELEMENTS, QUALITIES,
        parseBirthday, parseBulkLine, renderCrest, renderReading, renderPath, renderPair,
        parseCSV, parseContactsCSV, parseVCF, parseContacts, parseContactDate,
        WELLBEING, SIGN_BODY, SIGN_SWATCH, PLANET_LORE, BIRTHSTONE, DESTINY,
-       makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT,
+       makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT, DEPTH, renderDepth, relSpread,
        TAUNTS, STYLE, RING_ELEMENT, elementFactor,
        PLACE_OF, PLACE_NAME, BODY_OF, periodSlug, fightURL, fightBrief} = api;
 
@@ -228,17 +228,25 @@ is(new Set(PERIODS.map(p=>PORTRAIT[p.n])).size, 48, 'all 48 portraits are distin
    design), the correspondences data panel, and the section headings. */
 const strip = h => h.replace(/<[^>]+>/g, ' ').replace(/&mdash;/g, '-').replace(/\s+/g, ' ').trim();
 function periodProse(p){
-  let h = renderReading(profileOf({name:'X', month:p.sm, day:p.sd, year:1990}));
+  const prof = profileOf({name:'X', month:p.sm, day:p.sd, year:1990});
+  let h = renderReading(prof);
   const a = h.indexOf('<h4>The number'), b = h.indexOf('<h4>Where it converges');
   if(a > -1 && b > a) h = h.slice(0, a) + h.slice(b);
   const c = h.indexOf('<h4>Correspondences');
   if(c > -1) h = h.slice(0, c);
+  /* The deep layer is part of what the reader sees, so it belongs in the
+     comparison — appended after the correspondence table is trimmed off. */
+  h += renderDepth(prof);
   return strip(h.replace(/<h4>[\s\S]*?<\/h4>/g, ' '));
 }
 const proses = PERIODS.map(periodProse);
 const share = PERIODS.map((p, i)=>{
+  const D = DEPTH[p.n];
   const own = [PORTRAIT[p.n], LORE[p.n].k, LORE[p.n].g, LORE[p.n].s, LORE[p.n].p,
-               WELLBEING[p.n].h, WELLBEING[p.n].m].join(' ').length;
+               WELLBEING[p.n].h, WELLBEING[p.n].m,
+               D ? [D.action, D.reflect, D.strong, D.hard, D.mind, D.body, D.spirit,
+                    D.raised, D.making, D.close, D.direction,
+                    ...Object.values(D.stages)].join(' ') : ''].join(' ').length;
   return own / proses[i].length * 100;
 });
 const minShare = Math.min(...share), avgShare = share.reduce((a,b)=>a + b, 0) / share.length;
@@ -447,6 +455,277 @@ left.length ? bad('the rebuilt ring is not shipped alongside the real one', 'sti
 /(r3-canvas|new THREE\.WebGLRenderer|function playClip)/.test(html)
   ? bad('index.html no longer draws a ring of its own')
   : ok('index.html no longer draws a ring of its own');
+
+/* ---------------------------------------------------------- */
+group('The deep layer — depth, and no repeating itself');
+
+/* The first version of the readings passed a test that only checked whether
+   two fields were IDENTICAL, so it happily allowed the same idea rewritten
+   eight ways. This measures shared content words instead, which is what a
+   reader actually notices. */
+const STOPW = new Set(('a an the and or but of to in on at for with from as is are was were be been being it its this that '+
+'these those you your yours i me my we our they them their he she his her not no nor so than then there here what which '+
+'who whom how when where why all any both each few more most other some such only own same too very can could would should '+
+'did does do doing done have has had having if because while about against between into through during before after above '+
+'below up down out off over under again further once by way thing things one two something someone anything nothing get '+
+'got go goes going come comes came make makes made take takes took give gives gave say says said know knows knew think '+
+'thinks thought like just still even also than there they will can').split(' '));
+const cwords = t => String(t||'').toLowerCase().replace(/[^a-z\s]/g,' ').split(/\s+/)
+  .filter(w=>w.length>3 && !STOPW.has(w)).map(w=>w.replace(/(ing|edly|ed|es|s|ly|ness|ment)$/,''));
+
+function overlapPairs(sections, limit){
+  const keys = Object.keys(sections).filter(k=>sections[k]);
+  const sets = {}; keys.forEach(k=>sets[k] = new Set(cwords(sections[k])));
+  const hits = [];
+  for(let i=0;i<keys.length;i++) for(let j=i+1;j<keys.length;j++){
+    const A = sets[keys[i]], B = sets[keys[j]];
+    if(A.size < 3 || B.size < 3) continue;
+    const shared = [...A].filter(w=>B.has(w));
+    const ov = shared.length / Math.min(A.size, B.size);
+    if(ov >= limit) hits.push(`${keys[i]}/${keys[j]} ${Math.round(ov*100)}% (${shared.join(' ')})`);
+  }
+  return hits;
+}
+
+/* The deep layer rolls out period by period and the renderer shows it only
+   where it exists, so partial coverage is a state, not a fault. What must
+   never happen is a HALF-written entry reaching the screen. */
+const written = Object.keys(DEPTH).length;
+ok(`deep readings written: ${written} of ${PERIODS.length}`);
+/* All 48 are written now. The renderer skips a period with no deep reading,
+   so this is what stops one silently regressing to the shallow version. */
+const noDepth = PERIODS.filter(p=>!DEPTH[p.n]).map(p=>p.n);
+noDepth.length ? bad('no period falls back to the shallow reading', noDepth.join(', '))
+               : ok('all 48 periods render the full reading — no fallbacks left');
+Object.keys(DEPTH).every(n=>PERIODS.some(p=>p.n === n))
+  ? ok('every deep reading names a real period')
+  : bad('every deep reading names a real period',
+        Object.keys(DEPTH).filter(n=>!PERIODS.some(p=>p.n === n)).join(', '));
+
+/* Each field must carry its own weight, not a phrase. */
+const FIELDS = ['strong','hard','mind','body','spirit','raised','making','close','direction','action','reflect'];
+const thin = [];
+Object.entries(DEPTH).forEach(([n,D])=>{
+  FIELDS.forEach(f=>{
+    if(!D[f]) return thin.push(`${n}: no ${f}`);
+    if(!['direction','action','reflect'].includes(f) && D[f].split(/[.!?]/).filter(x=>x.trim().length>12).length < 3)
+      thin.push(`${n}: ${f} is under three sentences`);
+  });
+  ['young','rising','middle','later'].forEach(st=>{
+    if(!D.stages || !D.stages[st]) thin.push(`${n}: no ${st} stage`);
+  });
+});
+thin.length ? bad('every section of the deep reading is substantial', thin.slice(0,5).join('\n      '))
+            : ok(`all ${Object.keys(DEPTH).length} deep readings are complete — nine sections and four stages, each of real length`);
+
+/* The actual complaint: sections that restate each other. */
+const repeats = [];
+Object.entries(DEPTH).forEach(([n,D])=>{
+  const sec = {}; FIELDS.forEach(f=>sec[f] = D[f]);
+  Object.entries(D.stages).forEach(([k,v])=>sec['stage:'+k] = v);
+  /* The gift/cost/practice box is hidden once a period has a deep reading, so
+     only the portrait is still on screen beside these sections. */
+  sec.portrait = PORTRAIT[n];
+  overlapPairs(sec, 0.34).forEach(h=>repeats.push(`${n}: ${h}`));
+});
+repeats.length ? bad('no two sections of a reading restate each other', repeats.slice(0,6).join('\n      '))
+               : ok('no two sections of any deep reading share a third of their content words');
+
+/* And it has to be about THIS period, not personology in general.
+
+   Measuring shared words was the wrong instrument once the readings got
+   long: every reading now has a Love, Anger, Envy and Money section, so
+   they necessarily share that topic vocabulary, and the shared fraction
+   climbed with length rather than with sameness. What actually matters is
+   the opposite quantity — how much of a reading is vocabulary that appears
+   in NO other reading. That is length-robust and it is the thing a reader
+   notices. Paired with a hard ban on any shared sentence, it is a stricter
+   test than the one it replaces, not a looser one. */
+const vocab = {};
+Object.entries(DEPTH).forEach(([n,D])=>{
+  vocab[n] = new Set(FIELDS.map(f=>cwords(D[f])).concat(Object.values(D.stages).map(cwords)).flat());
+});
+/* A flat floor is not stable as the corpus grows: every reading's unique
+   share falls as more readings exist to share words with, so a fixed 20%
+   would pass early and fail everything later for no reason connected to
+   the writing. Measured against the median instead, which asks the real
+   question — is this one noticeably more generic than its neighbours. */
+const uniq = {};
+Object.entries(vocab).forEach(([n,mine])=>{
+  const elsewhere = new Set(Object.entries(vocab).filter(([m])=>m !== n).map(([,S])=>[...S]).flat());
+  uniq[n] = elsewhere.size ? [...mine].filter(w=>!elsewhere.has(w)).length / mine.size : 1;
+});
+const vals = Object.values(uniq).sort((a,b)=>a - b);
+const median = vals[Math.floor(vals.length / 2)] || 1;
+const generic = Object.entries(uniq).filter(([,v])=>v < median * 0.70)
+  .map(([n,v])=>`${n}: ${Math.round(v*100)}% of its vocabulary is its own, against a median of ${Math.round(median*100)}%`);
+generic.length ? bad('each period reads as its own person', generic.slice(0,4).join('\n      '))
+               : ok(`each deep reading is its own person — median ${Math.round(median*100)}% of vocabulary used nowhere else, none far below it`);
+
+/* Nothing may be reused verbatim between two readings. */
+const deepSents = {};
+Object.entries(DEPTH).forEach(([n,D])=>{
+  deepSents[n] = FIELDS.map(f=>D[f]).concat(Object.values(D.stages)).join(' ')
+    .split(/(?<=[.!?])\s+/).map(x=>x.trim()).filter(x=>x.length > 25);
+});
+const lifted = [];
+const seenDeep = new Map();
+Object.entries(deepSents).forEach(([n,list])=>list.forEach(x=>{
+  if(seenDeep.has(x) && seenDeep.get(x) !== n) lifted.push(`${seenDeep.get(x)} and ${n}: "${x.slice(0,60)}…"`);
+  else seenDeep.set(x, n);
+}));
+lifted.length ? bad('no sentence appears in two readings', lifted.slice(0,3).join('\n      '))
+              : ok('no sentence is reused between any two deep readings');
+
+/* Jacques' standing rule on his own app: no mechanisms, no research claims. */
+const CLAIM = /\b(research shows|studies show|scientificall|clinicall|dopamine|serotonin|neuroplastic|brain chemistry|cortisol|diagnos|disorder|cure[sd]?\b|treat(s|ed|ment)\b)/i;
+const claims = [];
+Object.entries(DEPTH).forEach(([n,D])=>{
+  FIELDS.concat(['stages']).forEach(f=>{
+    const t = f === 'stages' ? Object.values(D.stages).join(' ') : D[f];
+    const m = CLAIM.exec(t); if(m) claims.push(`${n}.${f}: "${m[0]}"`);
+  });
+});
+claims.length ? bad('no medical or mechanistic claims anywhere in the deep readings', claims.slice(0,4).join('\n      '))
+              : ok('no medical claims, no mechanisms, no research assertions — only what people describe');
+
+/* It can never tell somebody they are finished. */
+const FINISHED = /\b(you will never|you'll never|too late for you|no way back|beyond help|hopeless|doomed|damaged goods|always be this way)\b/i;
+const finished = [];
+Object.entries(DEPTH).forEach(([n,D])=>{
+  const all = FIELDS.map(f=>D[f]).concat(Object.values(D.stages)).join(' ');
+  const m = FINISHED.exec(all); if(m) finished.push(`${n}: "${m[0]}"`);
+});
+finished.length ? bad('nothing tells a reader they are finished', finished.join('\n      '))
+                : ok('nothing in any reading tells a reader they are finished');
+
+/* The renderer must actually show every section, or writing it was pointless. */
+const deepShown = ['D.action','D.reflect','D.strong','D.hard','D.mind','D.body','D.spirit','D.raised','D.making','D.close',
+               'D.direction','D.stages.young','D.stages.rising','D.stages.middle','D.stages.later'];
+const unshown = deepShown.filter(f=>!new RegExp('\\b' + f.replace('.','\\.') + '\\b').test(html));
+unshown.length ? bad('every written section reaches the screen', 'not rendered: ' + unshown.join(', '))
+               : ok(`all ${deepShown.length} sections of the deep reading are rendered`);
+html.includes('not medical advice, and not a diagnosis')
+  ? ok('the health sections carry their disclaimer') : bad('the health sections carry their disclaimer');
+html.includes('not a schedule')
+  ? ok('the stages say plainly they are not a prediction') : bad('the stages say plainly they are not a prediction');
+
+/* ---- the three books as one system ---- */
+
+/* Each deep reading must name the hinge all three books circle, and where
+   they pull against each other. Without the second one it is three lists. */
+const joinBad = [];
+Object.entries(DEPTH).forEach(([n,D])=>{
+  ['hinge','tension'].forEach(f=>{
+    if(!D[f]) return joinBad.push(`${n}: no ${f}`);
+    if(D[f].split(/[.!?]/).filter(x=>x.trim().length>12).length < 3)
+      joinBad.push(`${n}: ${f} is under three sentences`);
+  });
+  const h = D.hinge.toLowerCase();
+  const named = ['birthdays','destiny','relationship','pairing'].filter(w=>h.includes(w)).length;
+  if(named < 2) joinBad.push(`${n}: the hinge does not name the books it is joining`);
+});
+joinBad.length ? bad('every deep reading joins the three books', joinBad.slice(0,4).join('\n      '))
+               : ok('every deep reading names the hinge all three books circle, and where they disagree');
+
+/* The convergence block must quote all three, from their own tables — the
+   Relationships line is the pair engine run against every element, so it
+   cannot drift away from what the Pair layer would actually say. */
+[['P.per.n','the period'],['L.k','the Birthdays line'],['P.dest.from','the Destiny start'],
+ ['P.dest.toward','the Destiny direction'],['relSpread(P)','the Relationships spread']]
+  .forEach(([frag,what])=>{
+    html.includes('${' + frag + '}') || html.includes(frag)
+      ? ok(`the convergence quotes ${what} from its own table`)
+      : bad(`the convergence quotes ${what} from its own table`);
+  });
+
+const spreadBad = [];
+PERIODS.forEach(p=>{
+  const P = profileOf({name:'X', month:p.sm, day:p.sd, year:1990});
+  const line = renderDepth(P);
+  if(!DEPTH[p.n]) return;
+  ['Fire','Earth','Air','Water'].forEach(e=>{
+    const mode = EL_REL[relKey(P.elements[0], e)].mode;
+    /* cap() upper-cases whichever mode lands first, so match case-insensitively */
+    if(!line.includes(e)) spreadBad.push(`${p.n}: ${e} missing from the spread`);
+    if(!line.toLowerCase().includes(mode)) spreadBad.push(`${p.n}: no ${mode} pairing shown`);
+  });
+});
+spreadBad.length ? bad('the Relationships spread covers all four elements', spreadBad.slice(0,4).join('\n      '))
+                 : ok('the Relationships spread runs each period against all four elements, from the pair engine');
+
+/* The pair layer must read the deep material, not sit beside it. */
+(html.includes('function pairDepth') && html.includes('${pairDepth(A, B)}'))
+  ? ok('the pair reading pulls in the deep layer') : bad('the pair reading pulls in the deep layer');
+['DA.close','DB.close','DA.raised','DA.making'].every(f=>html.includes(f))
+  ? ok('the pair reads closeness and family off both people')
+  : bad('the pair reads closeness and family off both people');
+
+/* ---- the short version, and the voice ---- */
+
+/* A summary that needs a dictionary is not a summary. Third-grade reading
+   means short sentences and short words, so both get measured. */
+const simpleBad = [], grade = [];
+Object.entries(DEPTH).forEach(([n,D])=>{
+  if(!D.simple) return simpleBad.push(`${n}: no short version`);
+  ['self','others','path'].forEach(k=>{
+    const t = D.simple[k];
+    if(!t) return simpleBad.push(`${n}: short version has no ${k}`);
+    const sents = t.split(/[.!?]/).filter(x=>x.trim().length>3);
+    const words = t.replace(/[^A-Za-z\s]/g,' ').split(/\s+/).filter(Boolean);
+    const avgSent = words.length / sents.length;
+    const long = words.filter(w=>w.length > 8);
+    if(avgSent > 14) grade.push(`${n}.${k}: sentences average ${avgSent.toFixed(0)} words`);
+    if(long.length / words.length > 0.05)
+      grade.push(`${n}.${k}: ${Math.round(long.length/words.length*100)}% long words (${[...new Set(long)].slice(0,4).join(', ')})`);
+  });
+});
+simpleBad.length ? bad('every deep reading has a short version covering all three layers', simpleBad.slice(0,4).join('\n      '))
+                 : ok('every deep reading has a short version — self, other people, and where it is going');
+grade.length ? bad('the short version reads at third-grade level', grade.slice(0,5).join('\n      '))
+             : ok('the short version stays short-sentence and short-word throughout');
+
+/* It has to be reachable and it has to hide the long one, or it is just more text. */
+(html.includes("id=\"btn-simple\"") && html.includes("id=\"simple-box\"") && html.includes("id=\"deep-full\""))
+  ? ok('the short version has a button and its own box') : bad('the short version has a button and its own box');
+(html.includes("box.hidden = !showSimple; full.hidden = showSimple;"))
+  ? ok('showing the short version hides the long one') : bad('showing the short version hides the long one');
+
+/* Read aloud: the browser's own voice, so nothing ships and it works offline. */
+html.includes('SpeechSynthesisUtterance') ? ok('the reading can be played out loud')
+                                          : bad('the reading can be played out loud');
+html.includes("if(!speechOK()){ const b = $('btn-speak'); if(b) b.textContent = 'This browser has no voice'; return; }")
+  ? ok('a browser with no voice says so instead of failing silently')
+  : bad('a browser with no voice says so instead of failing silently');
+/* Several browsers truncate one long utterance, so it must be chunked. */
+html.includes('(buf + c).length > 220') ? ok('long readings are split so no browser cuts them off')
+                                        : bad('long readings are split so no browser cuts them off');
+html.includes('speechSynthesis.cancel()') ? ok('the voice can be stopped') : bad('the voice can be stopped');
+html.includes("addEventListener('beforeunload', stopSpeaking)")
+  ? ok('the voice stops when the page closes') : bad('the voice stops when the page closes');
+/* The voice must read whichever version is on screen, not always the long one. */
+html.includes("const src = (simpleBox && !simpleBox.hidden) ? simpleBox : full;")
+  ? ok('it reads aloud whichever version you are looking at')
+  : bad('it reads aloud whichever version you are looking at');
+
+/* All of life, not just the flattering half. */
+const LIFE = ['love','hate','envy','fantasy','fun','dark','money'];
+const missingLife = [];
+Object.entries(DEPTH).forEach(([n,D])=>LIFE.forEach(f=>{ if(!D[f]) missingLife.push(`${n}: no ${f}`); }));
+missingLife.length ? bad('every reading covers all of life, not just the good half', missingLife.slice(0,5).join('\n      '))
+                   : ok(`every reading covers ${LIFE.length} more of life — love, anger, envy, fantasy, fun, the dark stretch, money`);
+LIFE.every(f=>html.includes('D.' + f))
+  ? ok('all of it reaches the screen') : bad('all of it reaches the screen', LIFE.filter(f=>!html.includes('D.'+f)).join(', '));
+
+/* The blunt half has to actually be blunt, or this is the old version again. */
+const soft = [];
+Object.entries(DEPTH).forEach(([n,D])=>{
+  const h = D.hard.toLowerCase();
+  if(!/\b(you|your)\b/.test(h)) soft.push(`${n}: the worst side does not address the reader`);
+  if(h.length < 300) soft.push(`${n}: the worst side is too short to say anything`);
+});
+soft.length ? bad('the bad half is written as plainly as the good half', soft.slice(0,4).join('\n      '))
+            : ok('the bad half names it directly, at the same length as the good half');
 
 /* ---------------------------------------------------------- */
 group('The quiz');
