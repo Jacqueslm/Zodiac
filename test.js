@@ -791,6 +791,11 @@ if(!fs.existsSync(cardPath)){
                           : bad('the share picture is small enough', `${Math.round(buf.length/1024)}KB`);
 }
 
+/* Phones were holding an old copy of the page after an update had shipped. */
+(html.includes('http-equiv="cache-control"') && html.includes('must-revalidate'))
+  ? ok('the page asks browsers to check for a newer copy rather than reuse a stale one')
+  : bad('the page asks browsers to revalidate');
+
 /* An icon for the home screen, drawn rather than fetched, so it works offline. */
 (html.includes('rel="icon"') && html.includes('rel="apple-touch-icon"'))
   ? ok('there is an icon for the browser tab and for a phone home screen')
