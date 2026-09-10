@@ -22,6 +22,15 @@ Each reading also carries a **state of mind**, a **body and wellbeing** note
 a **correspondences** panel: birthstone for the birth month, the planetary
 stone, sign and planet colours, metal, day of the week, flower and body zone.
 
+### How to use this
+
+A **How to use this** button sits in the header, reachable from any tab. It
+opens plain instructions covering every tab, the three controls at the top of
+a reading, saving people, importing contacts, and putting the app on a phone's
+home screen. Held to the same reading level as the short version of a reading
+— it is the screen for somebody who is already stuck — and tested for it:
+sentences average twelve words and long words stay at three per cent.
+
 ### The day
 
 Above all of it sits the day itself — a named profile for each of the 366 days,

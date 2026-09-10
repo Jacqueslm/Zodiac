@@ -238,6 +238,16 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 .voicebar select{margin-bottom:9px}
 .voicebar .note{margin:9px 0 0}
 
+/* ---------- how to use ---------- */
+.top .btn.sm{margin-top:14px}
+.help{background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+  padding:24px 22px; margin:0 0 26px}
+.help h2{font-family:var(--serif); font-weight:500; font-size:26px; margin:0 0 6px}
+.help h4{font-family:var(--serif); font-weight:500; font-size:17px; color:var(--gold);
+  margin:20px 0 6px}
+.help p{font-size:15.5px; line-height:1.7; color:var(--dim); margin:0 0 9px}
+.help strong{color:var(--ink)}
+
 /* ---------- learning the wheel ---------- */
 .menu{display:grid; gap:10px}
 .mbtn{display:block; width:100%; text-align:left; font:inherit; cursor:pointer;
@@ -350,7 +360,56 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
   <div class="mark">Personology</div>
   <h1>The Birthday Index</h1>
   <p class="sub">One birthday, read three ways — the period you were born into, the path it implies, and what happens when it meets someone else's.</p>
+  <button class="btn ghost sm" id="btn-help">How to use this</button>
 </header>
+
+<div class="help" id="help-box" hidden>
+  <h2>How to use this</h2>
+
+  <h4>Read a birthday</h4>
+  <p>Type a name. Pick a month and a day. The year is optional. Press <strong>Read it</strong>.
+  You get the day itself first, then the week it sits in, then the deeper reading, then where
+  the life is pointed. It is long on purpose. You are not meant to read it all at once.</p>
+
+  <h4>The three buttons at the top of a reading</h4>
+  <p><strong>Short version</strong> turns the whole thing into plain words &mdash; a few lines about
+  your day, about you, about you and other people, and where you are going. Press it again for
+  the long one.</p>
+  <p><strong>Read it to me</strong> reads it out loud. It reads whichever version is showing, so
+  press Short version first if you only want the quick one.</p>
+  <p><strong>Voice</strong> lets you pick the voice. Tap it, choose from the list, press
+  <strong>Hear it</strong> to try one. The good ones are at the top &mdash; on a phone look for a
+  name starting <em>Google</em>. It remembers what you picked.</p>
+
+  <h4>People</h4>
+  <p>Press <strong>Save this person</strong> under any reading and they are kept on this device.
+  You can also paste a whole list at once, one per line, like <em>Ana Marchetti, 29 Nov 1988</em>.
+  Or bring in your phone contacts with <strong>Import contacts</strong>.</p>
+
+  <h4>Pair</h4>
+  <p>Pick two saved people and read them together &mdash; love, friendship, work, family, how close
+  it actually gets, and what each of them brings from the family they came from.</p>
+
+  <h4>Matrix</h4>
+  <p>Everybody you have saved, read against everybody else, all at once. Easy pairs, pairs that
+  complement each other, and pairs that run hot.</p>
+
+  <h4>Learn</h4>
+  <p>This is where you learn the system rather than just look yourself up. Astrology is small:
+  twelve signs made from four elements and three qualities, spread over four seasons. Learn those
+  seven words and every sign explains itself. Then take the quiz &mdash; every answer tells you why.</p>
+
+  <h4>The 48</h4>
+  <p>The whole year, week by week. Useful for finding somebody when you know roughly when their
+  birthday is.</p>
+
+  <h4>Keep it on your phone</h4>
+  <p>Open the site, press <strong>Share</strong>, then <strong>Add to Home Screen</strong>. It gets
+  an icon and opens like an app. Everything you save stays on that phone &mdash; nothing is sent
+  anywhere, and each phone keeps its own list.</p>
+
+  <div class="actions"><button class="btn primary" id="btn-help-close">Got it</button></div>
+</div>
 
 <nav class="tabs" role="tablist">
   <button role="tab" id="tab-read"   aria-selected="true"  data-panel="panel-read">Read a birthday</button>
@@ -4450,6 +4509,13 @@ document.addEventListener('change', e=>{
 
 document.addEventListener('click', e=>{
   const t = e.target;
+  if(t.id === 'btn-help' || t.id === 'btn-help-close'){
+    const box = $('help-box'); if(!box) return;
+    box.hidden = t.id === 'btn-help-close' ? true : !box.hidden;
+    if(!box.hidden) box.scrollIntoView({behavior:'smooth', block:'start'});
+    const b = $('btn-help'); if(b) b.classList.toggle('on', !box.hidden);
+    return;
+  }
   if(t.id === 'btn-simple'){
     const box = $('simple-box'), full = $('reading-full');
     if(!box || !full) return;

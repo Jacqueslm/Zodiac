@@ -737,6 +737,49 @@ soft.length ? bad('the bad half is written as plainly as the good half', soft.sl
             : ok('the bad half names it directly, at the same length as the good half');
 
 /* ---------------------------------------------------------- */
+group('How to use this');
+
+(html.includes('id="btn-help"') && html.includes('id="help-box"'))
+  ? ok('there is a How to use button and a panel for it') : bad('there is a How to use button');
+/<header class="top">[\s\S]{0,600}id="btn-help"/.test(html)
+  ? ok('the button sits in the header, reachable from any tab')
+  : bad('the button sits in the header');
+/id="help-box" hidden/.test(html)
+  ? ok('the panel starts closed') : bad('the panel starts closed');
+html.includes("id=\"btn-help-close\"")
+  ? ok('the panel can be closed from inside it as well as from the button')
+  : bad('the panel closes from inside');
+
+/* It has to cover every tab, or somebody will still be stuck. */
+const TABS = [['Read a birthday','panel-read'],['People','panel-people'],['Pair','panel-pair'],
+              ['Matrix','panel-matrix'],['Learn','panel-game'],['The 48','panel-wheel']];
+const helpText = (html.match(/<div class="help" id="help-box" hidden>([\s\S]*?)<\/div>\s*<nav/) || [,''])[1] ||
+                 html.slice(html.indexOf('id="help-box"'), html.indexOf('id="btn-help-close"'));
+const uncovered = TABS.filter(([label])=>!helpText.includes(label));
+uncovered.length ? bad('every tab is explained', uncovered.map(t=>t[0]).join(', '))
+                 : ok(`all ${TABS.length} tabs are explained`);
+['Short version','Read it to me','Voice','Save this person','Import contacts','Add to Home Screen']
+  .filter(x=>!helpText.includes(x)).length
+  ? bad('the controls a reader has to find are explained',
+        ['Short version','Read it to me','Voice','Save this person','Import contacts','Add to Home Screen']
+          .filter(x=>!helpText.includes(x)).join(', '))
+  : ok('the short version, the voice, saving, importing and adding to the home screen are all explained');
+
+/* And it has to be readable. This is the screen for somebody who is stuck,
+   so it is held to the same bar as the short version of a reading. */
+const helpPlain = helpText.replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/g, ' ');
+const helpSents = helpPlain.split(/[.!?]/).filter(x=>x.trim().split(/\s+/).length > 2);
+const helpWords = helpPlain.replace(/[^A-Za-z\s]/g, ' ').split(/\s+/).filter(Boolean);
+const helpAvg = helpWords.length / helpSents.length;
+const helpLong = helpWords.filter(w=>w.length > 8).length / helpWords.length;
+helpAvg <= 20 ? ok(`the instructions average ${helpAvg.toFixed(0)} words a sentence`)
+              : bad('the instructions are written in short sentences', `${helpAvg.toFixed(0)} words a sentence`);
+helpLong <= 0.09 ? ok(`long words stay at ${(helpLong*100).toFixed(0)}% of the instructions`)
+                 : bad('the instructions avoid long words', `${(helpLong*100).toFixed(0)}% are long`);
+helpWords.length > 200 ? ok(`the instructions actually say something (${helpWords.length} words)`)
+                       : bad('the instructions say enough', `${helpWords.length} words`);
+
+/* ---------------------------------------------------------- */
 group('Elements, qualities and seasons');
 
 /* The whole teaching claim rests on this: a quality IS a position in a
