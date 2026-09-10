@@ -225,7 +225,8 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 
 
 /* ---------- summary + read aloud ---------- */
-.tools{display:flex; gap:8px; flex-wrap:wrap; margin:0 0 18px}
+.tools{display:flex; gap:8px; flex-wrap:wrap; margin:0 0 18px; position:sticky; top:0; z-index:20;
+  padding:10px 0; background:linear-gradient(var(--bg) 78%, transparent)}
 .btn.sm{padding:7px 14px; font-size:13px}
 .btn.sm.on{border-color:var(--gold); color:var(--gold)}
 .simple .db{font-size:16.5px; line-height:1.8}
@@ -1611,6 +1612,36 @@ function renderDay(P){
   </div>`;
 }
 
+/* The two controls sit at the very top of a reading, because a reading is
+   long and anything below the fold may as well not exist. Both act on the
+   whole thing — the day, the period, the deep layer and the path — not on
+   one section of it. */
+function renderTools(P){
+  const D = DEPTH[P.per.n], day = DAYS[P.person.month + '-' + P.person.day];
+  if(!D || !D.simple) return '';
+  const n = esc(firstName(P.person.name));
+  const box = (t, b) => `<div class="dp"><div class="dt">${t}</div><div class="db">${b}</div></div>`;
+  return `
+  <div class="tools">
+    <button class="btn ghost sm" id="btn-simple">Short version</button>
+    <button class="btn ghost sm" id="btn-speak">Read it to me</button>
+    <button class="btn ghost sm" id="btn-stop" hidden>Stop</button>
+  </div>
+  <div class="simple layer" id="simple-box" hidden>
+    <h3>The short version <small>the whole reading, in plain words</small></h3>
+    <div class="layer-body">
+      ${box('Your day', `${esc(MONTHS[P.person.month - 1])} ${P.person.day} is ${esc(day ? day.t : '')}.
+        Your week is ${esc(P.per.n)}, ${esc(lower(P.per.t))}. You are ${P.elements.join(' and ')}
+        in a ${P.qualities.join('/')} gear.`)}
+      ${box('You', D.simple.self)}
+      ${box('You and other people', D.simple.others)}
+      ${box('Where you are going', D.simple.path)}
+      <p class="note">Same reading, plain words. The long version is underneath &mdash;
+      press <strong>Long version</strong> to bring it back.</p>
+    </div>
+  </div>`;
+}
+
 function renderDepth(P){
   const D = DEPTH[P.per.n];
   if(!D) return '';
@@ -1622,19 +1653,7 @@ function renderDepth(P){
   <div class="layer deep">
     <h3>The whole person <small>all of it &mdash; the good, the bad, and the parts nobody prints</small></h3>
     <div class="layer-body">
-      <div class="tools">
-        ${D.simple ? `<button class="btn ghost sm" id="btn-simple">Simple version</button>` : ''}
-        <button class="btn ghost sm" id="btn-speak">Read it to me</button>
-        <button class="btn ghost sm" id="btn-stop" hidden>Stop</button>
-      </div>
-      ${D.simple ? `<div class="simple" id="simple-box" hidden>
-        <h4>The short version</h4>
-        <div class="dp"><div class="dt">You</div><div class="db">${D.simple.self}</div></div>
-        <div class="dp"><div class="dt">You and other people</div><div class="db">${D.simple.others}</div></div>
-        <div class="dp"><div class="dt">Where you are going</div><div class="db">${D.simple.path}</div></div>
-        <p class="note">Same reading, plain words. The long version is underneath.</p>
-      </div>` : ''}
-      <div id="deep-full">
+
       <h4>Where the three books meet</h4>
       <div class="books">
         <div><small>Birthdays &mdash; who this is</small><span>${esc(P.per.n)}, ${esc(P.per.t.replace(/^The /,'the '))}. ${L.k}</span></div>
@@ -1688,7 +1707,6 @@ function renderDepth(P){
       </div>
       <p class="disclaim">Stages describe how this temperament tends to move through a life, not a schedule
       and not a prediction. Ages are rough and plenty of people run early or late.</p>
-      </div>
     </div>
   </div>`;
 }
@@ -3816,7 +3834,9 @@ function doRead(){
   const r = currentInput();
   if(r.err){ $('err').textContent = r.err; $('result').innerHTML = ''; return null; }
   const P = profileOf(r.person);
-  $('result').innerHTML = renderCrest(P) + renderDay(P) + renderReading(P) + renderDepth(P) + renderPairStub(P) + renderPath(P);
+  $('result').innerHTML = renderCrest(P) + renderTools(P) +
+    '<div id="reading-full">' + renderDay(P) + renderReading(P) + renderDepth(P) +
+    renderPairStub(P) + renderPath(P) + '</div>';
   writeHash(r.person);
   $('result').scrollIntoView({behavior:'smooth', block:'start'});
   return P;
@@ -4287,7 +4307,7 @@ let SPEAKING = false;
 function speechOK(){ return typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined'; }
 
 function readableText(){
-  const simpleBox = $('simple-box'), full = $('deep-full');
+  const simpleBox = $('simple-box'), full = $('reading-full');
   const src = (simpleBox && !simpleBox.hidden) ? simpleBox : full;
   if(!src) return '';
   /* Headings become short pauses so it does not run every section together. */
@@ -4330,12 +4350,12 @@ function speakReading(){
 document.addEventListener('click', e=>{
   const t = e.target;
   if(t.id === 'btn-simple'){
-    const box = $('simple-box'), full = $('deep-full');
+    const box = $('simple-box'), full = $('reading-full');
     if(!box || !full) return;
     stopSpeaking();
     const showSimple = box.hidden;
     box.hidden = !showSimple; full.hidden = showSimple;
-    t.textContent = showSimple ? 'Long version' : 'Simple version';
+    t.textContent = showSimple ? 'Long version' : 'Short version';
     t.classList.toggle('on', showSimple);
   }
   if(t.id === 'btn-speak') speakReading();

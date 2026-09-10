@@ -69,12 +69,18 @@ The writing is blunt where the books are blunt. A period is called
 manipulative, lazy, contemptuous or a liar when its own week carries that, and
 never when it does not. Two buttons sit at the top of it:
 
-- **Simple version** — the whole reading in plain English across all three
-  layers: you, you and other people, where you are going. Tested for reading
-  level, not just for existing: sentences must average under fourteen words
-  and long words stay under one in twenty.
+Two controls sit at the top of every reading, in a bar that stays put while
+the reading scrolls — a reading runs to some fifteen thousand pixels, so
+anything below the fold may as well not be there.
+
+- **Short version** — the whole reading in plain English: which day and week
+  you are, then you, you and other people, and where you are going. Tested for
+  reading level, not just for existing: sentences must average under fourteen
+  words and long words stay under one in twenty.
 - **Read it to me** — the browser's own voice, so nothing downloads and it
-  works offline. It reads whichever version is on screen and stops on demand.
+  works offline. It reads whichever version is on screen: about a thousand
+  characters for the short one, twelve thousand for the full reading. Stops on
+  demand and when the page closes.
 
 People are saved to the browser's `localStorage`. A **Matrix** tab reads every
 saved person against every other automatically, and **The 48** tab browses the

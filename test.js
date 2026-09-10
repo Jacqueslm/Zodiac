@@ -632,10 +632,29 @@ grade.length ? bad('the short version reads at third-grade level', grade.slice(0
              : ok('the short version stays short-sentence and short-word throughout');
 
 /* It has to be reachable and it has to hide the long one, or it is just more text. */
-(html.includes("id=\"btn-simple\"") && html.includes("id=\"simple-box\"") && html.includes("id=\"deep-full\""))
+(html.includes("id=\"btn-simple\"") && html.includes("id=\"simple-box\"") && html.includes("id=\"reading-full\""))
   ? ok('the short version has a button and its own box') : bad('the short version has a button and its own box');
 (html.includes("box.hidden = !showSimple; full.hidden = showSimple;"))
   ? ok('showing the short version hides the long one') : bad('showing the short version hides the long one');
+
+/* A reading is fifteen thousand pixels long. Controls below the fold may as
+   well not exist, which is exactly what happened the first time: they sat
+   five and a half thousand pixels down, inside the deep layer. They now sit
+   above the whole reading and stay put while it scrolls. */
+html.includes('function renderTools')
+  ? ok('the controls are their own block, not buried in a layer') : bad('the controls are their own block');
+/renderCrest\(P\) \+ renderTools\(P\)/.test(html)
+  ? ok('the controls render above the whole reading') : bad('the controls render above the whole reading');
+/\.tools\{[^}]*position:sticky/.test(html)
+  ? ok('the control bar sticks to the top while the reading scrolls')
+  : bad('the control bar sticks to the top');
+/* And both act on everything, not on one section. */
+html.includes("'<div id=\"reading-full\">' + renderDay(P) + renderReading(P) + renderDepth(P)")
+  ? ok('the short version and the voice cover the day, the period, the deep layer and the path')
+  : bad('the short version and the voice cover the whole reading');
+html.includes("${box('Your day',")
+  ? ok('the short version names the day and the week, not just the deep layer')
+  : bad('the short version names the day and the week');
 
 /* Read aloud: the browser's own voice, so nothing ships and it works offline. */
 html.includes('SpeechSynthesisUtterance') ? ok('the reading can be played out loud')
