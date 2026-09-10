@@ -272,6 +272,10 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 .voicebar select{margin-bottom:9px}
 .voicebar .note{margin:9px 0 0}
 
+.speaking{background:rgba(232,192,122,.10); border-radius:6px;
+  box-shadow:0 0 0 6px rgba(232,192,122,.10); transition:background .2s}
+.speaking mark{background:rgba(232,192,122,.42); color:var(--ink); border-radius:3px; padding:0 1px}
+
 /* ---------- how to use ---------- */
 .top .btn.sm{margin-top:14px}
 .help{background:var(--card); border:1px solid var(--line); border-radius:var(--r);
@@ -409,8 +413,9 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
   <p><strong>Short version</strong> turns the whole thing into plain words &mdash; a few lines about
   your day, about you, about you and other people, and where you are going. Press it again for
   the long one.</p>
-  <p><strong>Read it to me</strong> reads it out loud. It reads whichever version is showing, so
-  press Short version first if you only want the quick one.</p>
+  <p><strong>Read it to me</strong> reads it out loud and highlights along as it goes, so you can
+  follow the words. It reads whichever version is showing, so press Short version first if you only
+  want the quick one. The screen stays awake while it reads.</p>
   <p><strong>Voice</strong> lets you pick the voice. Tap it, choose from the list, press
   <strong>Hear it</strong> to try one. The good ones are at the top &mdash; on a phone look for a
   name starting <em>Google</em>. It remembers what you picked.</p>
@@ -4412,6 +4417,43 @@ $('game-box').addEventListener('click', e=>{
    Speech uses the browser's own voice, so nothing is downloaded and it works
    offline. Not every browser has one; if it does not, the button says so
    rather than doing nothing. */
+/* ---------- keeping the screen awake ----------
+   Ported from Some Day / Day One. A phone locking its screen suspends the
+   speech engine, so a reading stops partway through and looks like a fault.
+   The lock is held only while something needs it, is re-taken when the system
+   revokes it (which it does on every tab switch), and is released the moment
+   nothing needs it — holding one longer than necessary drains a battery. */
+const wakeNeeds = new Set();
+let wakeSentinel = null, wakeAsking = false;
+
+function wakeAcquire(need){ wakeNeeds.add(need); wakeEnsure(); }
+function wakeRelease(need){
+  wakeNeeds.delete(need);
+  if(wakeNeeds.size) return;
+  const s = wakeSentinel; wakeSentinel = null;
+  try{ if(s) s.release(); }catch(e){}
+}
+async function wakeEnsure(){
+  if(typeof navigator === 'undefined' || !('wakeLock' in navigator)) return;
+  if(!wakeNeeds.size || document.hidden || wakeSentinel || wakeAsking) return;
+  wakeAsking = true;
+  try{
+    const s = await navigator.wakeLock.request('screen');
+    if(!wakeNeeds.size){ try{ s.release(); }catch(e){} }   /* stopped while the request was in flight */
+    else{
+      wakeSentinel = s;
+      s.addEventListener('release', ()=>{
+        /* revoked by the system rather than by us: take it back if still needed */
+        if(wakeSentinel === s){ wakeSentinel = null; wakeEnsure(); }
+      });
+    }
+  }catch(e){ /* denied or unsupported — reading still works, the screen may sleep */ }
+  wakeAsking = false;
+}
+if(typeof document !== 'undefined'){
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) wakeEnsure(); });
+}
+
 /* ---------- the voice ----------
    The selection and the survival tricks below are lifted from the voice guide
    in Some Day / Day One, where they were learned the hard way on real phones.
@@ -4459,15 +4501,49 @@ function pickVoice(){
   return (saved && list.find(v=>v.name === saved)) || list[0];
 }
 
-function readableText(){
+/* One entry per block on screen, so the block being spoken can be lit up and
+   scrolled to. Speaking the page as one long string made a read-along
+   impossible: there was nothing to point at. */
+function readableBlocks(){
   const simpleBox = $('simple-box'), full = $('reading-full');
   const src = (simpleBox && !simpleBox.hidden) ? simpleBox : full;
-  if(!src) return '';
-  /* Headings become short pauses so it does not run every section together. */
+  if(!src) return [];
   return [...src.querySelectorAll('h3, h4, .dt, .db, p, li')]
     .filter(e=>!e.classList.contains('disclaim') && !e.classList.contains('note'))
-    .map(e=>e.textContent.trim()).filter(Boolean).join('. ')
-    .replace(/\.\s*\./g, '.').replace(/\s+/g, ' ');
+    .map(e=>({el:e, text:(e.textContent || '').trim()}))
+    .filter(b=>b.text.length > 1);
+}
+/* Kept for the tests and for anything that just wants the words. */
+function readableText(){ return readableBlocks().map(b=>b.text).join('. ').replace(/\.\s*\./g, '.'); }
+
+/* ---------- read-along ----------
+   The block being read is lit up. Inside it, the word being said is lit too,
+   using the boundary events the engine emits as it goes. Those events are not
+   universal — Android and some Safari builds never send them — so the block
+   highlight is the part that always works and the word is the bonus. The
+   element's own text is put back whenever it stops being the current one, so
+   nothing is left marked up. */
+let LIT = null, LIT_TEXT = '';
+
+function clearLit(){
+  if(LIT){ try{ LIT.textContent = LIT_TEXT; }catch(e){} LIT.classList.remove('speaking'); }
+  LIT = null; LIT_TEXT = '';
+}
+function lightBlock(el){
+  clearLit();
+  if(!el) return;
+  LIT = el; LIT_TEXT = el.textContent;
+  el.classList.add('speaking');
+  try{ el.scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){}
+}
+function lightWord(at, len){
+  if(!LIT || typeof at !== 'number') return;
+  const t = LIT_TEXT;
+  if(at < 0 || at >= t.length) return;
+  /* the engine reports a start; if it gives no length, run to the next space */
+  let end = len ? at + len : t.indexOf(' ', at);
+  if(end <= at) end = t.length;
+  LIT.innerHTML = esc(t.slice(0, at)) + '<mark>' + esc(t.slice(at, end)) + '</mark>' + esc(t.slice(end));
 }
 
 function speakKeepAlive(on){
@@ -4482,6 +4558,8 @@ function stopSpeaking(){
   if(speechOK()){ try{ speechSynthesis.cancel(); }catch(e){} }
   SPEAKING = false; VOICE_QUEUE = []; VOICE_AT = 0; VOICE_HOLD = null;
   speakKeepAlive(false);
+  wakeRelease('reading');
+  clearLit();
   const b = $('btn-speak'), st = $('btn-stop');
   if(b) b.textContent = 'Read it to me';
   if(st) st.hidden = true;
@@ -4490,11 +4568,14 @@ function stopSpeaking(){
 function speakNext(){
   if(!SPEAKING) return;
   if(VOICE_AT >= VOICE_QUEUE.length) return stopSpeaking();
-  const u = new SpeechSynthesisUtterance(VOICE_QUEUE[VOICE_AT++]);
+  const bit = VOICE_QUEUE[VOICE_AT++];
+  lightBlock(bit.el);
+  const u = new SpeechSynthesisUtterance(bit.text);
   VOICE_HOLD = u;                       /* held so it cannot be collected mid-sentence */
   const v = pickVoice();
   if(v) u.voice = v;
   u.rate = 0.9; u.pitch = 1;
+  u.onboundary = e=>{ if(e.name === 'word' || e.name === undefined) lightWord(e.charIndex, e.charLength); };
   let moved = false;
   const next = ()=>{ if(moved) return; moved = true; speakNext(); };
   const began = Date.now();
@@ -4506,18 +4587,22 @@ function speakNext(){
 function speakReading(){
   if(!speechOK()){ const b = $('btn-speak'); if(b) b.textContent = 'This browser has no voice'; return; }
   if(SPEAKING) return stopSpeaking();
-  const text = readableText();
-  if(!text) return;
+  const blocks = readableBlocks();
+  if(!blocks.length) return;
   if(!voiceList().length){ const b = $('btn-speak'); if(b) b.textContent = 'No voice installed'; return; }
   try{ speechSynthesis.cancel(); }catch(e){}
-  /* One long utterance gets truncated by several engines, so it is spoken a
-     sentence or two at a time, in order rather than all queued at once. */
-  const bits = text.match(/[^.!?]+[.!?]*/g) || [text];
-  let buf = '';
+  /* One utterance per block, so each can be lit as it is read. A very long
+     block is split further, because several engines truncate a long one. */
   VOICE_QUEUE = []; VOICE_AT = 0;
-  bits.forEach(c=>{ if((buf + c).length > 220){ VOICE_QUEUE.push(buf.trim()); buf = c; } else buf += c; });
-  if(buf.trim()) VOICE_QUEUE.push(buf.trim());
+  blocks.forEach(b=>{
+    if(b.text.length <= 240){ VOICE_QUEUE.push(b); return; }
+    const bits = b.text.match(/[^.!?]+[.!?]*/g) || [b.text];
+    let buf = '';
+    bits.forEach(c=>{ if((buf + c).length > 240){ VOICE_QUEUE.push({el:b.el, text:buf.trim()}); buf = c; } else buf += c; });
+    if(buf.trim()) VOICE_QUEUE.push({el:b.el, text:buf.trim()});
+  });
   SPEAKING = true;
+  wakeAcquire('reading');
   $('btn-speak').textContent = 'Pause';
   $('btn-stop').hidden = false;
   speakKeepAlive(true);

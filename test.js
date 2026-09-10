@@ -693,15 +693,51 @@ html.includes('u.onerror = ()=>{ if(Date.now() - began > 1500) next(); else stop
 html.includes('speakNext()') && html.includes('VOICE_AT >= VOICE_QUEUE.length')
   ? ok('lines are spoken one at a time in order rather than queued all at once')
   : bad('lines are spoken in order');
-html.includes('(buf + c).length > 220')
-  ? ok('long readings are split so no engine truncates them')
-  : bad('long readings are split');
+html.includes("(buf + c).length > 240")
+  ? ok('a block too long for an engine to speak in one go is split further')
+  : bad('long blocks are split');
 html.includes('speechSynthesis.cancel()') ? ok('the voice can be stopped') : bad('the voice can be stopped');
 html.includes("addEventListener('beforeunload', stopSpeaking)")
   ? ok('the voice stops when the page closes') : bad('the voice stops when the page closes');
 html.includes("const src = (simpleBox && !simpleBox.hidden) ? simpleBox : full;")
   ? ok('it reads aloud whichever version you are looking at')
   : bad('it reads aloud whichever version you are looking at');
+
+/* A phone locking its screen suspends the speech engine, so a reading stopped
+   partway through and looked like a fault. The lock is taken while reading and
+   released after, because holding one longer than needed costs battery. */
+html.includes('function wakeAcquire') && html.includes("navigator.wakeLock.request('screen')")
+  ? ok('the screen is kept awake while it reads, so a phone locking does not cut it off')
+  : bad('the screen is kept awake while it reads');
+html.includes("wakeAcquire('reading')") && html.includes("wakeRelease('reading')")
+  ? ok('the lock is taken when reading starts and released when it stops')
+  : bad('the lock is taken and released around reading');
+html.includes("if(wakeSentinel === s){ wakeSentinel = null; wakeEnsure(); }")
+  ? ok('a lock the system revokes is taken back, which it does on every tab switch')
+  : bad('a revoked lock is taken back');
+html.includes("document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) wakeEnsure(); })")
+  ? ok('the lock is re-taken on returning to the tab') : bad('the lock is re-taken on returning');
+
+/* Read-along. The block is the part that always works; the word depends on
+   boundary events, which Android and some Safari builds never send. */
+html.includes('function readableBlocks')
+  ? ok('the reading is broken into blocks, so there is something to point at')
+  : bad('the reading is broken into blocks');
+html.includes('lightBlock(bit.el)') && html.includes("el.classList.add('speaking')")
+  ? ok('the block being read is lit up and scrolled to')
+  : bad('the block being read is lit up');
+html.includes("u.onboundary = e=>{ if(e.name === 'word' || e.name === undefined) lightWord(e.charIndex, e.charLength); }")
+  ? ok('the word being said is lit inside the block, where the engine reports it')
+  : bad('the word being said is lit');
+html.includes('LIT.textContent = LIT_TEXT') && html.includes('function clearLit')
+  ? ok("each block's own text is put back, so no markup is left behind")
+  : bad("each block's text is restored");
+/\.speaking\{[^}]*background/.test(html) && /\.speaking mark\{/.test(html)
+  ? ok('the lit block and the lit word have their own styling')
+  : bad('the highlight has styling');
+html.includes("let end = len ? at + len : t.indexOf(' ', at);")
+  ? ok('an engine that reports no word length still highlights to the next space')
+  : bad('a missing word length is handled');
 
 /* Choosing a voice, and keeping the choice. */
 (html.includes('id="voice-pick"') && html.includes('function fillVoicePicker'))

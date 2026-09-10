@@ -90,6 +90,18 @@ anything below the fold may as well not be there.
   works offline. It reads whichever version is on screen: about a thousand
   characters for the short one, twelve thousand for the full reading. Stops on
   demand and when the page closes.
+
+  It reads block by block and lights up the one being read, scrolling it into
+  view, and lights the word being said inside it. The word depends on boundary
+  events, which Android and some Safari builds never send, so the block is the
+  part that always works. Each block's own text is put back afterwards, so no
+  markup is left behind.
+
+  A screen wake lock is held for the length of a reading — also from Some Day /
+  Day One. Without it a phone locking its screen suspends the speech engine and
+  the reading stops partway through, which reads as a fault rather than as the
+  phone going to sleep. It is released as soon as reading stops, and re-taken
+  when the system revokes it, which it does on every tab switch.
 - **Voice** — pick from whatever your phone or computer has installed, warmest
   first, with a sample button. The choice is remembered.
 
