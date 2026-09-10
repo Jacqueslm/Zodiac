@@ -231,6 +231,13 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 .btn.sm.on{border-color:var(--gold); color:var(--gold)}
 .simple .db{font-size:16.5px; line-height:1.8}
 
+.voicebar{margin:0 0 18px; padding:12px 15px; border:1px solid var(--line); border-radius:var(--r);
+  background:rgba(255,255,255,.03)}
+.voicebar label{display:block; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--dimmer); margin-bottom:5px}
+.voicebar select{margin-bottom:9px}
+.voicebar .note{margin:9px 0 0}
+
 /* ---------- learning the wheel ---------- */
 .menu{display:grid; gap:10px}
 .mbtn{display:block; width:100%; text-align:left; font:inherit; cursor:pointer;
@@ -1626,6 +1633,15 @@ function renderTools(P){
     <button class="btn ghost sm" id="btn-simple">Short version</button>
     <button class="btn ghost sm" id="btn-speak">Read it to me</button>
     <button class="btn ghost sm" id="btn-stop" hidden>Stop</button>
+    <button class="btn ghost sm" id="btn-voice" title="Choose the voice">Voice</button>
+  </div>
+  <div class="voicebar" id="voice-bar" hidden>
+    <label for="voice-pick">Voice</label>
+    <select id="voice-pick"></select>
+    <button class="btn ghost sm" id="btn-try">Hear it</button>
+    <p class="note">Whatever your phone or computer has installed. The warmer ones are listed
+    first &mdash; on Windows look for a name with <em>Natural</em> in it, on Android or Chrome one
+    starting <em>Google</em>. Your choice is remembered.</p>
   </div>
   <div class="simple layer" id="simple-box" hidden>
     <h3>The short version <small>the whole reading, in plain words</small></h3>
@@ -4303,26 +4319,95 @@ $('game-box').addEventListener('click', e=>{
    Speech uses the browser's own voice, so nothing is downloaded and it works
    offline. Not every browser has one; if it does not, the button says so
    rather than doing nothing. */
-let SPEAKING = false;
+/* ---------- the voice ----------
+   The selection and the survival tricks below are lifted from the voice guide
+   in Some Day / Day One, where they were learned the hard way on real phones.
+   Speech in a browser is not one engine but dozens, and most of them fail
+   quietly rather than loudly, so each of these guards a specific failure:
+
+   - Voice quality. Left alone, a browser hands back its default, which on
+     most machines is the flattest voice installed. Edge ships "Natural"
+     voices and Chrome ships "Google" ones; both are markedly warmer, so they
+     are preferred in that order before falling back to any English voice.
+   - Rate. 0.9 rather than 1. Slower reads as calm; the default reads as a
+     station announcement.
+   - Holding the utterance. Chrome and Android can garbage-collect an
+     utterance mid-sentence if nothing outside the function refers to it. The
+     audio simply stops, with no error and no onend.
+   - The 15-second freeze. Desktop Chrome stops speaking after about fifteen
+     seconds unless it is nudged. A pause/resume every ten seconds prevents
+     it. Deliberately not done on Android, where it causes the opposite bug.
+   - Error timing. An engine with no voices installed errors within
+     milliseconds of speak(). Treating that as the end of a line would race
+     the whole reading past in a second, so only an error after real speaking
+     time counts as real.
+   ---------------------------------------------------------------- */
+const VOICE_KEY = 'personology.voice.v1';
+let SPEAKING = false, VOICE_QUEUE = [], VOICE_AT = 0, VOICE_HOLD = null, VOICE_TICK = null;
+const IS_ANDROID = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || '');
+
 function speechOK(){ return typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined'; }
+
+/* Every English voice the device has, best first. */
+function voiceList(){
+  if(!speechOK()) return [];
+  const all = speechSynthesis.getVoices() || [];
+  const en = all.filter(v=>/^en/i.test(v.lang));
+  const rank = v => /natural/i.test(v.name) ? 0 : /google/i.test(v.name) ? 1 : /premium|enhanced/i.test(v.name) ? 2 : 3;
+  return en.slice().sort((a, b)=>rank(a) - rank(b));
+}
+function savedVoiceName(){ try{ return localStorage.getItem(VOICE_KEY) || ''; }catch(e){ return ''; } }
+function saveVoiceName(n){ try{ localStorage.setItem(VOICE_KEY, n); }catch(e){} }
+
+function pickVoice(){
+  const list = voiceList();
+  if(!list.length) return null;
+  const saved = savedVoiceName();
+  return (saved && list.find(v=>v.name === saved)) || list[0];
+}
 
 function readableText(){
   const simpleBox = $('simple-box'), full = $('reading-full');
   const src = (simpleBox && !simpleBox.hidden) ? simpleBox : full;
   if(!src) return '';
   /* Headings become short pauses so it does not run every section together. */
-  return [...src.querySelectorAll('h4, .dt, .db, p')]
+  return [...src.querySelectorAll('h3, h4, .dt, .db, p, li')]
     .filter(e=>!e.classList.contains('disclaim') && !e.classList.contains('note'))
     .map(e=>e.textContent.trim()).filter(Boolean).join('. ')
     .replace(/\.\s*\./g, '.').replace(/\s+/g, ' ');
 }
 
+function speakKeepAlive(on){
+  clearInterval(VOICE_TICK); VOICE_TICK = null;
+  if(!on || IS_ANDROID) return;
+  VOICE_TICK = setInterval(()=>{
+    try{ if(SPEAKING && speechSynthesis.speaking){ speechSynthesis.pause(); speechSynthesis.resume(); } }catch(e){}
+  }, 10000);
+}
+
 function stopSpeaking(){
-  if(speechOK()) speechSynthesis.cancel();
-  SPEAKING = false;
+  if(speechOK()){ try{ speechSynthesis.cancel(); }catch(e){} }
+  SPEAKING = false; VOICE_QUEUE = []; VOICE_AT = 0; VOICE_HOLD = null;
+  speakKeepAlive(false);
   const b = $('btn-speak'), st = $('btn-stop');
   if(b) b.textContent = 'Read it to me';
   if(st) st.hidden = true;
+}
+
+function speakNext(){
+  if(!SPEAKING) return;
+  if(VOICE_AT >= VOICE_QUEUE.length) return stopSpeaking();
+  const u = new SpeechSynthesisUtterance(VOICE_QUEUE[VOICE_AT++]);
+  VOICE_HOLD = u;                       /* held so it cannot be collected mid-sentence */
+  const v = pickVoice();
+  if(v) u.voice = v;
+  u.rate = 0.9; u.pitch = 1;
+  let moved = false;
+  const next = ()=>{ if(moved) return; moved = true; speakNext(); };
+  const began = Date.now();
+  u.onend = next;
+  u.onerror = ()=>{ if(Date.now() - began > 1500) next(); else stopSpeaking(); };
+  try{ speechSynthesis.speak(u); }catch(e){ stopSpeaking(); }
 }
 
 function speakReading(){
@@ -4330,22 +4415,38 @@ function speakReading(){
   if(SPEAKING) return stopSpeaking();
   const text = readableText();
   if(!text) return;
-  speechSynthesis.cancel();
-  /* Long text is split, because several browsers cut off a single long one. */
-  const chunks = text.match(/[^.!?]+[.!?]*/g) || [text];
-  let buf = '', queue = [];
-  chunks.forEach(c=>{ if((buf + c).length > 220){ queue.push(buf); buf = c; } else buf += c; });
-  if(buf.trim()) queue.push(buf);
-  queue.forEach((part, i)=>{
-    const u = new SpeechSynthesisUtterance(part.trim());
-    u.rate = .95; u.pitch = 1;
-    if(i === queue.length - 1) u.onend = stopSpeaking;
-    speechSynthesis.speak(u);
-  });
+  if(!voiceList().length){ const b = $('btn-speak'); if(b) b.textContent = 'No voice installed'; return; }
+  try{ speechSynthesis.cancel(); }catch(e){}
+  /* One long utterance gets truncated by several engines, so it is spoken a
+     sentence or two at a time, in order rather than all queued at once. */
+  const bits = text.match(/[^.!?]+[.!?]*/g) || [text];
+  let buf = '';
+  VOICE_QUEUE = []; VOICE_AT = 0;
+  bits.forEach(c=>{ if((buf + c).length > 220){ VOICE_QUEUE.push(buf.trim()); buf = c; } else buf += c; });
+  if(buf.trim()) VOICE_QUEUE.push(buf.trim());
   SPEAKING = true;
   $('btn-speak').textContent = 'Pause';
   $('btn-stop').hidden = false;
+  speakKeepAlive(true);
+  speakNext();
 }
+
+/* The list arrives asynchronously on most browsers, so the picker is refreshed
+   when it lands rather than read once at load. */
+if(speechOK() && typeof speechSynthesis.addEventListener === 'function'){
+  speechSynthesis.addEventListener('voiceschanged', ()=>{ const s = $('voice-pick'); if(s) fillVoicePicker(s); });
+}
+function fillVoicePicker(sel){
+  const list = voiceList();
+  if(!list.length){ sel.innerHTML = '<option>No voice on this device</option>'; sel.disabled = true; return; }
+  const cur = (pickVoice() || {}).name;
+  sel.disabled = false;
+  sel.innerHTML = list.map(v=>`<option value="${esc(v.name)}"${v.name === cur ? ' selected' : ''}>${esc(v.name)}</option>`).join('');
+}
+
+document.addEventListener('change', e=>{
+  if(e.target.id === 'voice-pick'){ saveVoiceName(e.target.value); stopSpeaking(); }
+});
 
 document.addEventListener('click', e=>{
   const t = e.target;
@@ -4360,6 +4461,21 @@ document.addEventListener('click', e=>{
   }
   if(t.id === 'btn-speak') speakReading();
   if(t.id === 'btn-stop') stopSpeaking();
+  if(t.id === 'btn-voice'){
+    const bar = $('voice-bar'); if(!bar) return;
+    bar.hidden = !bar.hidden;
+    if(!bar.hidden) fillVoicePicker($('voice-pick'));
+    t.classList.toggle('on', !bar.hidden);
+  }
+  if(t.id === 'btn-try'){
+    stopSpeaking();
+    if(!speechOK() || !voiceList().length) return;
+    const u = new SpeechSynthesisUtterance('This is the voice that will read to you. Take your time.');
+    VOICE_HOLD = u;
+    const v = pickVoice(); if(v) u.voice = v;
+    u.rate = 0.9; u.pitch = 1;
+    try{ speechSynthesis.speak(u); }catch(e){}
+  }
 });
 addEventListener('beforeunload', stopSpeaking);
 

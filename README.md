@@ -77,10 +77,22 @@ anything below the fold may as well not be there.
   you are, then you, you and other people, and where you are going. Tested for
   reading level, not just for existing: sentences must average under fourteen
   words and long words stay under one in twenty.
-- **Read it to me** — the browser's own voice, so nothing downloads and it
+- **Read it to me** — the device's own voice, so nothing downloads and it
   works offline. It reads whichever version is on screen: about a thousand
   characters for the short one, twelve thousand for the full reading. Stops on
   demand and when the page closes.
+- **Voice** — pick from whatever your phone or computer has installed, warmest
+  first, with a sample button. The choice is remembered.
+
+The voice handling is ported from the voice guide in Some Day / Day One, where
+it was worked out on real devices. Browsers do not have one speech engine but
+dozens, and most fail quietly: a default voice that is the flattest one
+installed, an utterance garbage-collected mid-sentence on Chrome and Android,
+desktop Chrome stopping after fifteen seconds unless nudged, and an engine
+with no voices at all erroring within milliseconds — which, taken as the end
+of a line, races an entire reading past in a second. Each has a guard, and
+each guard has a test naming it, because losing one of them breaks nothing
+visible until somebody presses the button.
 
 People are saved to the browser's `localStorage`. A **Matrix** tab reads every
 saved person against every other automatically, and **The 48** tab browses the

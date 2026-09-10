@@ -656,22 +656,66 @@ html.includes("${box('Your day',")
   ? ok('the short version names the day and the week, not just the deep layer')
   : bad('the short version names the day and the week');
 
-/* Read aloud: the browser's own voice, so nothing ships and it works offline. */
+/* Read aloud. The selection and the survival guards below are ported from the
+   voice guide in Some Day / Day One, where they were found on real devices.
+   Each one covers a failure that is silent rather than loud, so each is
+   pinned here — losing any of them would not break a test unless the test
+   names it. */
 html.includes('SpeechSynthesisUtterance') ? ok('the reading can be played out loud')
                                           : bad('the reading can be played out loud');
 html.includes("if(!speechOK()){ const b = $('btn-speak'); if(b) b.textContent = 'This browser has no voice'; return; }")
-  ? ok('a browser with no voice says so instead of failing silently')
-  : bad('a browser with no voice says so instead of failing silently');
-/* Several browsers truncate one long utterance, so it must be chunked. */
-html.includes('(buf + c).length > 220') ? ok('long readings are split so no browser cuts them off')
-                                        : bad('long readings are split so no browser cuts them off');
+  ? ok('a browser with no speech engine says so instead of failing silently')
+  : bad('a browser with no speech engine says so');
+html.includes("b.textContent = 'No voice installed'")
+  ? ok('an engine present but with no voices installed says so too')
+  : bad('an engine with no voices installed says so');
+
+/* Voice quality: left alone a browser hands back its flattest default. */
+(/rank = v => \/natural\/i\.test\(v\.name\) \? 0 : \/google\/i\.test\(v\.name\) \? 1/.test(html))
+  ? ok('Natural and Google voices are preferred over the default, as in the recovery app')
+  : bad('the warmer voices are preferred');
+html.includes("en = all.filter(v=>/^en/i.test(v.lang))")
+  ? ok('only English voices are offered') : bad('only English voices are offered');
+html.includes('u.rate = 0.9; u.pitch = 1;')
+  ? ok('it reads at 0.9 rather than the default rate, which is what makes it calm')
+  : bad('the rate is slowed to 0.9');
+
+/* The three silent-death guards. */
+html.includes('VOICE_HOLD = u;')
+  ? ok('the utterance is held, so Chrome cannot collect it mid-sentence')
+  : bad('the utterance is held against garbage collection');
+(html.includes('speechSynthesis.pause(); speechSynthesis.resume();') && html.includes('IS_ANDROID'))
+  ? ok('a keepalive defeats the fifteen-second desktop freeze, and is skipped on Android')
+  : bad('the fifteen-second freeze is handled');
+html.includes('u.onerror = ()=>{ if(Date.now() - began > 1500) next(); else stopSpeaking(); };')
+  ? ok('an instant error is treated as a dead engine, not as a finished line')
+  : bad('an instant error is not mistaken for a finished line');
+html.includes('speakNext()') && html.includes('VOICE_AT >= VOICE_QUEUE.length')
+  ? ok('lines are spoken one at a time in order rather than queued all at once')
+  : bad('lines are spoken in order');
+html.includes('(buf + c).length > 220')
+  ? ok('long readings are split so no engine truncates them')
+  : bad('long readings are split');
 html.includes('speechSynthesis.cancel()') ? ok('the voice can be stopped') : bad('the voice can be stopped');
 html.includes("addEventListener('beforeunload', stopSpeaking)")
   ? ok('the voice stops when the page closes') : bad('the voice stops when the page closes');
-/* The voice must read whichever version is on screen, not always the long one. */
 html.includes("const src = (simpleBox && !simpleBox.hidden) ? simpleBox : full;")
   ? ok('it reads aloud whichever version you are looking at')
   : bad('it reads aloud whichever version you are looking at');
+
+/* Choosing a voice, and keeping the choice. */
+(html.includes('id="voice-pick"') && html.includes('function fillVoicePicker'))
+  ? ok('the voice can be chosen from whatever the device has')
+  : bad('the voice can be chosen');
+html.includes("saveVoiceName(e.target.value)") && html.includes("localStorage.setItem(VOICE_KEY")
+  ? ok('the chosen voice is remembered between visits')
+  : bad('the chosen voice is remembered');
+html.includes("voiceschanged")
+  ? ok('the picker refills when the device reports its voices, which it does late')
+  : bad('the picker handles the late voiceschanged event');
+html.includes("id=\"btn-try\"") && html.includes('This is the voice that will read to you')
+  ? ok('a voice can be heard before committing to it')
+  : bad('a voice can be sampled first');
 
 /* All of life, not just the flattering half. */
 const LIFE = ['love','hate','envy','fantasy','fun','dark','money'];
