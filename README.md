@@ -22,6 +22,22 @@ Each reading also carries a **state of mind**, a **body and wellbeing** note
 a **correspondences** panel: birthstone for the birth month, the planetary
 stone, sign and planet colours, metal, day of the week, flower and body zone.
 
+### The day
+
+Above all of it sits the day itself — a named profile for each of the 366 days,
+supplied as *The Secret Language of Days* and inserted verbatim: the name of
+the day, an opening, then love, money, family, emotions, friendships, mind,
+body, spirit, work, risk and outlook, strengths and weaknesses, advice, and a
+closing line.
+
+The astrology shown beside it is the app's own, not that source's. The two
+disagree on 25 days, and in each case the source contradicts its own pattern:
+six of its cusps end on the 22nd while its other six run to the 24th or 25th,
+and the 30th of every month draws The Hanged Man where its own rule for all
+other days gives The Empress. The period table is generated from README.md and
+checked for full-year coverage, so it is the one that governs. The prose is the
+source's, unchanged.
+
 ### The whole person
 
 Under that sits the deep reading — all 48 periods, written for this app. Each

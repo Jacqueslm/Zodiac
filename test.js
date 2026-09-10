@@ -23,7 +23,7 @@ const NAMES = ['PERIODS','LORE','NUMBERS','TAROT','EL_REL','Q_REL','SIGNS','ELEM
                'isLeap','parseBirthday','parseBulkLine','renderCrest','renderReading','renderPath','renderPair',
                'parseCSV','parseContactsCSV','parseVCF','parseContacts','parseContactDate',
                'WELLBEING','SIGN_BODY','SIGN_SWATCH','PLANET_LORE','BIRTHSTONE','DESTINY',
-               'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT','DEPTH','renderDepth','relSpread',
+               'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT','DEPTH','renderDepth','relSpread','DAYS','renderDay',
                'TAUNTS','STYLE','RING_ELEMENT','elementFactor',
                'PLACE_OF','PLACE_NAME','BODY_OF','periodSlug','fightURL','fightBrief'];
 const ctx = vm.createContext({console, URLSearchParams});
@@ -36,7 +36,7 @@ const {PERIODS, LORE, NUMBERS, TAROT, EL_REL, Q_REL, SIGNS, ELEMENTS, QUALITIES,
        parseBirthday, parseBulkLine, renderCrest, renderReading, renderPath, renderPair,
        parseCSV, parseContactsCSV, parseVCF, parseContacts, parseContactDate,
        WELLBEING, SIGN_BODY, SIGN_SWATCH, PLANET_LORE, BIRTHSTONE, DESTINY,
-       makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT, DEPTH, renderDepth, relSpread,
+       makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT, DEPTH, renderDepth, relSpread, DAYS, renderDay,
        TAUNTS, STYLE, RING_ELEMENT, elementFactor,
        PLACE_OF, PLACE_NAME, BODY_OF, periodSlug, fightURL, fightBrief} = api;
 
@@ -455,6 +455,98 @@ left.length ? bad('the rebuilt ring is not shipped alongside the real one', 'sti
 /(r3-canvas|new THREE\.WebGLRenderer|function playClip)/.test(html)
   ? bad('index.html no longer draws a ring of its own')
   : ok('index.html no longer draws a ring of its own');
+
+/* ---------------------------------------------------------- */
+group('The day — all 366 profiles');
+
+const DAY_FIELDS = ['t','d','lo','mo','fa','em','fr','mi','bo','sp','wk','ri','ou','st','we','ad','cl'];
+is(Object.keys(DAYS).length, 366, 'a profile exists for all 366 days, leap day included');
+
+/* Every real date must resolve, and nothing else may be in the table. */
+const dayGaps = [], dayJunk = [];
+for(let m = 1; m <= 12; m++){
+  for(let d = 1; d <= DIM[m - 1]; d++) if(!DAYS[m + '-' + d]) dayGaps.push(`${m}/${d}`);
+}
+Object.keys(DAYS).forEach(k=>{
+  const [m, d] = k.split('-').map(Number);
+  if(!(m >= 1 && m <= 12 && d >= 1 && d <= DIM[m - 1])) dayJunk.push(k);
+});
+dayGaps.length ? bad('every day of the year has a profile', dayGaps.slice(0,6).join(', '))
+               : ok('every day of the year has a profile, 1 January to 31 December');
+dayJunk.length ? bad('no impossible dates in the table', dayJunk.join(', '))
+               : ok('no impossible dates in the table');
+DAYS['2-29'] ? ok('29 February has its own profile') : bad('29 February has its own profile');
+
+/* Each profile must be complete and substantial. */
+const thinDay = [];
+Object.entries(DAYS).forEach(([k, D])=>{
+  DAY_FIELDS.forEach(f=>{ if(!D[f]) thinDay.push(`${k}: no ${f}`); });
+  /* Four of them use a different grammar — "The Day the Tower Falls" — which
+     is the source's own wording, so the shape allowed is the wider one. */
+  if(D.t && !/^The Day\b/.test(D.t)) thinDay.push(`${k}: title is not a Day`);
+  if(D.d && D.d.length < 120) thinDay.push(`${k}: the opening is too short`);
+});
+thinDay.length ? bad('every day profile is complete', thinDay.slice(0,6).join('\n      '))
+               : ok(`all 366 day profiles carry every one of the ${DAY_FIELDS.length} fields`);
+
+/* The titles are the point of this layer — they must be distinct. */
+/* Six pairs of days share a name in the source as supplied. That is a defect
+   in the source rather than in the parse, and it is left as it arrived rather
+   than quietly renamed. Pinned so a seventh would fail rather than slip in. */
+const KNOWN_DUPES = ['The Day of the Changed Mind','The Day of the Deep Ground',
+  'The Day of the Deep Turn','The Day of the Read Balance',
+  'The Day of the Set Foundation','The Day of the Strong Pull'];
+const titleCount = {};
+Object.values(DAYS).forEach(D=>{ titleCount[D.t] = (titleCount[D.t] || 0) + 1; });
+const dupes = Object.keys(titleCount).filter(t=>titleCount[t] > 1).sort();
+const tripled = Object.keys(titleCount).filter(t=>titleCount[t] > 2);
+(dupes.join('|') === KNOWN_DUPES.join('|') && !tripled.length)
+  ? ok(`day names are distinct but for the six pairs the source shipped with (${360} unique of 366)`)
+  : bad('the set of repeated day names has changed',
+        'now: ' + dupes.join(', ') + (tripled.length ? ' | tripled: ' + tripled.join(', ') : ''));
+
+/* Strengths and weaknesses are dot-separated lists, and must not be the same list. */
+const tagBad = [];
+Object.entries(DAYS).forEach(([k, D])=>{
+  const st = D.st.split('·').map(x=>x.trim()).filter(Boolean);
+  const we = D.we.split('·').map(x=>x.trim()).filter(Boolean);
+  if(st.length < 2) tagBad.push(`${k}: only ${st.length} strengths`);
+  if(we.length < 2) tagBad.push(`${k}: only ${we.length} weaknesses`);
+  if(st.some(x=>we.includes(x))) tagBad.push(`${k}: a trait is listed as both`);
+});
+tagBad.length ? bad('strengths and weaknesses parse as lists', tagBad.slice(0,5).join('\n      '))
+              : ok('strengths and weaknesses each list two or more traits, with no overlap');
+
+/* The running headers in the source PDF were italic, same as the closing line,
+   so a page number could have been captured as the epigram. Nothing should
+   look like a stray header. */
+const bleed = Object.entries(DAYS).filter(([, D])=>
+  DAY_FIELDS.some(f=>/(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}\s*$/.test(D[f] || '')));
+bleed.length ? bad('no page header bled into the text', bleed.slice(0,4).map(x=>x[0]).join(', '))
+             : ok('no running header or page number bled into any profile');
+
+/* The layer must reach the screen, and it must show the app's astrology
+   rather than the source's, which disagrees on 25 days. */
+const dayShown = ['D.t','D.d','D.lo','D.mo','D.fa','D.em','D.fr','D.mi','D.bo','D.sp','D.wk',
+                  'D.ri','D.ou','D.st','D.we','D.ad','D.cl'];
+/* Some are printed raw, some through esc(), some behind a guard. */
+const dayUnshown = dayShown.filter(f=>
+  !(html.includes('${' + f + '}') || html.includes('esc(' + f + ')') ||
+    html.includes(f + ' ?') || html.includes('(' + f + ')') || html.includes(', ' + f + ')')));
+dayUnshown.length ? bad('every field of the day profile is rendered', dayUnshown.join(', '))
+                  : ok(`all ${dayShown.length} fields of the day profile reach the screen`);
+html.includes('renderDay(P)') ? ok('the day layer is rendered first, above the period')
+                              : bad('the day layer is rendered');
+(html.includes('${esc(P.per.n)}') && html.includes('${P.num} ${esc(P.planet)}'))
+  ? ok("the day shows the app's own period, number and card, not the source's")
+  : bad("the day shows the app's own period, number and card");
+
+/* Spot-check that the app's own table still governs the two places the source
+   disagreed with it: cusp end dates, and the 30th of the month. */
+is(findPeriod(10, 23).n, 'Libra–Scorpio Cusp', '23 October is still the cusp, as README.md has it');
+is(findPeriod(8, 25).n, 'Leo–Virgo Cusp', '25 August is still the cusp');
+is(tarotFor(30).n, 'The Empress', 'the 30th still draws The Empress — 3+0 is 3');
+is(tarotFor(29).n, 'Justice', 'the 29th still draws Justice — 2+9 is 11');
 
 /* ---------------------------------------------------------- */
 group('The deep layer — depth, and no repeating itself');
