@@ -22,6 +22,34 @@ Each reading also carries a **state of mind**, a **body and wellbeing** note
 a **correspondences** panel: birthstone for the birth month, the planetary
 stone, sign and planet colours, metal, day of the week, flower and body zone.
 
+### The whole person
+
+Under that sits the deep reading — all 48 periods, written for this app. Each
+one covers both sides of the personality, then love, anger, envy, what a
+person daydreams about, fun, the dark stretch and money, then mind, body and
+spirit, the family you came from and the family you make, how close people
+get, the direction, and four stages of a life.
+
+It opens on **where the three books meet**: the period and its line from
+*Birthdays*, the from/toward from *Destiny*, and — for *Relationships* — the
+pair engine itself, run against all four elements, so that line can never
+drift from what the Pair tab would say about the same person. Under it, the
+hinge all three circle, and **where they pull against each other**, which is
+the part that makes it one system instead of three lists. *Birthdays* counts a
+period's trait as its gift; *Destiny* counts the same trait as the thing to
+put down. Both are true, and saying so is more use than pretending they agree.
+
+The writing is blunt where the books are blunt. A period is called
+manipulative, lazy, contemptuous or a liar when its own week carries that, and
+never when it does not. Two buttons sit at the top of it:
+
+- **Simple version** — the whole reading in plain English across all three
+  layers: you, you and other people, where you are going. Tested for reading
+  level, not just for existing: sentences must average under fourteen words
+  and long words stay under one in twenty.
+- **Read it to me** — the browser's own voice, so nothing downloads and it
+  works offline. It reads whichever version is on screen and stops on demand.
+
 People are saved to the browser's `localStorage`. A **Matrix** tab reads every
 saved person against every other automatically, and **The 48** tab browses the
 whole year.

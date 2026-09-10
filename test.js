@@ -492,6 +492,11 @@ function overlapPairs(sections, limit){
    never happen is a HALF-written entry reaching the screen. */
 const written = Object.keys(DEPTH).length;
 ok(`deep readings written: ${written} of ${PERIODS.length}`);
+/* All 48 are written now. The renderer skips a period with no deep reading,
+   so this is what stops one silently regressing to the shallow version. */
+const noDepth = PERIODS.filter(p=>!DEPTH[p.n]).map(p=>p.n);
+noDepth.length ? bad('no period falls back to the shallow reading', noDepth.join(', '))
+               : ok('all 48 periods render the full reading — no fallbacks left');
 Object.keys(DEPTH).every(n=>PERIODS.some(p=>p.n === n))
   ? ok('every deep reading names a real period')
   : bad('every deep reading names a real period',
