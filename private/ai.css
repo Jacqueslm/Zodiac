@@ -1,0 +1,27 @@
+/* The AI block on the key screen. Private build only — injected by
+   build-private.js, never present in the public file. */
+.ai-ask{
+  margin:26px 0 0; padding:18px 20px; border-radius:var(--r);
+  border:1px solid rgba(167,139,250,.38); background:rgba(167,139,250,.07);
+}
+.ai-ask .at{
+  font-size:10.5px; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--violet); margin-bottom:10px;
+}
+.ai-ask p{margin:0 0 12px; font-size:15px; line-height:1.7; color:#ddd8ee}
+.ai-ask p.warn{
+  border-left:2px solid var(--rose); padding:8px 0 8px 14px; margin:16px 0;
+  color:#ffe4e8; font-size:14.5px;
+}
+.ai-ask p.warn b{color:var(--rose)}
+.ai-ask button{margin-top:2px}
+.ai-out{margin-top:18px; border-top:1px solid var(--line); padding-top:16px}
+.ai-out h4{
+  font-family:var(--sans); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--violet); margin:20px 0 8px; font-weight:600;
+}
+.ai-out h4:first-child{margin-top:0}
+.ai-out p{margin:0 0 13px; font-size:15.5px; line-height:1.74; color:var(--ink)}
+.ai-out .ai-wait{color:var(--dim); font-style:italic}
+.ai-out.bad p{color:#ffd9de}
+.ai-out.bad .ai-still{color:var(--dim); font-size:14px; font-style:italic}
