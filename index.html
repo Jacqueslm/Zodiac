@@ -435,12 +435,25 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 ol.steps{margin:6px 0 0; padding-left:22px; color:#ddd8ee}
 ol.steps li{margin:0 0 13px; font-size:15.5px; line-height:1.72}
 ol.steps li b{color:var(--gold); font-weight:600}
+.layer.key .layer-body p b{color:#f3eddd}
+#btn-back{
+  position:fixed; left:14px; bottom:14px; z-index:60;
+  width:46px; height:46px; border-radius:50%; cursor:pointer;
+  font-size:21px; line-height:1; color:var(--ink);
+  background:rgba(18,14,5,.82); border:1px solid var(--line2);
+  backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px);
+  box-shadow:0 3px 14px rgba(0,0,0,.42); transition:.14s;
+}
+#btn-back:hover{border-color:var(--gold); color:var(--gold)}
+#btn-back:active{transform:scale(.93)}
+@media(max-width:640px){ body{padding-bottom:70px} }
 .btn.danger{color:var(--rose); border-color:rgba(240,145,159,.42); background:rgba(240,145,159,.06)}
 .btn.danger:hover{border-color:var(--rose); background:rgba(240,145,159,.14)}
 </style>
 </head>
 <body>
 <canvas id="stars"></canvas>
+<button id="btn-back" aria-label="Back" title="Back" hidden>&#8592;</button>
 <div class="wrap">
 
 <header class="top">
@@ -502,6 +515,13 @@ ol.steps li b{color:var(--gold); font-weight:600}
   the ditch in order. It reads aloud like everything else.</p>
   <p>It saves itself as you go, on this device only. <strong>Delete my answers</strong> really
   deletes them. This is the most personal thing in the app and it never leaves your phone.</p>
+
+  <h4>Getting back</h4>
+  <p>The round arrow in the bottom left goes back one screen. Your phone's own back button and
+  gesture do the same thing now &mdash; one press, one screen &mdash; instead of throwing you out
+  of the app from six screens deep. It closes whatever is open first (the instructions, the voice
+  picker, the short version), then walks back through the tabs. When there is nowhere left to go
+  the arrow disappears, and the next press leaves properly.</p>
 
   <h4>The 48</h4>
   <p>The whole year, week by week. Useful for finding somebody when you know roughly when their
@@ -4016,7 +4036,7 @@ const KEY_AREAS = {
     open: 'You are on your own side. That is not vanity and do not let anyone talk you out of it — it is the floor the rest of this stands on.'
   },
   mind: {
-    n: 'Your mind, right now',
+    n: 'Your mind',
     depth: 'mind', day: 'mi',
     lock: 'Your own head is not a good place to be at the moment. This app can tell you what your temperament tends to do when it is under weather. It cannot tell you what is happening to you, and it is not going to try.',
     turn: 'Say it out loud to one person this week. Not the tidy version — the real one. An app cannot sit in a room with you, and that is the entire thing you are short of.',
@@ -4044,7 +4064,7 @@ const KEY_AREAS = {
     open: 'You were handed a floor to stand on. A lot of people were not. That is not a debt and you owe nobody an apology for it — the only wrong use of it is assuming everyone got one.'
   },
   close: {
-    n: 'Family, now',
+    n: 'Your family now',
     depth: 'making', day: 'fa',
     lock: 'The people you are related to are not people you are close to. Some of that is theirs to answer for. Some of it is that you stopped reaching somewhere around the third time it went badly, and you have been calling that a decision ever since.',
     turn: 'Decide, once, which of these people is worth another attempt and which is not. Then make the attempt, or stop grieving the ones who are not. The middle position — half in, permanently disappointed — is the one costing you the most.',
@@ -4265,7 +4285,12 @@ const KEY_STANDING = {
   strong: K => `You are doing well, and it is worth saying out loud, because the people who are doing well get told the least. ${K.highCount} ${K.highCount === 1 ? 'area came' : 'areas came'} back strong. The risk at this end is not collapse, it is coasting — and the specific way your temperament coasts is already written into the reading below. What follows is the thin part of a good structure.`
 };
 
-function renderKey(P, A){
+/* The log renderKey should draw on. Set by the screen before it renders,
+   and empty everywhere else — the tests, and any caller that only wants the
+   reading, get no movement section rather than a broken one. */
+let MOVE_LOG = [];
+function renderKey(P, A, log){
+  MOVE_LOG = log || [];
   const K = keyRead(P, A);
   const n = esc(firstName(P.person.name));
   const box = (t, b) => b ? `<div class="dp"><div class="dt">${t}</div><div class="db">${b}</div></div>` : '';
@@ -4342,6 +4367,8 @@ function renderKey(P, A){
       <p>In this order. Not all of it this week — the first one this week.</p>
       <ol class="steps">${K.steps.map(s=>`<li><b>${s.t}.</b> ${s.b}</li>`).join('')}</ol>` : ''}
 
+      ${MOVE_LOG.length ? renderMovement(MOVE_LOG) : ''}
+
       ${K.written.length ? `
       <h4>What you wrote down</h4>
       <p class="note" style="margin-bottom:10px">Read back exactly as you typed it. Nothing in this app reads these boxes or draws conclusions from them — there is no AI in this file. They are here because writing your own life down and then looking at it is worth more than most things a screen can say about it.</p>
@@ -4351,6 +4378,156 @@ function renderKey(P, A){
     </div>
   </div>`;
 }
+
+/* ============================================================
+   WHERE YOU'VE MOVED — the key, read over time.
+
+   A key turned once is a photograph. Getting out of a ditch takes
+   months, so a photograph cannot tell you the one thing you
+   actually want to know: did any of it shift.
+
+   Every turn keeps a dated snapshot of the scores — the numbers
+   only, never the boxes, which are none of this section's
+   business. Then it says what went up, what went backwards, and
+   what has not moved at all. The last of those is the one nobody
+   wants and the only one that changes anything.
+   ============================================================ */
+
+/* One turn, reduced to what movement needs. */
+function keySnapshot(A, K){
+  const s = {};
+  KEY_SCALES.forEach(id=>{ const v = Number(A[id]); if(v >= 1 && v <= 5) s[id] = v; });
+  return {at:todayKey(), s, named:K.named || null, standing:K.standing, avg:Math.round(K.avg * 100) / 100};
+}
+function todayKey(d){
+  const t = d || new Date();
+  const p = n => String(n).padStart(2, '0');
+  return t.getFullYear() + '-' + p(t.getMonth() + 1) + '-' + p(t.getDate());
+}
+/* Answering twice in one day is one answer, not two — otherwise a
+   person fiddling with the sliders invents a trend out of an afternoon. */
+function keyLogPush(log, snap){
+  const out = (log || []).slice();
+  if(out.length && out[out.length - 1].at === snap.at) out[out.length - 1] = snap;
+  else out.push(snap);
+  return out.slice(-60);
+}
+function daysBetween(a, b){
+  const ms = Date.parse(b + 'T00:00:00') - Date.parse(a + 'T00:00:00');
+  return Math.max(0, Math.round(ms / 86400000));
+}
+
+function keyMovement(log){
+  const L = (log || []).filter(e=>e && e.s);
+  if(L.length < 2) return {runs:L.length, enough:false};
+
+  const first = L[0], now = L[L.length - 1], prev = L[L.length - 2];
+  const span = daysBetween(first.at, now.at);
+
+  const up = [], down = [], stuck = [];
+  KEY_SCALES.forEach(id=>{
+    const a = first.s[id], b = now.s[id];
+    if(!(a >= 1 && b >= 1)) return;
+    const row = {id, n:KEY_AREAS[id].n, from:a, to:b, by:b - a};
+    if(b > a) up.push(row);
+    else if(b < a) down.push(row);
+    else if(b <= 2) stuck.push(row);        /* a steady 5 is not a problem to report */
+  });
+  const bySize = (p, q)=>Math.abs(q.by) - Math.abs(p.by);
+  up.sort(bySize); down.sort(bySize);
+
+  /* What they keep naming as the fight, and whether naming it has
+     been worth anything. */
+  const namedCount = {};
+  L.forEach(e=>{ if(e.named) namedCount[e.named] = (namedCount[e.named] || 0) + 1; });
+  let namedStuck = null, namedTimes = 0;
+  Object.keys(namedCount).forEach(id=>{
+    const a = first.s[id], b = now.s[id];
+    if(namedCount[id] >= 2 && a >= 1 && b >= 1 && b <= a && namedCount[id] > namedTimes){
+      namedStuck = id; namedTimes = namedCount[id];
+    }
+  });
+
+  return {
+    runs:L.length, enough:true, span, first, now, prev,
+    up, down, stuck, namedStuck, namedTimes,
+    avgBy:Math.round((now.avg - first.avg) * 100) / 100,
+    standingFrom:first.standing, standingTo:now.standing,
+    better:now.avg > first.avg, worse:now.avg < first.avg
+  };
+}
+
+/* Some area names carry a comma of their own, so a comma-joined list of them
+   reads as twice as many things as it is. */
+function listOf(items){
+  if(items.length <= 1) return items.join('');
+  return items.slice(0, -1).join(' &middot; ') + ' &middot; ' + items[items.length - 1];
+}
+
+function renderMovement(log){
+  const M = keyMovement(log);
+  const h4 = '<h4>Where you have moved</h4>';
+
+  if(!M.enough){
+    return h4 + `<p>This is the first time you have turned it${M.runs ? '' : ''}. Nothing to compare it
+    to yet. Answer it again in a month &mdash; not next week, a month &mdash; and this section will
+    tell you what actually shifted and what did not. That second answer is worth more than this
+    first one, because a life is a direction rather than a position.</p>`;
+  }
+
+  const line = M.span >= 14
+    ? `${M.runs} answers over ${M.span} days.`
+    : `${M.runs} answers, ${M.span === 0 ? 'all today' : 'over ' + M.span + ' day' + (M.span === 1 ? '' : 's')} — too close together to mean much yet.`;
+
+  const say = [];
+
+  if(M.up.length){
+    const top = M.up[0];
+    say.push(`<p><b>${esc(top.n)} moved.</b> ${top.from} to ${top.to}${M.up.length > 1 ?
+      `, and so did ${M.up.length - 1} other${M.up.length === 2 ? '' : 's'}: ${listOf(M.up.slice(1).map(r=>esc(r.n.toLowerCase())))}` : ''}.
+      Say that out loud, because you will not otherwise — people who are climbing out notice the
+      climbing far less than the ditch.</p>`);
+  }
+  if(M.down.length){
+    const top = M.down[0];
+    say.push(`<p><b>${esc(top.n)} went backwards.</b> ${top.from} to ${top.to}${M.down.length > 1 ?
+      `, along with ${listOf(M.down.slice(1).map(r=>esc(r.n.toLowerCase())))}` : ''}.
+      That is information, not a verdict. Something took the effort that used to go there.</p>`);
+  }
+  if(M.stuck.length){
+    /* Ten of these in one sentence is a wall nobody reads, and the point of
+       the sentence is that it should be read. */
+    const shown = M.stuck.slice(0, 5).map(r=>esc(r.n.toLowerCase()));
+    const more = M.stuck.length - shown.length;
+    say.push(`<p><b>Has not moved at all:</b> ${listOf(shown)}${more ? `, and ${more} more` : ''} &mdash;
+      same as ${M.first.at}. Low, and exactly where you left ${M.stuck.length === 1 ? 'it' : 'them'}.</p>`);
+  }
+  if(!M.up.length && !M.down.length && !M.stuck.length){
+    say.push(`<p>Nothing moved in either direction. Everything is where it was on ${M.first.at}.
+      For a good life that is stability. For a hard one it is a year going past.</p>`);
+  }
+
+  /* The one that earns this whole section. */
+  const nag = M.namedStuck ? `
+    <div class="pull">You have named ${esc(KEY_AREAS[M.namedStuck].n.toLowerCase())} as the fight
+    ${M.namedTimes} times now, and it is sitting exactly where it was on ${M.first.at}. That is not
+    bad luck and it is not the wrong app. It is the one thing you keep deciding to deal with later.</div>` : '';
+
+  const overall = M.better
+    ? `<p>Overall you are up ${Math.abs(M.avgBy)} of a point since ${M.first.at}${
+        M.standingFrom !== M.standingTo ? `, and you have gone from <b>${M.standingFrom}</b> to <b>${M.standingTo}</b>` : ''}.</p>`
+    : M.worse
+    ? `<p>Overall you are down ${Math.abs(M.avgBy)} of a point since ${M.first.at}${
+        M.standingFrom !== M.standingTo ? `, and gone from <b>${M.standingFrom}</b> to <b>${M.standingTo}</b>` : ''}.
+        Worth knowing rather than worth panicking about &mdash; one bad month answers low across the board.</p>`
+    : '';
+
+  return h4 + `<p class="note" style="margin-bottom:12px">${line}</p>` +
+         say.join('') + nag + overall +
+         `<p class="disclaim">Only the sliders are kept for this, never anything you typed. It all
+         stays in this browser, and Delete my answers clears it with the rest.</p>`;
+}
+
 /* ============================================================
    STORAGE
    ============================================================ */
@@ -4383,7 +4560,10 @@ function showTab(id){
   /* What gets read aloud depends on which panel is open, so a tab change has
      to end the reading rather than carry on reading a page nobody is on. */
   const already = document.querySelector('nav.tabs button[aria-selected="true"]');
-  if(already && already.id !== id) stopSpeaking();
+  if(already && already.id !== id){
+    stopSpeaking();
+    backPush({k:'tab', id:already.id});
+  }
   document.querySelectorAll('nav.tabs button').forEach(b=>{
     const on = b.id === id;
     b.setAttribute('aria-selected', on ? 'true' : 'false');
@@ -4557,6 +4737,23 @@ $('wheel-list').addEventListener('click', e=>{
    really deletes. Nothing is transmitted.
    ============================================================ */
 const KKEY = 'personology.key.v1';
+/* The dated scores, kept apart from the answers so nothing already saved
+   has to be migrated and a broken log can never cost somebody their sheet. */
+const KLOG = 'personology.key.log.v1';
+function keyLogAll(){
+  try{ const r = localStorage.getItem(KLOG); return r ? JSON.parse(r) : {}; }
+  catch(e){ return {}; }
+}
+function keyLogFor(slot){
+  const l = keyLogAll()[slot || keySlot()];
+  return Array.isArray(l) ? l : [];
+}
+function keyLogSave(snap){
+  const slot = keySlot(), all = keyLogAll();
+  all[slot] = keyLogPush(all[slot], snap);
+  try{ localStorage.setItem(KLOG, JSON.stringify(all)); }catch(e){}
+  return all[slot];
+}
 let KANS = keyBlank();
 
 function keyAll(){
@@ -4595,9 +4792,11 @@ function keyStore(slot){
   catch(e){ toast('Could not save — storage is unavailable'); return false; }
 }
 function keyWipe(){
-  const all = keyAll();
+  const all = keyAll(), logs = keyLogAll();
   delete all[keySlot()];
+  delete logs[keySlot()];
   try{ localStorage.setItem(KKEY, JSON.stringify(all)); }catch(e){}
+  try{ localStorage.setItem(KLOG, JSON.stringify(logs)); }catch(e){}
   KANS = keyBlank();
   KSLOT = keySlot();
   renderKeyForm();
@@ -4662,7 +4861,9 @@ $('btn-key').addEventListener('click', ()=>{
   if(r.err){ $('k-err').textContent = r.err; return; }
   keyStore();
   stopSpeaking();
-  $('k-result').innerHTML = renderKey(profileOf(r.person), KANS);
+  const P = profileOf(r.person);
+  const log = keyLogSave(keySnapshot(KANS, keyRead(P, KANS)));
+  $('k-result').innerHTML = renderKey(P, KANS, log);
   $('k-tools').hidden = false;
   $('k-result').scrollIntoView({behavior:'smooth', block:'start'});
 });
@@ -5270,8 +5471,9 @@ document.addEventListener('click', e=>{
   const t = e.target;
   if(t.id === 'btn-help' || t.id === 'btn-help-close'){
     const box = $('help-box'); if(!box) return;
+    const wasHidden = box.hidden;
     box.hidden = t.id === 'btn-help-close' ? true : !box.hidden;
-    if(!box.hidden) box.scrollIntoView({behavior:'smooth', block:'start'});
+    if(!box.hidden){ box.scrollIntoView({behavior:'smooth', block:'start'}); if(wasHidden) backPush({k:'help'}); }
     const b = $('btn-help'); if(b) b.classList.toggle('on', !box.hidden);
     return;
   }
@@ -5281,6 +5483,7 @@ document.addEventListener('click', e=>{
     stopSpeaking();
     const showSimple = box.hidden;
     box.hidden = !showSimple; full.hidden = showSimple;
+    if(showSimple) backPush({k:'simple'});
     t.textContent = showSimple ? 'Long version' : 'Short version';
     t.classList.toggle('on', showSimple);
   }
@@ -5289,8 +5492,12 @@ document.addEventListener('click', e=>{
   if(act && act.dataset.act === 'stop') stopSpeaking();
   if(act && act.dataset.act === 'voice'){
     const bar = act.closest('.panel').querySelector('.voicebar'); if(!bar) return;
+    const wasHidden = bar.hidden;
     bar.hidden = !bar.hidden;
-    if(!bar.hidden) fillVoicePicker(bar.querySelector('.voice-pick'));
+    if(!bar.hidden){
+      fillVoicePicker(bar.querySelector('.voice-pick'));
+      if(wasHidden) backPush({k:'voice', panel:act.closest('.panel').id});
+    }
     act.classList.toggle('on', !bar.hidden);
   }
   if(act && act.dataset.act === 'try'){
@@ -5403,6 +5610,83 @@ addEventListener('hashchange', applyHash);
   draw();
   let t; addEventListener('resize', ()=>{ clearTimeout(t); t = setTimeout(draw, 220); });
 })();
+
+
+/* ============================================================
+   GOING BACK
+
+   On a phone this behaves like an app, so the hardware back button
+   is expected to behave like an app's — step back one screen. It
+   did not: the first press left the site entirely and took your
+   place with it, from six tabs deep.
+
+   Every step that changes what is on screen records itself AND
+   pushes one history entry, so the two counts are always equal.
+   Back consumes one step instead of the whole app, and when there
+   are none left the next press leaves, which is correct — nothing
+   here traps somebody on a page they are trying to close.
+
+   The button in the corner is the same thing for a thumb, and it
+   is only there when there is somewhere to go.
+   ============================================================ */
+let BACK = [];
+let backUndoing = false;
+
+function backPush(step){
+  if(backUndoing) return;
+  BACK.push(step);
+  try{ history.pushState({z:BACK.length}, ''); }catch(e){ /* file:// may refuse */ }
+  backPaint();
+}
+function backPaint(){
+  const b = $('btn-back');
+  if(b) b.hidden = BACK.length === 0;
+}
+
+/* Undo one step. Returns false when there was nothing of ours left. */
+function backStep(){
+  const step = BACK.pop();
+  backPaint();
+  if(!step) return false;
+  backUndoing = true;
+  try{
+    if(step.k === 'tab') showTab(step.id);
+    else if(step.k === 'help'){
+      const box = $('help-box'); if(box) box.hidden = true;
+      const t = $('btn-help'); if(t) t.classList.remove('on');
+    }
+    else if(step.k === 'voice'){
+      const bar = document.querySelector('#' + step.panel + ' .voicebar');
+      if(bar) bar.hidden = true;
+      const btn = document.querySelector('#' + step.panel + ' [data-act="voice"]');
+      if(btn) btn.classList.remove('on');
+    }
+    else if(step.k === 'simple'){
+      const box = $('simple-box'), full = $('reading-full'), btn = $('btn-simple');
+      if(box && full){ box.hidden = true; full.hidden = false; }
+      if(btn){ btn.textContent = 'Short version'; btn.classList.remove('on'); }
+    }
+  } finally { backUndoing = false; }
+  stopSpeaking();
+  return true;
+}
+
+addEventListener('popstate', ()=>{ backStep(); });
+
+document.addEventListener('click', e=>{
+  if(e.target.closest && e.target.closest('#btn-back')){
+    /* Going through history keeps the entry count and the step count in
+       step; calling backStep() directly here would leave a stale entry
+       and the hardware button would then need two presses. */
+    history.back();
+  }
+});
+
+/* Escape is the same gesture on a keyboard. */
+addEventListener('keydown', e=>{
+  if(e.key === 'Escape' && BACK.length && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName || ''))) history.back();
+});
+backPaint();
 
 updateCount(); fillPairSelects();
 if(!applyHash()) $('f-name').focus();

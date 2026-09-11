@@ -25,7 +25,8 @@ const NAMES = ['PERIODS','LORE','NUMBERS','TAROT','EL_REL','Q_REL','SIGNS','ELEM
                'WELLBEING','SIGN_BODY','SIGN_SWATCH','PLANET_LORE','BIRTHSTONE','DESTINY',
                'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT','DEPTH','renderDepth','relSpread','DAYS','renderDay',
                'SEASONS','SEASON_PLACE','SEASON_VERB','seasonOf','seasonLine','ELEMENT_LORE','QUALITY_LORE','signFrom','describeSign',
-               'KEY_Q','KEY_AREAS','KEY_SCALES','KEY_TEXTS','KEY_CHOICE','KEY_STANDING','keyBlank','keyRead','renderKey'];
+               'KEY_Q','KEY_AREAS','KEY_SCALES','KEY_TEXTS','KEY_CHOICE','KEY_STANDING','keyBlank','keyRead','renderKey',
+               'keySnapshot','keyLogPush','keyMovement','renderMovement','todayKey','daysBetween','listOf'];
 const ctx = vm.createContext({console, URLSearchParams});
 vm.runInContext(engine + `\n;globalThis.__api = {${NAMES.join(',')}};`, ctx, {filename:'index.html:engine'});
 const api = ctx.__api;
@@ -39,7 +40,8 @@ const {PERIODS, LORE, NUMBERS, TAROT, EL_REL, Q_REL, SIGNS, ELEMENTS, QUALITIES,
        makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT, DEPTH, renderDepth, relSpread, DAYS, renderDay,
        SEASONS, SEASON_PLACE, SEASON_VERB, seasonOf, seasonLine, ELEMENT_LORE, QUALITY_LORE,
        signFrom, describeSign,
-       KEY_Q, KEY_AREAS, KEY_SCALES, KEY_TEXTS, KEY_CHOICE, KEY_STANDING, keyBlank, keyRead, renderKey} = api;
+       KEY_Q, KEY_AREAS, KEY_SCALES, KEY_TEXTS, KEY_CHOICE, KEY_STANDING, keyBlank, keyRead, renderKey,
+       keySnapshot, keyLogPush, keyMovement, renderMovement, todayKey, daysBetween, listOf} = api;
 
 let failures = 0, checks = 0;
 function ok(label){ checks++; console.log('  ✓ ' + label); }
@@ -1537,7 +1539,7 @@ const htmlBlank = renderKey(P_KEY, blank);
 /Answer the questions above/i.test(htmlBlank) ? ok('an unanswered key asks rather than invents') : bad('an unanswered key asks rather than invents');
 !/ditch|holding|strong/i.test(htmlBlank.replace(/class="[^"]*"/g,'')) ? ok('and passes no verdict on somebody who said nothing') : bad('and passes no verdict on somebody who said nothing');
 
-html.includes("if(already && already.id !== id) stopSpeaking();")
+(html.includes("if(already && already.id !== id){") && /already\.id !== id\)\{\s*stopSpeaking\(\);/.test(html))
   ? ok('changing tab stops the voice, rather than reading a page you have left')
   : bad('changing tab stops the voice');
 
@@ -1547,6 +1549,8 @@ helpBox.includes('<h4>The Key</h4>') ? ok('"How to use this" explains The Key') 
 /tap it again to unanswer/i.test(helpBox) ? ok('and says how to take an answer back') : bad('and says how to take an answer back');
 /never leaves your phone/i.test(helpBox) ? ok('and says where the answers live') : bad('and says where the answers live');
 /no AI in here/i.test(helpBox) ? ok('and is straight about there being no AI reading the boxes') : bad('and is straight about there being no AI');
+
+helpBox.includes('<h4>Getting back</h4>') ? ok('and how to get back') : bad('and how to get back');
 
 /* A class carrying a display rule beat the hidden attribute once already. */
 html.includes('[hidden]{display:none !important}')
@@ -1562,6 +1566,202 @@ html.includes('btn-key-wipe') ? ok('there is a delete button') : bad('there is a
 !/fetch\(|XMLHttpRequest|navigator\.sendBeacon/.test(html) ? ok('nothing in the file can send it anywhere') : bad('nothing in the file can send it anywhere');
 
 }
+{
+group('The key, read over time');
+
+const Pm = profileOf({name:'Test', month:11, day:12, year:null});
+const snapAt = (date, scores, named)=>{
+  const A = keyBlank();
+  Object.keys(scores).forEach(k=>A[k] = scores[k]);
+  if(named) A.struggle = named;
+  const s = keySnapshot(A, keyRead(Pm, A));
+  s.at = date;
+  return s;
+};
+const allAt = (date, v, named)=>{
+  const o = {}; KEY_SCALES.forEach(id=>o[id] = v);
+  return snapAt(date, o, named);
+};
+
+/* A snapshot keeps the numbers and nothing else. */
+const A1 = keyBlank();
+KEY_SCALES.forEach(id=>A1[id] = 2);
+A1.job = 'something private'; A1.bad = 'the worst thing that happened';
+const snap = keySnapshot(A1, keyRead(Pm, A1));
+is(Object.keys(snap.s).length, 12, 'a snapshot keeps all twelve scores');
+is(JSON.stringify(snap).includes('something private'), false, 'and nothing anybody typed');
+is(JSON.stringify(snap).includes('the worst thing'), false, 'especially not the hard parts');
+is(/^\d{4}-\d{2}-\d{2}$/.test(snap.at), true, 'and is stamped with a plain date');
+
+/* Twice in a day is one answer. */
+let log = [];
+log = keyLogPush(log, allAt('2026-01-01', 2));
+log = keyLogPush(log, allAt('2026-01-01', 4));
+is(log.length, 1, 'answering twice in one day replaces rather than invents a trend');
+is(log[0].s.money, 4, 'and it is the later answer that is kept');
+log = keyLogPush(log, allAt('2026-02-01', 4));
+is(log.length, 2, 'a different day is a new entry');
+
+/* One answer cannot show movement, and says so instead of guessing. */
+is(keyMovement([]).enough, false, 'no answers, no movement');
+is(keyMovement([allAt('2026-01-01', 3)]).enough, false, 'one answer is not a trend');
+/Answer it again in a month/i.test(renderMovement([allAt('2026-01-01', 3)]))
+  ? ok('the first turn asks them back rather than inventing a comparison')
+  : bad('the first turn asks them back');
+/first time/i.test(renderMovement([])) ? ok('and an empty log does the same') : bad('an empty log does the same');
+
+/* Up, down, and the one that matters. */
+const two = [snapAt('2026-01-01', {money:1, body:4, dir:2, self:1}),
+             snapAt('2026-04-01', {money:3, body:2, dir:2, self:1})];
+const M = keyMovement(two);
+is(M.enough, true, 'two answers are enough');
+is(M.runs, 2, 'it counts the turns');
+is(M.span, 90, 'and the days between them');
+is(M.up.length, 1, 'it finds what went up');
+is(M.up[0].id, 'money', 'and names it');
+is(M.up[0].by, 2, 'and by how much');
+is(M.down.length, 1, 'it finds what went backwards');
+is(M.down[0].id, 'body', 'and names that too');
+is(M.stuck.map(r=>r.id).sort().join(','), 'dir,self', 'and what has not moved at all');
+
+/* A steady 5 is not a problem to report. */
+const steady = [snapAt('2026-01-01', {friends:5, money:1}), snapAt('2026-03-01', {friends:5, money:1})];
+is(keyMovement(steady).stuck.map(r=>r.id).join(','), 'money',
+   'a high score sitting still is not reported as stuck — only a low one is');
+
+/* Naming the same fight over and over while it does not move. */
+const nagged = [snapAt('2026-01-01', {money:1, friends:4}, 'money'),
+                snapAt('2026-02-01', {money:1, friends:4}, 'money'),
+                snapAt('2026-03-01', {money:1, friends:4}, 'money')];
+const N = keyMovement(nagged);
+is(N.namedStuck, 'money', 'it notices the fight named again and again that never moves');
+is(N.namedTimes, 3, 'and how many times it was named');
+const nagHtml = renderMovement(nagged);
+/keep deciding to deal with later/i.test(nagHtml) ? ok('and says so, plainly') : bad('and says so');
+/not\s+bad luck/i.test(nagHtml) ? ok('without blaming it on luck or on the app') : bad('it does not blame luck');
+
+/* Named, and it did move — no nagging. */
+const worked = [snapAt('2026-01-01', {money:1}, 'money'), snapAt('2026-03-01', {money:4}, 'money')];
+is(keyMovement(worked).namedStuck, null, 'naming a fight you then win is not nagged about');
+!/keep deciding to deal with later/i.test(renderMovement(worked))
+  ? ok('and the nag stays off the page') : bad('the nag stays off the page');
+
+/* Nothing moved at all. */
+const flat = [allAt('2026-01-01', 3), allAt('2026-06-01', 3)];
+const flatHtml = renderMovement(flat);
+/Nothing moved in either direction/i.test(flatHtml) ? ok('a flat year is named as a flat year') : bad('a flat year is named');
+/a year going past/i.test(flatHtml) ? ok('and what that costs is said out loud') : bad('the cost is said');
+
+/* Overall direction. */
+is(keyMovement([allAt('2026-01-01', 1), allAt('2026-06-01', 4)]).better, true, 'it knows when somebody climbed');
+is(keyMovement([allAt('2026-01-01', 4), allAt('2026-06-01', 1)]).worse, true, 'and when they slid');
+const climbed = renderMovement([allAt('2026-01-01', 1), allAt('2026-06-01', 4)]);
+/ditch/.test(climbed) && /strong/.test(climbed) ? ok('and reports the change in standing') : bad('it reports the standing change');
+/Say that out loud/i.test(climbed) ? ok('and makes them acknowledge the climb') : bad('it names the climb');
+const slid = renderMovement([allAt('2026-01-01', 4), allAt('2026-06-01', 1)]);
+/worth panicking about/i.test(slid) ? ok('a slide is reported without alarm') : bad('a slide is reported calmly');
+
+/* Answers too close together are not dressed up as a trend. */
+/too close together/i.test(renderMovement([allAt('2026-01-01', 2), allAt('2026-01-03', 4)]))
+  ? ok('two answers days apart are called what they are') : bad('close answers are not oversold');
+
+/* The log is bounded, so it cannot grow forever in a phone's storage. */
+let big = [];
+for(let i = 0; i < 80; i++) big = keyLogPush(big, allAt('2026-01-' + String((i % 28) + 1).padStart(2,'0') + '', 3));
+is(big.length <= 60, true, 'the log is capped rather than growing without limit');
+
+/* It holds for every period, and never leaks typed words onto the page. */
+let moveGaps = [];
+PERIODS.slice(0, 48).forEach(p=>{
+  const Q = profileOf({name:'X', month:p.sm, day:p.sd, year:null});
+  const h = renderKey(Q, A1, nagged);
+  if(/undefined|\[object Object\]/.test(h)) moveGaps.push(p.n);
+  if(!/Where you have moved/.test(h)) moveGaps.push(p.n + ': no movement section');
+  if(h.includes('something private') && !h.includes('What you wrote down')) moveGaps.push(p.n + ': leak');
+});
+is(moveGaps.length, 0, 'the movement section renders for all 48 periods' + (moveGaps.length ? ' — ' + moveGaps.slice(0,2).join('; ') : ''));
+
+/* Without a log, the reading is exactly what it was before. */
+const noLog = renderKey(Pm, A1);
+!/Where you have moved/.test(noLog) ? ok('a caller that passes no log gets no movement section') : bad('no log, no section');
+
+/* Dates. */
+is(daysBetween('2026-01-01', '2026-01-01'), 0, 'the same day is no days apart');
+is(daysBetween('2026-01-01', '2026-03-01'), 59, 'and it counts real days across months');
+is(todayKey(new Date(2026, 0, 5)), '2026-01-05', 'dates are stamped as plain local calendar days');
+
+/* Names with a comma in them must not read as two things. */
+is(Object.values(KEY_AREAS).filter(a=>a.n.includes(',')).length, 0, 'no area name carries a comma of its own');
+is(listOf(['a']), 'a', 'a list of one is just the thing');
+is(listOf(['a','b']), 'a &middot; b', 'a list of two is separated, not comma-joined');
+is(listOf(['a','b','c']), 'a &middot; b &middot; c', 'and so is a longer one');
+{
+  const allStuck = [];
+  const mk = (at)=>{ const o = {}; KEY_SCALES.forEach(id=>o[id] = 1); const A = keyBlank();
+    Object.keys(o).forEach(k=>A[k] = o[k]); const sn = keySnapshot(A, keyRead(Pm, A)); sn.at = at; return sn; };
+  allStuck.push(mk('2026-01-01'), mk('2026-06-01'));
+  const h = renderMovement(allStuck);
+  /and 7 more/.test(h) ? ok('a sheet where nothing moved lists five and counts the rest')
+                       : bad('a fully stuck sheet is capped', h.slice(h.indexOf('Has not moved'), h.indexOf('Has not moved') + 200));
+}
+
+/* Storage: its own key, deleted with the rest, never sent. */
+html.includes("const KLOG = 'personology.key.log.v1'") ? ok('the log has its own storage key') : bad('the log has its own key');
+html.includes('delete logs[keySlot()];') ? ok('and Delete my answers clears it too') : bad('delete clears the log');
+/Only the sliders are kept for this, never anything you typed/.test(nagHtml)
+  ? ok('and the page says what is kept and what is not') : bad('the page says what is kept');
+}
+
+{
+group('Going back');
+
+html.includes('id="btn-back"') ? ok('there is a back button') : bad('there is a back button');
+html.includes("addEventListener('popstate'") ? ok('and the phone’s own back button is caught') : bad('the hardware back button is caught');
+/backPush\(\{k:'tab'/.test(html) ? ok('changing tab is a step you can come back from') : bad('a tab change is a step');
+/backPush\(\{k:'help'\}\)/.test(html) ? ok('so is opening the instructions') : bad('opening help is a step');
+/backPush\(\{k:'simple'\}\)/.test(html) ? ok('so is switching to the short version') : bad('the short version is a step');
+/backPush\(\{k:'voice'/.test(html) ? ok('so is opening the voice picker') : bad('the voice picker is a step');
+
+/* The count of history entries and the count of steps have to stay equal,
+   or the hardware button starts needing two presses for one screen. */
+/BACK\.push\(step\);\s*try\{ history\.pushState/.test(html)
+  ? ok('every recorded step pushes exactly one history entry')
+  : bad('steps and history entries are pushed together');
+html.includes("history.back();") && /#btn-back'\)\)\{[\s\S]{0,220}history\.back\(\)/.test(html)
+  ? ok('and the on-screen button goes through history rather than round it')
+  : bad('the on-screen button goes through history');
+
+/* Nothing may trap somebody trying to leave. */
+!/popstate[\s\S]{0,200}pushState/.test(html)
+  ? ok('going back never re-pushes an entry, so the app can always be left')
+  : bad('going back could trap somebody on the page');
+/if\(!step\) return false;/.test(html)
+  ? ok('and with no steps left the press falls through to leaving')
+  : bad('an empty stack falls through');
+
+/* Undoing must not record itself, or back would never reach the bottom. */
+/if\(backUndoing\) return;/.test(html) ? ok('undoing a step does not record a new one') : bad('undoing does not re-record');
+/backUndoing = true;[\s\S]{0,900}finally \{ backUndoing = false; \}/.test(html)
+  ? ok('and the flag is cleared even if a step throws') : bad('the undoing flag is cleared in a finally');
+
+/* The button is only there when it does something. */
+/b\.hidden = BACK\.length === 0;/.test(html) ? ok('the button hides when there is nowhere to go') : bad('the button hides when idle');
+
+/* It must not sit on top of the reading on a phone. */
+/@media\(max-width:640px\)\{ body\{padding-bottom:70px\} \}/.test(html)
+  ? ok('and the page makes room for it on a phone') : bad('the page makes room for it');
+
+/* Escape is the same gesture, but not while typing a name into a box. */
+/e\.key === 'Escape'/.test(html) ? ok('Escape goes back too') : bad('Escape goes back');
+/INPUT\|TEXTAREA\|SELECT/.test(html) ? ok('except while typing, where Escape means something else') : bad('Escape is ignored in a field');
+
+/* The hash is written with replaceState, so sharing a reading cannot
+   quietly fill the history with entries that back has to walk through. */
+html.includes("history.replaceState(null, '', h)")
+  ? ok('reading a birthday still replaces the hash rather than adding history')
+  : bad('the hash does not add history entries');
+}
+
 /* ---------------------------------------------------------- */
 console.log('\n' + '-'.repeat(58));
 console.log(failures ? `FAILED — ${failures} of ${checks} checks failed` : `PASSED — all ${checks} checks`);
