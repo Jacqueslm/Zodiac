@@ -80,6 +80,9 @@ nav.tabs button{
 nav.tabs button:hover{color:var(--ink); border-color:var(--line); background:var(--card)}
 nav.tabs button[aria-selected="true"]{color:#120e05; background:var(--gold); border-color:var(--gold); font-weight:600}
 .panel[hidden]{display:none}
+/* A class with a display rule outranks the hidden attribute, which is how a
+   toolbar marked hidden stayed on screen. Settle it once, for everything. */
+[hidden]{display:none !important}
 
 /* ---------- form ---------- */
 .card{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:22px}
@@ -388,6 +391,52 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
 .swatch{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:0; border:1px solid rgba(255,255,255,.25)}
 .disclaim{font-size:12px; color:var(--dimmer); font-style:italic; margin-top:12px}
 .tally b{font-family:var(--serif); font-size:21px; display:block; color:var(--ink); font-weight:500}
+/* ---------- the key ---------- */
+.layer.key > h3{background:linear-gradient(90deg,var(--rose),#e07c8d)}
+.layer.key .layer-body h4{color:var(--rose)}
+.layer.key .pull{border-left-color:var(--rose)}
+.ktitle{font-family:var(--serif); font-weight:500; font-size:26px; margin:0 0 10px}
+.kgroup{margin:22px 0 0}
+.kgroup > .gh{font-family:var(--sans); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--gold); margin:0 0 12px; font-weight:600; border-top:1px solid var(--line); padding-top:16px}
+.kq{margin:0 0 20px}
+.kq > .qt{font-family:var(--serif); font-size:17.5px; line-height:1.45; margin:0 0 9px; color:var(--ink)}
+.kscale{display:flex; gap:7px}
+.kscale button{flex:1; font-family:var(--sans); font-size:15px; color:var(--dim);
+  background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:10px; padding:11px 0; cursor:pointer; transition:.14s}
+.kscale button:hover{border-color:var(--gold); color:var(--ink)}
+.kscale button[aria-pressed="true"]{background:var(--gold); border-color:var(--gold); color:#120e05; font-weight:600}
+.kends{display:flex; justify-content:space-between; gap:10px; font-size:11.5px; color:var(--dimmer); margin-top:6px}
+.kends span:last-child{text-align:right}
+.kopts{display:grid; gap:8px}
+@media(min-width:640px){.kopts{grid-template-columns:1fr 1fr}}
+.kopts button{text-align:left; font-family:var(--sans); font-size:14.5px; color:var(--ink);
+  background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:10px; padding:12px 14px; cursor:pointer; transition:.14s}
+.kopts button:hover{border-color:var(--gold)}
+.kopts button[aria-pressed="true"]{border-color:var(--gold); background:rgba(232,192,122,.13); color:#f3eddd}
+.kq textarea{width:100%; min-height:74px; resize:vertical; font-family:var(--sans); font-size:15px; line-height:1.6;
+  color:var(--ink); background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:10px; padding:11px 13px}
+.kq textarea:focus{outline:none; border-color:var(--gold)}
+.gauge{height:5px; background:rgba(255,255,255,.08); border-radius:5px; overflow:hidden; margin:4px 0 8px}
+.gauge i{display:block; height:100%; background:linear-gradient(90deg,var(--rose),var(--gold),var(--teal))}
+.signpost{border:1px solid rgba(240,145,159,.42); background:rgba(240,145,159,.08);
+  border-radius:var(--r); padding:16px 18px; margin:0 0 22px}
+.signpost .st{font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--rose); margin-bottom:8px}
+.signpost p{margin:0 0 10px; font-size:15px; line-height:1.7; color:#ffe4e8}
+.signpost p:last-child{margin-bottom:0}
+.lock{margin:0 0 22px; padding:0 0 4px}
+.lock .lk{font-family:var(--serif); font-size:19px; color:var(--rose); margin-bottom:7px}
+.turn{border:1px solid rgba(95,217,196,.36); background:rgba(95,217,196,.07); border-radius:var(--r); padding:13px 16px; margin-top:12px}
+.turn .tk{font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--teal); margin-bottom:5px}
+.turn .tv{font-size:15.5px; line-height:1.72; color:#d7f3ec}
+.dp.open{border-left-color:var(--teal)} .dp.open .dt{color:var(--teal)}
+.dp.said{border-left-color:var(--dimmer)} .dp.said .dt{color:var(--dimmer); text-transform:none; letter-spacing:.02em; font-size:12px}
+.dp.said .db{font-family:var(--serif); white-space:pre-wrap}
+ol.steps{margin:6px 0 0; padding-left:22px; color:#ddd8ee}
+ol.steps li{margin:0 0 13px; font-size:15.5px; line-height:1.72}
+ol.steps li b{color:var(--gold); font-weight:600}
+.btn.danger{color:var(--rose); border-color:rgba(240,145,159,.42); background:rgba(240,145,159,.06)}
+.btn.danger:hover{border-color:var(--rose); background:rgba(240,145,159,.14)}
 </style>
 </head>
 <body>
@@ -438,6 +487,22 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
   twelve signs made from four elements and three qualities, spread over four seasons. Learn those
   seven words and every sign explains itself. Then take the quiz &mdash; every answer tells you why.</p>
 
+  <h4>The Key</h4>
+  <p>This is the one that is about you rather than about your birthday. A birthday says what you
+  are made of. It cannot say where you currently are &mdash; whether you are doing well, whether you
+  are in a ditch, what your childhood was like, whether you like yourself. So it asks.</p>
+  <p>Put your name and birthday in, then work down the questions. Most are a slider from 1 to 5.
+  Tap a number to answer, tap it again to unanswer. Skip anything you do not want to answer &mdash;
+  it works from whatever you give it. The boxes you type in are for you to read back; nothing in
+  this app reads your words or draws conclusions from them, because there is no AI in here and
+  nothing to send it to.</p>
+  <p>Press <strong>Turn the key</strong>. You get where you are standing, then <strong>the locks</strong>
+  &mdash; the parts of your life that are shut, each one answered by the part of your own reading
+  that speaks to it &mdash; then what is already open, then the key itself, then the steps out of
+  the ditch in order. It reads aloud like everything else.</p>
+  <p>It saves itself as you go, on this device only. <strong>Delete my answers</strong> really
+  deletes them. This is the most personal thing in the app and it never leaves your phone.</p>
+
   <h4>The 48</h4>
   <p>The whole year, week by week. Useful for finding somebody when you know roughly when their
   birthday is.</p>
@@ -456,6 +521,7 @@ td.m-self{background:rgba(255,255,255,.02); color:var(--dimmer)}
   <button role="tab" id="tab-pair"   aria-selected="false" data-panel="panel-pair">Pair</button>
   <button role="tab" id="tab-matrix" aria-selected="false" data-panel="panel-matrix">Matrix</button>
   <button role="tab" id="tab-game"   aria-selected="false" data-panel="panel-game">Learn</button>
+  <button role="tab" id="tab-key"    aria-selected="false" data-panel="panel-key">The Key</button>
   <button role="tab" id="tab-wheel"  aria-selected="false" data-panel="panel-wheel">The 48</button>
 </nav>
 
@@ -531,6 +597,43 @@ Emeka Nwosu&#9;Oct 21, 1975"></textarea>
 <!-- GAME -->
 <section class="panel" id="panel-game" role="tabpanel" hidden>
   <div id="game-box"></div>
+</section>
+
+<!-- KEY -->
+<section class="panel" id="panel-key" role="tabpanel" hidden>
+  <div class="card">
+    <h2 class="ktitle">The Key</h2>
+    <p class="note" style="margin:0 0 4px">A birthday tells you what you are made of. It cannot tell you where you currently are. Answer these and the reading gets laid against your actual life &mdash; which parts of it are shut, which parts are open, and which one opens the other.</p>
+    <p class="note" style="margin:0 0 16px"><b>Everything here stays in this browser.</b> It is never sent anywhere, because there is nowhere for it to be sent. Nothing in this file reads your words or draws conclusions from them &mdash; the questions with sliders and buttons do the work, and the boxes you type in are stored so you can read them back.</p>
+
+    <div class="form-grid">
+      <div><label for="k-name">Whose life is this?</label><input id="k-name" type="text" placeholder="Your name" autocomplete="off"></div>
+      <div><label for="k-month">Birth month</label><select id="k-month"></select></div>
+      <div><label for="k-day">Day</label><select id="k-day"></select></div>
+    </div>
+    <div class="err" id="k-err"></div>
+
+    <div id="k-form"></div>
+
+    <div class="actions" style="margin-top:18px">
+      <button class="btn primary" id="btn-key">Turn the key</button>
+      <button class="btn" id="btn-key-save">Save my answers</button>
+      <button class="btn danger" id="btn-key-wipe">Delete my answers</button>
+    </div>
+  </div>
+  <div class="tools" id="k-tools" hidden>
+    <button class="btn ghost sm speak-btn" data-act="speak">Read it to me</button>
+    <button class="btn ghost sm stop-btn" data-act="stop" hidden>Stop</button>
+    <button class="btn ghost sm" data-act="voice" title="Choose the voice">Voice</button>
+  </div>
+  <div class="voicebar" hidden>
+    <label>Voice</label>
+    <select class="voice-pick" aria-label="Voice"></select>
+    <button class="btn ghost sm" data-act="try">Hear it</button>
+    <p class="note">Whatever your phone or computer has installed. Your choice is remembered
+    and it is the same voice that reads the birthday.</p>
+  </div>
+  <div id="k-result"></div>
 </section>
 
 <!-- WHEEL -->
@@ -1729,14 +1832,14 @@ function renderTools(P){
   return `
   <div class="tools">
     <button class="btn ghost sm" id="btn-simple">Short version</button>
-    <button class="btn ghost sm" id="btn-speak">Read it to me</button>
-    <button class="btn ghost sm" id="btn-stop" hidden>Stop</button>
-    <button class="btn ghost sm" id="btn-voice" title="Choose the voice">Voice</button>
+    <button class="btn ghost sm speak-btn" data-act="speak">Read it to me</button>
+    <button class="btn ghost sm stop-btn" data-act="stop" hidden>Stop</button>
+    <button class="btn ghost sm" data-act="voice" title="Choose the voice">Voice</button>
   </div>
   <div class="voicebar" id="voice-bar" hidden>
-    <label for="voice-pick">Voice</label>
-    <select id="voice-pick"></select>
-    <button class="btn ghost sm" id="btn-try">Hear it</button>
+    <label>Voice</label>
+    <select class="voice-pick" aria-label="Voice"></select>
+    <button class="btn ghost sm" data-act="try">Hear it</button>
     <p class="note">Whatever your phone or computer has installed. The warmer ones are listed
     first &mdash; on Windows look for a name with <em>Natural</em> in it, on Android or Chrome one
     starting <em>Google</em>. Your choice is remembered.</p>
@@ -3876,6 +3979,379 @@ function renderPair(A, B){
 }
 
 /* ============================================================
+   THE KEY — a life laid against the reading.
+
+   There is no AI in this file and no server behind it. Nothing
+   here guesses at meaning. It asks plain questions, scores the
+   answers, and routes each one to the part of the person's OWN
+   reading that already speaks to that area — the period's deep
+   layer, the day's line, the path's next step. The free-text
+   boxes are stored so they can be read back on the screen. They
+   are never interpreted, and the screen says so.
+
+   The key is not a secret. It is the ordinary mechanic running
+   underneath this whole system: the thing a temperament does
+   best is the same thing it does worst, and the way out of a
+   ditch is almost always the strong hand reaching into the
+   weak one. Which hand is strong is the only part that has to
+   be asked, because a birthday cannot know it.
+
+   Everything typed here stays in this browser. It is never sent
+   anywhere, because there is nowhere for it to be sent.
+   ============================================================ */
+
+const KEY_AREAS = {
+  full: {
+    n: 'The way you see it',
+    depth: 'dark', day: 'ou',
+    lock: 'You are reading your own life as a loss before the count is finished. That is not weakness and it is not stupidity — mostly it is the honest report of somebody who has been let down often enough to stop betting. But a person who expects nothing stops asking for anything, the nothing then arrives on schedule, and it gets filed as proof.',
+    turn: 'For one week write down the thing that went right each day, even if it is small and even if you have to hunt for it. You are not lying to yourself. You are correcting for the fact that the bad news files its own report automatically and the good news has to be asked for by name.',
+    open: 'You expect the day to be worth something, and that expectation does real work — it is what gets you to ask, to try, to stay in the room past the point where it stopped being comfortable.'
+  },
+  self: {
+    n: 'How you are with yourself',
+    depth: 'hard', mate: 'strong',
+    lock: 'You do not like the person you are. Say it plainly, because half-saying it is what keeps it alive. Nobody negotiates well on behalf of somebody they hold in contempt — that is why your standards for yourself are cruel and your boundaries with everyone else are thin. You are not required to love yourself by Friday. You are required to stop being the loudest voice against you.',
+    turn: 'Catch one sentence you say about yourself this week that you would never say to a friend in the same position. Write it down. Then write what you would actually say to them. The second sentence is the accurate one, and you are owed the same accuracy as anybody else.',
+    open: 'You are on your own side. That is not vanity and do not let anyone talk you out of it — it is the floor the rest of this stands on.'
+  },
+  mind: {
+    n: 'Your mind, right now',
+    depth: 'mind', day: 'mi',
+    lock: 'Your own head is not a good place to be at the moment. This app can tell you what your temperament tends to do when it is under weather. It cannot tell you what is happening to you, and it is not going to try.',
+    turn: 'Say it out loud to one person this week. Not the tidy version — the real one. An app cannot sit in a room with you, and that is the entire thing you are short of.',
+    open: 'Your head is steady enough to think with. That is the tool the rest of this gets done with, so spend it on the parts of your life that are not steady, while you have it.'
+  },
+  body: {
+    n: 'Your body',
+    depth: 'body', day: 'bo',
+    lock: 'You have been running the machine and never servicing it. The body keeps the tab and the body always collects. You know this already — knowing it is not the part you are missing.',
+    turn: 'Pick the one thing you already know you should be doing — sleep, water, moving, the appointment you keep rescheduling — and do only that one, for two weeks, before you add a single thing to it.',
+    open: 'Your body is holding up its end. It is buying you the room to do hard things in the other areas. Do not spend all of it.'
+  },
+  spirit: {
+    n: 'Where you stand with something bigger',
+    depth: 'spirit', day: 'sp',
+    lock: 'Nothing above you and nothing under you, and every meaning in your life has to be manufactured by you, daily, from scratch. That is exhausting, and it is also a real position honestly held — this is not an argument for belief. The practical problem is narrower: when everything means only what you decide it means, one bad week gets to rewrite the whole account.',
+    turn: 'Find one thing you would still call worth doing if nobody ever knew you had done it. Do it this month. Meaning does not arrive by argument. It arrives by repetition.',
+    open: 'You are held by something outside your own head. On the days your own head is wrong about you, that is what keeps you upright.'
+  },
+  raised: {
+    n: 'Where you came from',
+    depth: 'raised',
+    lock: 'You did not get a fair start. That is a fact, it explains a great deal, and it is also the most comfortable place in the world to park a life. Both of those are true at once. The damage was not your fault. What gets done with it now is nobody else’s job.',
+    turn: 'Name one rule you learned at home that you are still obeying and have never actually agreed with. Break it once, on purpose, and watch whether the sky falls.',
+    open: 'You were handed a floor to stand on. A lot of people were not. That is not a debt and you owe nobody an apology for it — the only wrong use of it is assuming everyone got one.'
+  },
+  close: {
+    n: 'Family, now',
+    depth: 'making', day: 'fa',
+    lock: 'The people you are related to are not people you are close to. Some of that is theirs to answer for. Some of it is that you stopped reaching somewhere around the third time it went badly, and you have been calling that a decision ever since.',
+    turn: 'Decide, once, which of these people is worth another attempt and which is not. Then make the attempt, or stop grieving the ones who are not. The middle position — half in, permanently disappointed — is the one costing you the most.',
+    open: 'You have family you can actually reach. That is rarer than the greeting cards let on, and it is also the thing most easily left to look after itself until the day it does not.'
+  },
+  friends: {
+    n: 'Friendships',
+    depth: 'fun', day: 'fr',
+    lock: 'There is nobody you would call at three in the morning. You will tell yourself you are busy, or private, or that people are hard work. Some of that is true. But being unreachable is a decision you keep making, it gets easier every year you make it, and eventually it finishes making itself without you.',
+    turn: 'Contact one person this week who drifted for no good reason. Not a like — a message, or a call. You will be surprised how little it takes, and how badly you had been overestimating the awkwardness.',
+    open: 'You have people, and real ones. That is the best thing anybody carries into a bad stretch. It is also the resource you are least likely to actually spend — ask them for something.'
+  },
+  known: {
+    n: 'How much of you people see',
+    depth: 'close', day: 'em',
+    lock: 'People know a version of you. You built it, you maintain it, and it works — which is exactly the problem. Nobody can help the person they have not been allowed to meet. So you carry all of it, and then you resent carrying all of it, and both halves of that are yours.',
+    turn: 'Tell one true thing to one person this month that you would normally edit out. Small is fine. You are testing whether the edit was ever necessary, and it usually was not.',
+    open: 'You let people see you. It costs you something every time, and it is the reason you are not carrying your life on your own.'
+  },
+  work: {
+    n: 'Work',
+    day: 'wk',
+    lock: 'You are in something that is not going anywhere, and you have known it for a while. Staying is a choice rather than a sentence — even when the choice is "I stay because leaving costs more than I have right now". Name which one it is, because "stuck" is the word people use so they do not have to decide.',
+    turn: 'Write the actual reason you have not moved: money, fear, timing, or it is not as bad as you have been saying. Then deal with that reason. The job is not the problem you have been failing to solve.',
+    open: 'Your work is doing what work is meant to do. That is a stability most people are short of, and it is leverage — it is what makes a risky move somewhere else in your life survivable.'
+  },
+  money: {
+    n: 'Money',
+    depth: 'money', day: 'mo',
+    lock: 'You are under water, and money is making your decisions for you. Every other thing on this list is harder while that is true, and pretending otherwise is a luxury you cannot currently afford.',
+    turn: 'Write down the real number this week. All of it, one page, one place. Most of the fear lives in not looking, and the number is almost never as bad as the guess you have been carrying around instead of it.',
+    open: 'Money is not the thing steering you. That is room — and room is exactly what the parts of this that money cannot fix are going to need.'
+  },
+  dir: {
+    n: 'Where you are headed',
+    depth: 'direction', dest: 'step',
+    lock: 'You do not know where you are going. Not the honest not-knowing that comes just before a turn — the other kind, where a year went by, nothing was decided, and it got called keeping your options open.',
+    turn: 'Pick a direction you are not certain about and commit to it for ninety days. A wrong direction, walked, tells you more in three months than a right one considered for three years.',
+    open: 'You know where you are going. That is the spine holding the rest of this up. Check it against reality once a year anyway, because a direction held long enough stops being a choice and turns into a habit.'
+  }
+};
+
+/* The questions. Scales run 1 to 5 and route to an area above.
+   Choices route to a written response. Text is stored, read
+   back, and never interpreted. */
+const KEY_Q = [
+  {id:'full',   kind:'scale', g:'Where you are',   q:'Is your life half empty or half full?',                        lo:'Half empty',                 hi:'Half full'},
+  {id:'self',   kind:'scale', g:'Where you are',   q:'Do you like yourself?',                                        lo:'I hate the person I am',     hi:'I like and love who I am'},
+  {id:'mind',   kind:'scale', g:'Where you are',   q:'How is your mental health at the moment?',                     lo:'I am struggling badly',      hi:'Steady'},
+  {id:'body',   kind:'scale', g:'Where you are',   q:'How is your physical wellbeing?',                              lo:'Run into the ground',        hi:'Looked after'},
+  {id:'spirit', kind:'scale', g:'Where you are',   q:'Your spiritual outlook — is anything holding you up?',         lo:'Nothing out there',          hi:'Something bigger holds me'},
+  {id:'raised', kind:'scale', g:'Where you come from', q:'Your upbringing — what kind of start was it?',             lo:'Hard, and it cost me',       hi:'Steady, and it gave me a floor'},
+  {id:'close',  kind:'scale', g:'Where you come from', q:'How close are you to your family now?',                    lo:'Distant, or nothing at all', hi:'Close, and in touch'},
+  {id:'friends',kind:'scale', g:'Your people',     q:'Your friendships — who would you call at 3am?',                lo:'Nobody',                     hi:'More than one person'},
+  {id:'known',  kind:'scale', g:'Your people',     q:'How much of the real you do people actually get to see?',      lo:'Almost none of it',          hi:'The people close to me see all of it'},
+  {id:'work',   kind:'scale', g:'What you do',     q:'Your working life — where is it?',                             lo:'Stuck, and going nowhere',   hi:'Where I want it to be'},
+  {id:'money',  kind:'scale', g:'What you do',     q:'Money — where do you stand?',                                  lo:'Under water',                hi:'Clear, and not deciding for me'},
+  {id:'dir',    kind:'scale', g:'What you do',     q:'Your goals — do you know where you are headed?',               lo:'No idea at all',             hi:'I know exactly'},
+
+  {id:'struggle', kind:'choice', g:'The hard part', q:'What is the biggest thing you are fighting right now?',
+   opts:[['money','Money'],['body','My health'],['known','People'],['dir','Not knowing where I am going'],['raised','The past'],['self','Myself']]},
+
+  {id:'horrific', kind:'choice', g:'The hard part', q:'Has something happened to you that you would call horrific?',
+   opts:[['no','No'],['yes','Yes'],['skip','I would rather not answer that']]},
+
+  {id:'kids',   kind:'choice', g:'Your people', q:'Kids?',
+   opts:[['yes','Yes'],['want','Not yet, and I want them'],['chosen','No, and that is my choice'],['none','No']]},
+
+  {id:'faith',  kind:'choice', g:'Where you come from', q:'Your religious background:',
+   opts:[['in','Raised in it, still in it'],['left','Raised in it, left it'],['found','Came to it later'],['never','Never had one']]},
+
+  {id:'world',  kind:'choice', g:'The hard part', q:'When you look at people, what do you actually believe?',
+   opts:[['good','Most people are basically decent'],['self','Everybody is looking out for themselves'],['depends','Depends entirely on the person'],['unsure','I have not decided']]},
+
+  {id:'roots',  kind:'text',  g:'Your background', q:'Where you are from — region, background, ethnicity, whatever "where I am from" means to you'},
+  {id:'job',    kind:'text',  g:'Your background', q:'What you do'},
+  {id:'quals',  kind:'text',  g:'Your background', q:'Qualifications, training, anything you earned'},
+  {id:'wins',   kind:'text',  g:'Your background', q:'What you have accomplished — the things you are proud of'},
+  {id:'good',   kind:'text',  g:'Your background', q:'The best things that have happened to you'},
+  {id:'bad',    kind:'text',  g:'Your background', q:'The bad things'},
+  {id:'goals',  kind:'text',  g:'Your background', q:'What you want'}
+];
+
+const KEY_SCALES = KEY_Q.filter(q=>q.kind === 'scale').map(q=>q.id);
+const KEY_TEXTS  = KEY_Q.filter(q=>q.kind === 'text').map(q=>q.id);
+
+/* Written responses to the choice questions. Each is a reading of
+   the answer, not a judgement of it, and each hands off to a part
+   of the person's own chart rather than inventing a new claim. */
+const KEY_CHOICE = {
+  horrific: {
+    yes: {t:'What happened to you', b:'Something horrific happened to you. This app is not going to ask what, it is not going to guess, and it is not going to tell you what it did to you — anybody claiming to know that from a birthday is selling something. Here is the honest part a reading can offer. Whatever you were before it, you had to carry it with the temperament you already had, and that is why some of what you have called a character flaw ever since was actually the shape of getting through. The carrying is not the healing. The healing is not something a screen does.'},
+    skip: {t:'The one you skipped', b:'You left that one alone, and that is allowed. It stays blank and nothing on this page assumes an answer either way.'}
+  },
+  kids: {
+    yes:    {t:'Kids', b:'You have children, which means the rest of this stopped being only about you some time ago. That is the part people get wrong in both directions: it is not an excuse to stop working on yourself, and it is not a reason to work on yourself only in the hours nobody needs you. Children read the version of you that is actually in the room, not the one you intend to become.'},
+    want:   {t:'Kids', b:'You want them and do not have them yet. Hold that carefully, because wanting something on a timetable you do not control is one of the specific ways a good life gets spent waiting instead of lived. The work in front of you is the same work either way, and it does not go on hold.'},
+    chosen: {t:'Kids', b:'No, by choice. That is a decision, not a deficiency, and you do not owe the explanation you have probably been asked for a hundred times. What it does mean is that the meaning other people outsource to their children is yours to build deliberately — and deliberate is harder than automatic.'},
+    none:   {t:'Kids', b:'No children. Nothing here treats that as a gap to be explained. It only changes who the work is for.'}
+  },
+  faith: {
+    in:    {t:'Faith', b:'Raised in it and still in it. That gives you a frame that holds when your own judgement will not, and it gives you a community that notices when you go missing — both of which are real and neither of which is guaranteed to anyone else on this page. The risk at your end is using the frame to avoid the question rather than to hold it.'},
+    left:  {t:'Faith', b:'Raised in it and you left. People underestimate what that costs. You did not just change an opinion, you left a building full of people, a calendar, and a set of answers that used to arrive without being asked for. Whatever you replaced it with has to do all of that work, and most replacements only do one part.'},
+    found: {t:'Faith', b:'You came to it later, which usually means you arrived by way of something that did not work. That makes it chosen rather than inherited, and chosen holds differently — harder to shake, easier to defend, and worth watching that it does not harden into the thing you once left.'},
+    never: {t:'Faith', b:'Never had one. No argument for one here. The only practical note is the one in the outlook section above: meaning you build yourself has to be rebuilt regularly, and a bad stretch is exactly when the building stops.'}
+  },
+  world: {
+    good:    {t:'What you believe about people', b:'You think people are basically decent. That belief will get you more from other people than the opposite one, and it will also get you taken for a ride at some point — and you will be tempted to treat that as proof you were a fool. It is not. It is the cost of the position, and the position still pays.'},
+    self:    {t:'What you believe about people', b:'You think everybody is looking out for themselves. There is enough evidence for that to keep it alive forever, and it makes you hard to con. It also means you will be alone in ways you have stopped noticing, because you cannot get close to somebody you are auditing. That is not a moral failing. It is a price, and you should know you are paying it.'},
+    depends: {t:'What you believe about people', b:'Depends on the person, which is the answer somebody gives once they have been on both ends. It is the most accurate of the four and the most work, because it means judging every case on its own rather than running a rule.'},
+    unsure:  {t:'What you believe about people', b:'You have not decided. That is honest. It is also the position that quietly hands the decision to whoever hurt you most recently.'}
+  }
+};
+
+function keyBlank(){
+  const a = {};
+  KEY_Q.forEach(q=>{ a[q.id] = q.kind === 'text' ? '' : null; });
+  return a;
+}
+
+/* The whole computation. Given a profile and a set of answers,
+   work out where this person is standing, which wall to push on,
+   and which part of their own reading answers it. */
+function keyRead(P, A){
+  A = A || {};
+  const D = DEPTH[P.per.n] || {};
+  const day = DAYS[P.person.month + '-' + P.person.day] || {};
+  const dest = P.dest || {};
+
+  const scored = KEY_SCALES
+    .map(id=>({id, v: Number(A[id])}))
+    .filter(x=>x.v >= 1 && x.v <= 5);
+
+  const answered = scored.length;
+  const avg = answered ? scored.reduce((s,x)=>s + x.v, 0) / answered : 0;
+
+  /* Pull the person's own words for an area: the deep layer for
+     the period, the line for the day, the step for the path. */
+  function mine(id){
+    const a = KEY_AREAS[id], out = [];
+    if(!a) return out;
+    if(a.depth && D[a.depth]) out.push({t:'Your reading, on this', b:D[a.depth]});
+    if(a.mate  && D[a.mate])  out.push({t:'And the other half of it', b:D[a.mate]});
+    if(a.day   && day[a.day]) out.push({t:'Your day, on this', b:day[a.day]});
+    if(a.dest  && dest[a.dest]) out.push({t:'Where the path says to start', b:dest[a.dest]});
+    return out;
+  }
+
+  const asLock = x => ({id:x.id, v:x.v, n:KEY_AREAS[x.id].n, say:KEY_AREAS[x.id].lock,
+                        turn:KEY_AREAS[x.id].turn, mine:mine(x.id)});
+  const locks = scored.filter(x=>x.v <= 2)
+    .sort((p,q)=>p.v - q.v || KEY_SCALES.indexOf(p.id) - KEY_SCALES.indexOf(q.id))
+    .map(asLock);
+
+  const open = scored.filter(x=>x.v >= 4)
+    .sort((p,q)=>q.v - p.v || KEY_SCALES.indexOf(p.id) - KEY_SCALES.indexOf(q.id))
+    .map(x=>({id:x.id, v:x.v, n:KEY_AREAS[x.id].n, say:KEY_AREAS[x.id].open}));
+
+  /* What they named as the fight leads, whatever the numbers said. And it gets
+     its own block whether or not it scored low enough to count as a lock —
+     they told you what the fight is, so answering something else is no answer. */
+  const named = A.struggle && KEY_AREAS[A.struggle] ? A.struggle : null;
+  let lead = named || (locks[0] && locks[0].id) ||
+             (scored.slice().sort((p,q)=>p.v - q.v)[0] || {}).id || null;
+  if(named && !locks.some(L=>L.id === named)){
+    const sc = scored.find(x=>x.id === named);
+    locks.unshift(asLock(sc || {id:named, v:null}));
+  } else if(named){
+    locks.sort((p,q)=>(q.id === named) - (p.id === named));
+  }
+  const lever = (open[0] && open[0].id) ||
+                (scored.slice().sort((p,q)=>q.v - p.v)[0] || {}).id || null;
+
+  const standing = !answered ? 'unanswered'
+                 : avg <= 2.4 ? 'ditch'
+                 : avg <= 3.4 ? 'holding'
+                 : 'strong';
+
+  /* Signposting, not diagnosing. Nothing here names a condition,
+     claims a mechanism, or tells anybody they are finished. */
+  const signpost = A.horrific === 'yes' ||
+                   Number(A.mind) <= 2 && A.mind != null ||
+                   Number(A.self) <= 2 && A.self != null ||
+                   Number(A.full) <= 2 && A.full != null;
+
+  const chosen = [];
+  ['horrific','kids','faith','world'].forEach(id=>{
+    const set = KEY_CHOICE[id], v = A[id];
+    if(set && v && set[v]) chosen.push(set[v]);
+  });
+
+  /* The steps. Their own turn first, because it is the one that
+     is about where they actually are, then the reading's. */
+  const steps = [];
+  if(lead && KEY_AREAS[lead]) steps.push({t:'Because of where you said you are', b:KEY_AREAS[lead].turn});
+  if(D.action) steps.push({t:'Because of who you are', b:D.action});
+  if(dest.step) steps.push({t:'Because of where you are headed', b:dest.step});
+  if(day.ad) steps.push({t:'Because of the day you were born on', b:day.ad});
+  if(locks[1] && locks[1].id !== lead) steps.push({t:'And then the next wall', b:KEY_AREAS[locks[1].id].turn});
+  if(D.reflect) steps.push({t:'One thing to sit with while you do it', b:D.reflect});
+
+  const written = KEY_TEXTS
+    .map(id=>({id, q:(KEY_Q.find(q=>q.id === id) || {}).q, v:String(A[id] || '').trim()}))
+    .filter(x=>x.v);
+
+  return {answered, total:KEY_SCALES.length, avg, standing, locks, open, lead, lever,
+          named, signpost, chosen, steps, written, mine,
+          lowCount:locks.length, highCount:open.length,
+          hinge:D.hinge || '', tension:D.tension || '',
+          strong:D.strong || '', hard:D.hard || '',
+          from:dest.from || '', toward:dest.toward || '', lesson:dest.lesson || '',
+          pitfall:dest.pitfall || ''};
+}
+
+const KEY_STANDING = {
+  ditch: K => `You are in a ditch. Not a mood and not a rough patch being dramatised — ${K.lowCount} of the ${K.total} areas came back at the bottom, and that is a life under water. You knew that before you opened this. Nothing on this screen is going to lift you out. What it can do is tell you which wall to push on first, because people rarely stay in ditches for lack of effort. They stay because the effort gets spread evenly across everything, and so nothing moves.`,
+  holding: K => `You are holding. Some of this is working and some of it is not, and you are managing the gap the way nearly everybody does — putting the effort where it is already paying and leaving the rest to sort itself out. It does not sort itself out. What follows is the part you have been leaving.`,
+  strong: K => `You are doing well, and it is worth saying out loud, because the people who are doing well get told the least. ${K.highCount} ${K.highCount === 1 ? 'area came' : 'areas came'} back strong. The risk at this end is not collapse, it is coasting — and the specific way your temperament coasts is already written into the reading below. What follows is the thin part of a good structure.`
+};
+
+function renderKey(P, A){
+  const K = keyRead(P, A);
+  const n = esc(firstName(P.person.name));
+  const box = (t, b) => b ? `<div class="dp"><div class="dt">${t}</div><div class="db">${b}</div></div>` : '';
+
+  if(!K.answered){
+    return `<div class="layer key"><h3>The Key <small>your life, laid against your reading</small></h3>
+      <div class="layer-body"><p class="lead">Answer the questions above and this fills in.</p>
+      <p>None of it is required and none of it is scored against anybody else. Skip whatever you do not want to answer — the page works from what you give it.</p></div></div>`;
+  }
+
+  const sign = K.signpost ? `
+      <div class="signpost">
+        <div class="st">Before the rest of it</div>
+        <p>Some of what you just answered is not a personality matter, and this app is not equipped for it. A reading can tell you what a temperament tends to do. It cannot sit in a room with you.</p>
+        <p>If your head is somewhere dark, or something happened to you that you have never said out loud, say it to a person — somebody you trust, a doctor, or a crisis line where you live. That is not a failure of character and it is not the opposite of doing this work. It is the one move nothing on this screen can make for you.</p>
+        <p>Nothing here means ${n} is finished. It means today is heavy.</p>
+      </div>` : '';
+
+  const lead = K.lead ? KEY_AREAS[K.lead] : null;
+  const lever = K.lever ? KEY_AREAS[K.lever] : null;
+
+  /* Three ways this goes. With a strong area and a weak one, the
+     key is the first spent on the second. With nothing open, there
+     is no strong hand to reach across with and the key gets smaller
+     rather than disappearing. With nothing shut, it is the thin part
+     of a good structure. The line itself does not change. */
+  const opening =
+      (lead && lever && lead !== lever)
+        ? `${lever.n} is the part of the vault that is already open. ${lead.n} is the part that is not. The key is not a secret and it was never hidden — it is the first one spent on the second, on purpose, this month.`
+    : (lead && K.open.length === 0)
+        ? `Nothing came back open, so there is no strong hand to reach across with. That makes the key smaller and more irritating than the version people want — not absent. It is one wall, ${lower(lead.n)}, worked on by itself until it gives, because what lifts the rest of a life like this is almost never a plan. It is having moved one thing at all. The key is not a secret. It is that, and it is boring, and it works.`
+    : (lead)
+        ? `${lead.n} is the thin part of a structure that is otherwise holding. The key is not a secret and it is not a rescue — it is the thing you are already good at, pointed for once at the part of your life you have been letting run on its own.`
+        : `The key is not a secret. It is the mechanism underneath the reading itself.`;
+
+  const theKey = `
+      <h4>The key itself</h4>
+      <p class="lead">${opening}</p>
+      <p>${K.hinge}</p>
+      <div class="pull">${K.tension}</div>
+      <p>That is why this works. The thing you are best at and the thing you are worst at are not two separate facts about you — they are one mechanism running in two directions. ${K.from ? `You start from ${K.from} and you are pointed at ${K.toward}.` : ''} ${K.lesson ? `The lesson that keeps coming back is <strong>${K.lesson}</strong>, and it arrives again every time the starting gift stops being enough on its own.` : ''}</p>`;
+
+  return `
+  <div class="layer key">
+    <h3>The Key <small>your life, laid against your reading</small></h3>
+    <div class="layer-body">
+      ${sign}
+
+      <h4>Where you are</h4>
+      <p class="lead">${(KEY_STANDING[K.standing] || (()=>''))(K)}</p>
+      <div class="gauge"><i style="width:${Math.round((K.avg - 1) / 4 * 100)}%"></i></div>
+      <p class="note" style="margin:0 0 6px">${K.answered} of ${K.total} answered${K.named ? ` &middot; you named <b>${esc(KEY_AREAS[K.named].n.toLowerCase())}</b> as the fight` : ''}</p>
+
+      ${theKey}
+
+      ${K.locks.length ? `<h4>The locks — what is actually shut</h4>` : ''}
+      ${K.locks.map(L=>`
+        <div class="lock">
+          <div class="lk">${esc(L.n)}</div>
+          <p>${L.say}</p>
+          ${L.mine.map(m=>box(m.t, m.b)).join('')}
+          <div class="turn"><div class="tk">The turn</div><div class="tv">${L.turn}</div></div>
+        </div>`).join('')}
+
+      ${K.open.length ? `
+      <h4>What is already open</h4>
+      <p>These are not compliments. They are the leverage — the only things you have to push the locked parts with.</p>
+      ${K.open.map(O=>`<div class="dp open"><div class="dt">${esc(O.n)}</div><div class="db">${O.say}</div></div>`).join('')}` : ''}
+
+      ${K.chosen.length ? `<h4>The rest of what you said</h4>${K.chosen.map(c=>box(c.t, c.b)).join('')}` : ''}
+
+      ${K.steps.length ? `
+      <h4>How to work yourself out of the ditch</h4>
+      <p>In this order. Not all of it this week — the first one this week.</p>
+      <ol class="steps">${K.steps.map(s=>`<li><b>${s.t}.</b> ${s.b}</li>`).join('')}</ol>` : ''}
+
+      ${K.written.length ? `
+      <h4>What you wrote down</h4>
+      <p class="note" style="margin-bottom:10px">Read back exactly as you typed it. Nothing in this app reads these boxes or draws conclusions from them — there is no AI in this file. They are here because writing your own life down and then looking at it is worth more than most things a screen can say about it.</p>
+      ${K.written.map(w=>`<div class="dp said"><div class="dt">${esc(w.q)}</div><div class="db">${esc(w.v)}</div></div>`).join('')}` : ''}
+
+      <p class="disclaim">This is a reading of temperament laid against answers you gave about your own life &mdash; not medical advice, not a diagnosis, and not a prediction. The scores mean only what you meant when you moved the sliders. Everything you typed stays in this browser and is never sent anywhere.</p>
+    </div>
+  </div>`;
+}
+/* ============================================================
    STORAGE
    ============================================================ */
 const KEY = 'personology.people.v1';
@@ -3904,6 +4380,10 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
   btn.addEventListener('click', ()=>showTab(btn.id));
 });
 function showTab(id){
+  /* What gets read aloud depends on which panel is open, so a tab change has
+     to end the reading rather than carry on reading a page nobody is on. */
+  const already = document.querySelector('nav.tabs button[aria-selected="true"]');
+  if(already && already.id !== id) stopSpeaking();
   document.querySelectorAll('nav.tabs button').forEach(b=>{
     const on = b.id === id;
     b.setAttribute('aria-selected', on ? 'true' : 'false');
@@ -3914,6 +4394,7 @@ function showTab(id){
   if(id === 'tab-game') renderGame();
   if(id === 'tab-matrix') renderMatrix();
   if(id === 'tab-wheel') renderWheel();
+  if(id === 'tab-key') primeKey();
 }
 
 /* date selects */
@@ -4068,6 +4549,155 @@ $('wheel-list').addEventListener('click', e=>{
   $('f-year').value = '';
   showTab('tab-read'); doRead();
 });
+
+
+/* ============================================================
+   THE KEY — the screen half. Answers live in this browser under
+   one storage key, one record per person, and the delete button
+   really deletes. Nothing is transmitted.
+   ============================================================ */
+const KKEY = 'personology.key.v1';
+let KANS = keyBlank();
+
+function keyAll(){
+  try{ const r = localStorage.getItem(KKEY); return r ? JSON.parse(r) : {}; }
+  catch(e){ return {}; }
+}
+function keySlot(){
+  const name = $('k-name').value.trim().toLowerCase() || 'me';
+  return name + '|' + $('k-month').value + '|' + $('k-day').value;
+}
+/* The slot currently on screen. Leaving the name field fires a
+   change event even when the name has not changed, so reloading
+   unconditionally would throw away everything answered since. */
+let KSLOT = null;
+
+function keyLoad(){
+  const slot = keySlot();
+  if(slot === KSLOT) return false;          /* same person — leave the answers alone */
+  if(KSLOT) keyStore(KSLOT);                /* switching away: keep what was answered */
+  KSLOT = slot;
+  const rec = keyAll()[slot];
+  KANS = Object.assign(keyBlank(), rec || {});
+  renderKeyForm();
+  $('k-result').innerHTML = ''; $('k-tools').hidden = true;
+  return !!rec;
+}
+function keyAnswered(){
+  return KEY_Q.some(q=>q.kind === 'text' ? String(KANS[q.id] || '').trim() : KANS[q.id] != null);
+}
+function keyStore(slot){
+  slot = slot || keySlot();
+  const all = keyAll();
+  if(!keyAnswered()){ delete all[slot]; }    /* never leave an empty record behind */
+  else all[slot] = KANS;
+  try{ localStorage.setItem(KKEY, JSON.stringify(all)); return true; }
+  catch(e){ toast('Could not save — storage is unavailable'); return false; }
+}
+function keyWipe(){
+  const all = keyAll();
+  delete all[keySlot()];
+  try{ localStorage.setItem(KKEY, JSON.stringify(all)); }catch(e){}
+  KANS = keyBlank();
+  KSLOT = keySlot();
+  renderKeyForm();
+  $('k-result').innerHTML = ''; $('k-tools').hidden = true;
+  toast('Deleted from this browser');
+}
+
+function renderKeyForm(){
+  let html = '', group = '';
+  KEY_Q.forEach(q=>{
+    if(q.g !== group){ group = q.g; html += `${html ? '</div>' : ''}<div class="kgroup"><div class="gh">${esc(group)}</div>`; }
+    html += `<div class="kq"><div class="qt">${esc(q.q)}</div>`;
+    if(q.kind === 'scale'){
+      html += `<div class="kscale">` + [1,2,3,4,5].map(v=>
+        `<button type="button" data-q="${q.id}" data-v="${v}" aria-pressed="${KANS[q.id] === v}">${v}</button>`).join('') + `</div>`;
+      html += `<div class="kends"><span>1 &mdash; ${esc(q.lo)}</span><span>${esc(q.hi)} &mdash; 5</span></div>`;
+    } else if(q.kind === 'choice'){
+      html += `<div class="kopts">` + q.opts.map(([v,label])=>
+        `<button type="button" data-q="${q.id}" data-c="${esc(v)}" aria-pressed="${KANS[q.id] === v}">${esc(label)}</button>`).join('') + `</div>`;
+    } else {
+      html += `<textarea data-t="${q.id}" rows="3" placeholder="However much or little you want. Leave it blank if you would rather not.">${esc(KANS[q.id] || '')}</textarea>`;
+    }
+    html += `</div>`;
+  });
+  $('k-form').innerHTML = html + '</div>';
+}
+
+$('k-form').addEventListener('click', e=>{
+  const b = e.target.closest('button[data-q]');
+  if(!b) return;
+  const id = b.dataset.q;
+  if(b.dataset.v != null){
+    const v = +b.dataset.v;
+    KANS[id] = KANS[id] === v ? null : v;          /* pressing it again clears it */
+  } else {
+    KANS[id] = KANS[id] === b.dataset.c ? null : b.dataset.c;
+  }
+  b.parentElement.querySelectorAll('button').forEach(x=>{
+    const on = x.dataset.v != null ? (+x.dataset.v === KANS[id]) : (x.dataset.c === KANS[id]);
+    x.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  keyStore();
+});
+let kTypeTimer;
+$('k-form').addEventListener('input', e=>{
+  const t = e.target.closest('textarea[data-t]');
+  if(!t) return;
+  KANS[t.dataset.t] = t.value;
+  clearTimeout(kTypeTimer);
+  kTypeTimer = setTimeout(keyStore, 400);     /* typing saves itself, quietly */
+});
+
+function keyProfile(){
+  const name = $('k-name').value.trim();
+  if(!name) return {err:'Put a name in first — this is your page, it should say who it belongs to.'};
+  return {person:{id:'k', name, month:+$('k-month').value, day:+$('k-day').value, year:null}};
+}
+
+$('btn-key').addEventListener('click', ()=>{
+  $('k-err').textContent = '';
+  const r = keyProfile();
+  if(r.err){ $('k-err').textContent = r.err; return; }
+  keyStore();
+  stopSpeaking();
+  $('k-result').innerHTML = renderKey(profileOf(r.person), KANS);
+  $('k-tools').hidden = false;
+  $('k-result').scrollIntoView({behavior:'smooth', block:'start'});
+});
+$('btn-key-save').addEventListener('click', ()=>{
+  const r = keyProfile();
+  if(r.err){ $('k-err').textContent = r.err; return; }
+  if(keyStore()) toast('Saved in this browser only');
+});
+$('btn-key-wipe').addEventListener('click', ()=>{
+  if(confirm('Delete everything you have answered for this person? It cannot be undone.')) keyWipe();
+});
+$('k-month').addEventListener('change', ()=>{ fillKeyDays(); keyLoad(); });
+$('k-day').addEventListener('change', keyLoad);
+$('k-name').addEventListener('change', keyLoad);
+$('k-name').addEventListener('blur', keyLoad);
+
+function fillKeyDays(keep){
+  const max = DIM[(+$('k-month').value) - 1];
+  const cur = keep != null ? keep : (+$('k-day').value || 1);
+  $('k-day').innerHTML = Array.from({length:max}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
+  $('k-day').value = Math.min(cur, max);
+}
+
+/* First visit to the tab: carry over whoever is in the read form. */
+let keyPrimed = false;
+function primeKey(){
+  if(keyPrimed) return;
+  keyPrimed = true;
+  $('k-month').innerHTML = MONTHS.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+  const n = $('f-name').value.trim();
+  if(n){ $('k-name').value = n; $('k-month').value = $('f-month').value; fillKeyDays(+$('f-day').value); }
+  else { fillKeyDays(1); }
+  KSLOT = null;
+  keyLoad();
+}
 
 /* ============================================================
    BULK ENTRY — parse a pasted list instead of typing one at a time
@@ -4506,7 +5136,12 @@ function pickVoice(){
    impossible: there was nothing to point at. */
 function readableBlocks(){
   const simpleBox = $('simple-box'), full = $('reading-full');
-  const src = (simpleBox && !simpleBox.hidden) ? simpleBox : full;
+  const keyPanel = $('panel-key'), keyOut = $('k-result');
+  /* Whichever screen is actually open: the key, the short version, or the long
+     one. Reading the wrong page aloud is worse than reading nothing. */
+  const src = (keyPanel && !keyPanel.hidden && keyOut && keyOut.innerHTML.trim()) ? keyOut
+            : (simpleBox && !simpleBox.hidden) ? simpleBox
+            : full;
   if(!src) return [];
   return [...src.querySelectorAll('h3, h4, .dt, .db, p, li')]
     .filter(e=>!e.classList.contains('disclaim') && !e.classList.contains('note'))
@@ -4560,10 +5195,12 @@ function stopSpeaking(){
   speakKeepAlive(false);
   wakeRelease('reading');
   clearLit();
-  const b = $('btn-speak'), st = $('btn-stop');
-  if(b) b.textContent = 'Read it to me';
-  if(st) st.hidden = true;
+  speakLabel('Read it to me');
+  document.querySelectorAll('.stop-btn').forEach(x=>x.hidden = true);
 }
+/* There are two places to press play from — the reading and the key — so the
+   label is set on both rather than on whichever one happens to be on screen. */
+function speakLabel(text){ document.querySelectorAll('.speak-btn').forEach(x=>x.textContent = text); }
 
 function speakNext(){
   if(!SPEAKING) return;
@@ -4585,11 +5222,11 @@ function speakNext(){
 }
 
 function speakReading(){
-  if(!speechOK()){ const b = $('btn-speak'); if(b) b.textContent = 'This browser has no voice'; return; }
+  if(!speechOK()){ speakLabel('This browser has no voice'); return; }
   if(SPEAKING) return stopSpeaking();
   const blocks = readableBlocks();
   if(!blocks.length) return;
-  if(!voiceList().length){ const b = $('btn-speak'); if(b) b.textContent = 'No voice installed'; return; }
+  if(!voiceList().length){ speakLabel('No voice installed'); return; }
   try{ speechSynthesis.cancel(); }catch(e){}
   /* One utterance per block, so each can be lit as it is read. A very long
      block is split further, because several engines truncate a long one. */
@@ -4603,8 +5240,8 @@ function speakReading(){
   });
   SPEAKING = true;
   wakeAcquire('reading');
-  $('btn-speak').textContent = 'Pause';
-  $('btn-stop').hidden = false;
+  speakLabel('Pause');
+  document.querySelectorAll('.stop-btn').forEach(x=>x.hidden = false);
   speakKeepAlive(true);
   speakNext();
 }
@@ -4612,7 +5249,7 @@ function speakReading(){
 /* The list arrives asynchronously on most browsers, so the picker is refreshed
    when it lands rather than read once at load. */
 if(speechOK() && typeof speechSynthesis.addEventListener === 'function'){
-  speechSynthesis.addEventListener('voiceschanged', ()=>{ const s = $('voice-pick'); if(s) fillVoicePicker(s); });
+  speechSynthesis.addEventListener('voiceschanged', ()=>{ document.querySelectorAll('.voice-pick').forEach(fillVoicePicker); });
 }
 function fillVoicePicker(sel){
   const list = voiceList();
@@ -4623,7 +5260,10 @@ function fillVoicePicker(sel){
 }
 
 document.addEventListener('change', e=>{
-  if(e.target.id === 'voice-pick'){ saveVoiceName(e.target.value); stopSpeaking(); }
+  if(e.target.classList && e.target.classList.contains('voice-pick')){
+    saveVoiceName(e.target.value); stopSpeaking();
+    document.querySelectorAll('.voice-pick').forEach(fillVoicePicker);
+  }
 });
 
 document.addEventListener('click', e=>{
@@ -4644,15 +5284,16 @@ document.addEventListener('click', e=>{
     t.textContent = showSimple ? 'Long version' : 'Short version';
     t.classList.toggle('on', showSimple);
   }
-  if(t.id === 'btn-speak') speakReading();
-  if(t.id === 'btn-stop') stopSpeaking();
-  if(t.id === 'btn-voice'){
-    const bar = $('voice-bar'); if(!bar) return;
+  const act = t.closest('[data-act]');
+  if(act && act.dataset.act === 'speak') speakReading();
+  if(act && act.dataset.act === 'stop') stopSpeaking();
+  if(act && act.dataset.act === 'voice'){
+    const bar = act.closest('.panel').querySelector('.voicebar'); if(!bar) return;
     bar.hidden = !bar.hidden;
-    if(!bar.hidden) fillVoicePicker($('voice-pick'));
-    t.classList.toggle('on', !bar.hidden);
+    if(!bar.hidden) fillVoicePicker(bar.querySelector('.voice-pick'));
+    act.classList.toggle('on', !bar.hidden);
   }
-  if(t.id === 'btn-try'){
+  if(act && act.dataset.act === 'try'){
     stopSpeaking();
     if(!speechOK() || !voiceList().length) return;
     const u = new SpeechSynthesisUtterance('This is the voice that will read to you. Take your time.');

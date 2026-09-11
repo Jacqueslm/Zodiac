@@ -24,7 +24,8 @@ const NAMES = ['PERIODS','LORE','NUMBERS','TAROT','EL_REL','Q_REL','SIGNS','ELEM
                'parseCSV','parseContactsCSV','parseVCF','parseContacts','parseContactDate',
                'WELLBEING','SIGN_BODY','SIGN_SWATCH','PLANET_LORE','BIRTHSTONE','DESTINY',
                'makeQuiz','QUIZ_KINDS','findPeriod','PORTRAIT','DEPTH','renderDepth','relSpread','DAYS','renderDay',
-               'SEASONS','SEASON_PLACE','SEASON_VERB','seasonOf','seasonLine','ELEMENT_LORE','QUALITY_LORE','signFrom','describeSign'];
+               'SEASONS','SEASON_PLACE','SEASON_VERB','seasonOf','seasonLine','ELEMENT_LORE','QUALITY_LORE','signFrom','describeSign',
+               'KEY_Q','KEY_AREAS','KEY_SCALES','KEY_TEXTS','KEY_CHOICE','KEY_STANDING','keyBlank','keyRead','renderKey'];
 const ctx = vm.createContext({console, URLSearchParams});
 vm.runInContext(engine + `\n;globalThis.__api = {${NAMES.join(',')}};`, ctx, {filename:'index.html:engine'});
 const api = ctx.__api;
@@ -37,7 +38,8 @@ const {PERIODS, LORE, NUMBERS, TAROT, EL_REL, Q_REL, SIGNS, ELEMENTS, QUALITIES,
        WELLBEING, SIGN_BODY, SIGN_SWATCH, PLANET_LORE, BIRTHSTONE, DESTINY,
        makeQuiz, QUIZ_KINDS, findPeriod, PORTRAIT, DEPTH, renderDepth, relSpread, DAYS, renderDay,
        SEASONS, SEASON_PLACE, SEASON_VERB, seasonOf, seasonLine, ELEMENT_LORE, QUALITY_LORE,
-       signFrom, describeSign} = api;
+       signFrom, describeSign,
+       KEY_Q, KEY_AREAS, KEY_SCALES, KEY_TEXTS, KEY_CHOICE, KEY_STANDING, keyBlank, keyRead, renderKey} = api;
 
 let failures = 0, checks = 0;
 function ok(label){ checks++; console.log('  ✓ ' + label); }
@@ -663,10 +665,10 @@ html.includes("${box('Your day',")
    names it. */
 html.includes('SpeechSynthesisUtterance') ? ok('the reading can be played out loud')
                                           : bad('the reading can be played out loud');
-html.includes("if(!speechOK()){ const b = $('btn-speak'); if(b) b.textContent = 'This browser has no voice'; return; }")
+html.includes("if(!speechOK()){ speakLabel('This browser has no voice'); return; }")
   ? ok('a browser with no speech engine says so instead of failing silently')
   : bad('a browser with no speech engine says so');
-html.includes("b.textContent = 'No voice installed'")
+html.includes("speakLabel('No voice installed')")
   ? ok('an engine present but with no voices installed says so too')
   : bad('an engine with no voices installed says so');
 
@@ -699,9 +701,9 @@ html.includes("(buf + c).length > 240")
 html.includes('speechSynthesis.cancel()') ? ok('the voice can be stopped') : bad('the voice can be stopped');
 html.includes("addEventListener('beforeunload', stopSpeaking)")
   ? ok('the voice stops when the page closes') : bad('the voice stops when the page closes');
-html.includes("const src = (simpleBox && !simpleBox.hidden) ? simpleBox : full;")
-  ? ok('it reads aloud whichever version you are looking at')
-  : bad('it reads aloud whichever version you are looking at');
+(html.includes("(simpleBox && !simpleBox.hidden) ? simpleBox") && html.includes("keyOut && keyOut.innerHTML.trim()) ? keyOut"))
+  ? ok('it reads aloud whichever screen you are looking at — the long one, the short one, or the key')
+  : bad('it reads aloud whichever screen you are looking at');
 
 /* A phone locking its screen suspends the speech engine, so a reading stopped
    partway through and looked like a fault. The lock is taken while reading and
@@ -740,7 +742,7 @@ html.includes("let end = len ? at + len : t.indexOf(' ', at);")
   : bad('a missing word length is handled');
 
 /* Choosing a voice, and keeping the choice. */
-(html.includes('id="voice-pick"') && html.includes('function fillVoicePicker'))
+(html.includes('class="voice-pick"') && html.includes('function fillVoicePicker'))
   ? ok('the voice can be chosen from whatever the device has')
   : bad('the voice can be chosen');
 html.includes("saveVoiceName(e.target.value)") && html.includes("localStorage.setItem(VOICE_KEY")
@@ -749,7 +751,7 @@ html.includes("saveVoiceName(e.target.value)") && html.includes("localStorage.se
 html.includes("voiceschanged")
   ? ok('the picker refills when the device reports its voices, which it does late')
   : bad('the picker handles the late voiceschanged event');
-html.includes("id=\"btn-try\"") && html.includes('This is the voice that will read to you')
+html.includes('data-act="try"') && html.includes('This is the voice that will read to you')
   ? ok('a voice can be heard before committing to it')
   : bad('a voice can be sampled first');
 
@@ -1299,6 +1301,267 @@ is(badLeap.people[0].month, 2, 'the 29 February date itself is kept');
 const importedProfile = profileOf({name:gc.people[1].name, month:gc.people[1].month, day:gc.people[1].day, year:gc.people[1].year});
 is(importedProfile.per.n, 'Aries II', 'a year-less imported birthday still resolves to a period');
 
+/* ---------------------------------------------------------- */
+{
+group('The Key — the life laid against the reading');
+
+const P_KEY = profileOf({name:'Test Person', month:11, day:12, year:null});
+
+is(KEY_SCALES.length, 12, 'twelve scored areas');
+is(KEY_Q.length, KEY_SCALES.length + 5 + KEY_TEXTS.length, 'every question is a scale, a choice or a text box');
+is(KEY_TEXTS.length, 7, 'seven free-text boxes');
+
+/* Everything Jacques listed has somewhere to go. */
+const asked = KEY_Q.map(q=>q.q.toLowerCase()).join(' | ');
+[['background','background'],['job','what you do'],['qualification','qualifications'],
+ ['accomplishment','accomplished'],['good things','best things'],['bad things','the bad things'],
+ ['horrific','horrific'],['family closeness','close are you to your family'],['upbringing','upbringing'],
+ ['struggles','biggest thing you are fighting'],['religious background','religious background'],
+ ['ethnicity','ethnicity'],['region','region'],['mental health','mental health'],
+ ['physical wellbeing','physical wellbeing'],['spiritual outlook','spiritual outlook'],
+ ['worldview','when you look at people'],['goals','goals'],['kids','kids'],
+ ['friendships','friendships'],['self-regard','do you like yourself'],['half full or empty','half empty or half full']
+].forEach(([label, needle])=>{
+  asked.includes(needle) ? ok(`it asks about ${label}`) : bad(`it asks about ${label}`, `no question contains "${needle}"`);
+});
+
+/* Every scale points at a real area, and every area is fully written. */
+let areaGaps = [];
+KEY_SCALES.forEach(id=>{
+  const a = KEY_AREAS[id];
+  if(!a) return areaGaps.push(`${id}: no area`);
+  if(!a.n || a.n.length < 3) areaGaps.push(`${id}.n`);
+  ['lock','turn','open'].forEach(f=>{ if(!a[f] || a[f].length < 40) areaGaps.push(`${id}.${f}`); });
+});
+is(areaGaps.length, 0, 'every scored area has a name, a lock, a turn and an open' + (areaGaps.length ? ' — ' + areaGaps.join(', ') : ''));
+
+/* Areas route to fields that actually exist, in every period and every day. */
+let routeGaps = [];
+Object.entries(KEY_AREAS).forEach(([id, a])=>{
+  if(a.depth) PERIODS.forEach(p=>{ if(!DEPTH[p.n] || !DEPTH[p.n][a.depth]) routeGaps.push(`${id} -> DEPTH.${a.depth} missing on ${p.n}`); });
+  if(a.mate)  PERIODS.forEach(p=>{ if(!DEPTH[p.n] || !DEPTH[p.n][a.mate])  routeGaps.push(`${id} -> DEPTH.${a.mate} missing on ${p.n}`); });
+  if(a.dest)  PERIODS.forEach(p=>{ if(!DESTINY[p.n] || !DESTINY[p.n][a.dest]) routeGaps.push(`${id} -> DESTINY.${a.dest} missing on ${p.n}`); });
+  if(a.day)   Object.entries(DAYS).forEach(([k, d])=>{ if(!d[a.day]) routeGaps.push(`${id} -> DAYS.${a.day} missing on ${k}`); });
+});
+is(routeGaps.length, 0, 'every area routes to a field that exists on all 48 periods and all 366 days' +
+   (routeGaps.length ? ' — ' + routeGaps.slice(0,3).join('; ') : ''));
+
+/* No two areas say the same thing. */
+const lockTexts = Object.values(KEY_AREAS).map(a=>a.lock);
+is(new Set(lockTexts).size, lockTexts.length, 'no two areas share a lock');
+const turnTexts = Object.values(KEY_AREAS).map(a=>a.turn);
+is(new Set(turnTexts).size, turnTexts.length, 'no two areas share a turn');
+
+/* A blank sheet covers every question and reads as unanswered. */
+const blank = keyBlank();
+is(Object.keys(blank).length, KEY_Q.length, 'a blank sheet has a slot for every question');
+is(keyRead(P_KEY, blank).standing, 'unanswered', 'a blank sheet does not pretend to a verdict');
+is(keyRead(P_KEY, blank).answered, 0, 'a blank sheet counts nothing');
+is(keyRead(P_KEY, {}).locks.length, 0, 'no answers, no locks');
+
+/* Somebody in a ditch. */
+const low = keyBlank();
+KEY_SCALES.forEach(id=>low[id] = 1);
+const R_low = keyRead(P_KEY, low);
+is(R_low.standing, 'ditch', 'all bottom answers read as a ditch');
+is(R_low.locks.length, 12, 'all twelve areas come back locked');
+is(R_low.open.length, 0, 'nothing is open');
+is(R_low.signpost, true, 'a ditch raises the signpost');
+R_low.locks.every(L=>L.mine.length > 0)
+  ? ok('every lock quotes the person’s own reading back at them')
+  : bad('every lock quotes the person’s own reading back at them');
+R_low.steps.length >= 4 ? ok('a ditch gets at least four steps out of it') : bad('a ditch gets at least four steps out of it', 'got ' + R_low.steps.length);
+
+/* Somebody doing well. */
+const high = keyBlank();
+KEY_SCALES.forEach(id=>high[id] = 5);
+const R_high = keyRead(P_KEY, high);
+is(R_high.standing, 'strong', 'all top answers read as strong');
+is(R_high.locks.length, 0, 'nothing is locked');
+is(R_high.open.length, 12, 'all twelve are open');
+is(R_high.signpost, false, 'doing well does not raise the signpost');
+R_high.steps.length > 0 ? ok('doing well still gets somewhere to go — the thin part of a good structure') : bad('doing well still gets somewhere to go');
+
+/* The middle. */
+const mid = keyBlank();
+KEY_SCALES.forEach(id=>mid[id] = 3);
+is(keyRead(P_KEY, mid).standing, 'holding', 'threes read as holding');
+
+/* What they name as the fight leads, whatever the numbers say. */
+const named = keyBlank();
+KEY_SCALES.forEach(id=>named[id] = 4);
+named.money = 1;
+named.struggle = 'dir';
+const R_named = keyRead(P_KEY, named);
+is(R_named.lead, 'dir', 'the fight they named leads, over the lowest score');
+is(R_named.locks[0].id, 'dir', 'the fight they named is written out in full even though it did not score low');
+is(R_named.locks.some(L=>L.id === 'money'), true, 'and the low score is still listed as a lock');
+is(R_named.locks[0].mine.length > 0, true, 'the named fight is answered by their own reading too');
+
+/* Named, and also low: it leads the list rather than being listed twice. */
+const bothNamed = keyBlank();
+KEY_SCALES.forEach(id=>bothNamed[id] = 1);
+bothNamed.struggle = 'money';
+const R_both = keyRead(P_KEY, bothNamed);
+is(R_both.locks[0].id, 'money', 'a named fight that also scored low leads the locks');
+is(R_both.locks.filter(L=>L.id === 'money').length, 1, 'and is not listed twice');
+is(R_both.locks.length, 12, 'with every other lock still there');
+is(R_named.steps[0].b, KEY_AREAS.dir.turn, 'the first step is the turn for the fight they named');
+
+/* Without a named fight, the lowest score leads and the highest is the lever. */
+const auto = keyBlank();
+KEY_SCALES.forEach((id,i)=>auto[id] = 3);
+auto.body = 1; auto.friends = 5;
+const R_auto = keyRead(P_KEY, auto);
+is(R_auto.lead, 'body', 'with nothing named, the lowest area leads');
+is(R_auto.lever, 'friends', 'the highest area is the lever');
+
+/* The steps come from the reading, not from thin air. */
+const D_KEY = DEPTH[P_KEY.per.n], DAY_KEY = DAYS['11-12'], DEST_KEY = DESTINY[P_KEY.per.n];
+const stepText = R_low.steps.map(s=>s.b);
+stepText.includes(D_KEY.action) ? ok('a step comes from the period’s own action line') : bad('a step comes from the period’s own action line');
+stepText.includes(DEST_KEY.step) ? ok('a step comes from the path’s own next move') : bad('a step comes from the path’s own next move');
+stepText.includes(DAY_KEY.ad) ? ok('a step comes from the day’s own advice') : bad('a step comes from the day’s own advice');
+
+/* The signpost triggers on what it should, and on nothing else. */
+const onlyMind = keyBlank(); onlyMind.mind = 2;
+is(keyRead(P_KEY, onlyMind).signpost, true, 'a struggling mind raises the signpost on its own');
+const onlySelf = keyBlank(); onlySelf.self = 1;
+is(keyRead(P_KEY, onlySelf).signpost, true, 'hating yourself raises the signpost on its own');
+const horrific = keyBlank(); horrific.horrific = 'yes'; KEY_SCALES.forEach(id=>horrific[id] = 5);
+is(keyRead(P_KEY, horrific).signpost, true, 'a horrific answer raises the signpost even when everything else is fine');
+const okMind = keyBlank(); okMind.mind = 4; okMind.self = 4; okMind.full = 4; okMind.horrific = 'no';
+is(keyRead(P_KEY, okMind).signpost, false, 'answers that are fine do not raise it');
+const skipped = keyBlank(); skipped.horrific = 'skip';
+is(keyRead(P_KEY, skipped).signpost, false, 'declining to answer is not read as a yes');
+
+/* Free text is stored and read back — never routed. */
+const typed = keyBlank();
+KEY_SCALES.forEach(id=>typed[id] = 2);
+KEY_TEXTS.forEach(id=>typed[id] = 'something private about ' + id);
+const R_typed = keyRead(P_KEY, typed);
+is(R_typed.written.length, 7, 'everything typed is read back');
+is(R_typed.written[0].v, 'something private about ' + KEY_TEXTS[0], 'read back exactly as typed');
+const sameButBlank = Object.assign({}, typed);
+KEY_TEXTS.forEach(id=>sameButBlank[id] = '');
+const R_blankText = keyRead(P_KEY, sameButBlank);
+is(JSON.stringify(R_typed.locks), JSON.stringify(R_blankText.locks),
+   'what you type changes nothing about the reading — the app does not interpret prose, and does not pretend to');
+is(R_typed.lead, R_blankText.lead, 'the lead is unchanged by free text');
+is(R_blankText.written.length, 0, 'empty boxes are not read back');
+
+/* Choices all have something written for them. */
+let choiceGaps = [];
+['horrific','kids','faith','world'].forEach(id=>{
+  const q = KEY_Q.find(x=>x.id === id);
+  q.opts.forEach(([v])=>{
+    if(id === 'horrific' && v === 'no') return;                 /* 'no' is deliberately silent */
+    if(!KEY_CHOICE[id] || !KEY_CHOICE[id][v]) choiceGaps.push(`${id}.${v}`);
+  });
+});
+is(choiceGaps.length, 0, 'every choice has a written response' + (choiceGaps.length ? ' — missing ' + choiceGaps.join(', ') : ''));
+is(KEY_Q.find(q=>q.id === 'struggle').opts.every(([v])=>!!KEY_AREAS[v]), true,
+   'every fight you can name is an area the reading can answer');
+
+/* The rules that do not bend. */
+const keyProse = [
+  ...Object.values(KEY_AREAS).flatMap(a=>[a.lock, a.turn, a.open]),
+  ...Object.values(KEY_CHOICE).flatMap(set=>Object.values(set).map(x=>x.b)),
+  ...Object.values(KEY_STANDING).map(f=>f({lowCount:3, highCount:3, total:12})),
+  renderKey(P_KEY, low)
+].join(' \n ');
+
+const keyClaims = /research shows|studies show|scientists|clinically|serotonin|dopamine|brain chemistry|\bcure[sd]?\b|\btreatment\b|proven to|(?<!not a )diagnosis|\bdiagnos(e|es|ed|ing)\b/i;
+const keyClaimHit = keyProse.match(keyClaims);
+is(keyClaimHit, null, 'no medical claims, no mechanisms, no "research shows"' + (keyClaimHit ? ' — found "' + keyClaimHit[0] + '"' : ''));
+
+const keyDoom = /you are finished|no way (out|back)|beyond (help|saving)|too late for you|nothing can be done/i;
+const keyDoomHit = keyProse.match(keyDoom);
+is(keyDoomHit, null, 'it never tells anybody they are finished' + (keyDoomHit ? ' — found "' + keyDoomHit[0] + '"' : ''));
+
+const keyBlame = /(?<!not )your (own )?fault|you brought this on|you deserved/i;
+const keyBlameHit = keyProse.match(keyBlame);
+is(keyBlameHit, null, 'it never blames the person for what happened to them' + (keyBlameHit ? ' — found "' + keyBlameHit[0] + '"' : ''));
+
+/* The screen itself. */
+const keyHtmlLow = renderKey(P_KEY, low);
+keyHtmlLow.includes('signpost') ? ok('the signpost renders when it is raised') : bad('the signpost renders when it is raised');
+/say it to a person/i.test(keyHtmlLow) ? ok('the signpost points at a person, not at the app') : bad('the signpost points at a person, not at the app');
+/crisis line/i.test(keyHtmlLow) ? ok('the signpost names somewhere to go') : bad('the signpost names somewhere to go');
+!renderKey(P_KEY, okMind).includes('signpost') ? ok('the signpost stays away when it is not needed') : bad('the signpost stays away when it is not needed');
+/never sent anywhere/i.test(keyHtmlLow) ? ok('the page says out loud that nothing leaves the browser') : bad('the page says out loud that nothing leaves the browser');
+/not medical advice|not a diagnosis/i.test(keyHtmlLow) ? ok('the page says what it is not') : bad('the page says what it is not');
+keyHtmlLow.includes('The key is not a secret') ? ok('the key is named as what it is — not a secret, a key') : bad('the key is named as what it is');
+/How to work yourself out of the ditch/i.test(keyHtmlLow) ? ok('it says how to get out of the ditch') : bad('it says how to get out of the ditch');
+
+/* Both halves of it: the lever and the lock, in one sentence. */
+const two = keyBlank();
+KEY_SCALES.forEach(id=>two[id] = 3);
+two.money = 1; two.friends = 5;
+const htmlTwo = renderKey(P_KEY, two);
+htmlTwo.includes(KEY_AREAS.friends.n + ' is the part of the vault that is already open')
+  ? ok('the key names the open part') : bad('the key names the open part');
+htmlTwo.includes(KEY_AREAS.money.n + ' is the part that is not')
+  ? ok('the key names the shut part') : bad('the key names the shut part');
+
+/* Nothing typed can become markup. */
+const nasty = keyBlank();
+nasty.full = 1;
+nasty.job = '<img src=x onerror="alert(1)">';
+const htmlNasty = renderKey(P_KEY, nasty);
+!htmlNasty.includes('<img src=x') ? ok('anything typed is escaped before it reaches the page') : bad('anything typed is escaped before it reaches the page');
+htmlNasty.includes('&lt;img src=x') ? ok('and it is still shown back, harmlessly') : bad('and it is still shown back, harmlessly');
+
+/* It has to hold for all 48 periods and all 366 days, not just one. */
+let renderGaps = [];
+PERIODS.forEach(p=>{
+  const Q = profileOf({name:'X', month:p.sm, day:p.sd, year:null});
+  const h = renderKey(Q, low);
+  if(/undefined|\[object Object\]/.test(h)) renderGaps.push(p.n + ': hole in the page');
+  if(h.length < 4000) renderGaps.push(p.n + ': page came back thin (' + h.length + ')');
+  if(!h.includes('The Key')) renderGaps.push(p.n + ': lost its heading');
+});
+is(renderGaps.length, 0, 'the key renders whole for all 48 periods' + (renderGaps.length ? ' — ' + renderGaps.slice(0,3).join('; ') : ''));
+
+let dayGaps = 0;
+Object.keys(DAYS).forEach(k=>{
+  const [m, d] = k.split('-').map(Number);
+  const Q = profileOf({name:'X', month:m, day:d, year:null});
+  const R = keyRead(Q, low);
+  if(R.steps.length < 5 || R.locks.some(L=>L.mine.length === 0)) dayGaps++;
+});
+is(dayGaps, 0, 'and for all 366 days, with every lock answered and every step filled');
+
+/* The empty case renders something honest rather than a blank box. */
+const htmlBlank = renderKey(P_KEY, blank);
+/Answer the questions above/i.test(htmlBlank) ? ok('an unanswered key asks rather than invents') : bad('an unanswered key asks rather than invents');
+!/ditch|holding|strong/i.test(htmlBlank.replace(/class="[^"]*"/g,'')) ? ok('and passes no verdict on somebody who said nothing') : bad('and passes no verdict on somebody who said nothing');
+
+html.includes("if(already && already.id !== id) stopSpeaking();")
+  ? ok('changing tab stops the voice, rather than reading a page you have left')
+  : bad('changing tab stops the voice');
+
+/* The instructions have to cover it, or nobody finds it. */
+const helpBox = html.slice(html.indexOf('id="help-box"'), html.indexOf('btn-help-close'));
+helpBox.includes('<h4>The Key</h4>') ? ok('"How to use this" explains The Key') : bad('"How to use this" explains The Key');
+/tap it again to unanswer/i.test(helpBox) ? ok('and says how to take an answer back') : bad('and says how to take an answer back');
+/never leaves your phone/i.test(helpBox) ? ok('and says where the answers live') : bad('and says where the answers live');
+/no AI in here/i.test(helpBox) ? ok('and is straight about there being no AI reading the boxes') : bad('and is straight about there being no AI');
+
+/* A class carrying a display rule beat the hidden attribute once already. */
+html.includes('[hidden]{display:none !important}')
+  ? ok('the hidden attribute wins over any class that would show the element')
+  : bad('the hidden attribute wins over any class');
+
+/* The tab is on the page and reachable. */
+html.includes('id="tab-key"') ? ok('The Key has a tab') : bad('The Key has a tab');
+html.includes('id="panel-key"') ? ok('The Key has a panel') : bad('The Key has a panel');
+html.includes("if(id === 'tab-key') primeKey();") ? ok('opening the tab builds the questions') : bad('opening the tab builds the questions');
+html.includes('btn-key-wipe') ? ok('there is a delete button') : bad('there is a delete button');
+/personology\.key\.v1/.test(html) ? ok('answers are stored under their own key in this browser') : bad('answers are stored under their own key in this browser');
+!/fetch\(|XMLHttpRequest|navigator\.sendBeacon/.test(html) ? ok('nothing in the file can send it anywhere') : bad('nothing in the file can send it anywhere');
+
+}
 /* ---------------------------------------------------------- */
 console.log('\n' + '-'.repeat(58));
 console.log(failures ? `FAILED — ${failures} of ${checks} checks failed` : `PASSED — all ${checks} checks`);
