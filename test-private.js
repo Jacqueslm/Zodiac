@@ -202,6 +202,79 @@ if(!server){
 }
 
 /* ---------------------------------------------------------- */
+group('The installer');
+
+{
+  const os = require('os'), cp = require('child_process');
+  const src = '/home/user/jacqueslm/app/TurnSomeDayIntoOneday';
+  if(!fs.existsSync(src + '/server/server.js')){
+    console.log('  – recovery app not in this session, skipping');
+  } else {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'keyinst-'));
+    fs.mkdirSync(path.join(tmp, 'server'), {recursive:true});
+    fs.copyFileSync(src + '/server/server.js', path.join(tmp, 'server', 'server.js'));
+    fs.copyFileSync(src + '/robots.txt', path.join(tmp, 'robots.txt'));
+    const run = args => cp.execFileSync('node', [path.join(ROOT, 'private', 'install.js'), tmp].concat(args || []),
+                                        {encoding:'utf8'});
+
+    const dry = run(['--dry']);
+    /nothing will be written/.test(dry) ? ok('a dry run says it is a dry run') : bad('a dry run says so');
+    is(fs.readFileSync(path.join(tmp,'server','server.js'),'utf8'), fs.readFileSync(src + '/server/server.js','utf8'),
+       'and changes nothing');
+
+    const first = run();
+    const patched = fs.readFileSync(path.join(tmp, 'server', 'server.js'), 'utf8');
+    /added the allowlist check/.test(first) ? ok('it makes the edits') : bad('it makes the edits');
+    fs.existsSync(path.join(tmp,'server','server.js.bak')) ? ok('and keeps the old file as .bak') : bad('it keeps a backup');
+    patched.includes('function isFriendlyRequest(req)') ? ok('the gate is in') : bad('the gate is in');
+    /app\.get\('\/key',/.test(patched) ? ok('the route is in') : bad('the route is in');
+    patched.includes("app.get('/key.html', (req, res) => res.status(404).end());") ? ok('the 404 is in') : bad('the 404 is in');
+
+    /* The one that would fail open silently: static registered first would
+       serve key.html to anybody before the 404 ever ran. */
+    const at404 = patched.indexOf("app.get('/key.html'");
+    const atStatic = patched.indexOf('app.use(express.static(');
+    at404 > 0 && atStatic > 0 && at404 < atStatic
+      ? ok('the 404 is registered BEFORE express.static, so static cannot serve the page')
+      : bad('the 404 comes before express.static', `404 at ${at404}, static at ${atStatic}`);
+
+    /* The gate must be defined before the module finishes loading. Function
+       declarations hoist, but the route must not be able to call a missing one. */
+    patched.includes('function isFriendlyRequest') && /isFriendlyRequest\(req\)/.test(patched)
+      ? ok('and the route calls a gate that exists in the same file') : bad('the route calls a real gate');
+
+    new Function(patched) ? ok('the patched server.js parses') : bad('the patched server.js parses');
+    is(fs.readFileSync(path.join(tmp,'robots.txt'),'utf8').includes('Disallow: /key'), true, 'robots.txt is updated');
+
+    const second = run();
+    is((second.match(/already there/g) || []).length >= 4, true, 'running it twice changes nothing and says so');
+    is(fs.readFileSync(path.join(tmp,'server','server.js'),'utf8'), patched, 'and the file is byte-identical after a second run');
+
+    /* It must refuse a folder that is not the app rather than write into it. */
+    const notApp = fs.mkdtempSync(path.join(os.tmpdir(), 'notapp-'));
+    let refused = false;
+    try{ cp.execFileSync('node', [path.join(ROOT,'private','install.js'), notApp], {encoding:'utf8', stdio:'pipe'}); }
+    catch(e){ refused = /does not look like the recovery app/.test(String(e.stderr)); }
+    refused ? ok('it refuses a folder that is not the recovery app') : bad('it refuses the wrong folder');
+
+    /* If an anchor is gone it must stop before writing, not half-patch. */
+    const moved = fs.mkdtempSync(path.join(os.tmpdir(), 'moved-'));
+    fs.mkdirSync(path.join(moved, 'server'), {recursive:true});
+    fs.writeFileSync(path.join(moved,'server','server.js'),
+      fs.readFileSync(src + '/server/server.js','utf8').replace('function requireOwner(req, res) {', 'function somethingElse(req, res) {'));
+    let stopped = false, before = fs.readFileSync(path.join(moved,'server','server.js'),'utf8');
+    try{ cp.execFileSync('node', [path.join(ROOT,'private','install.js'), moved], {encoding:'utf8', stdio:'pipe'}); }
+    catch(e){ stopped = /Could not find where to make these edits/.test(String(e.stderr)); }
+    stopped ? ok('a moved anchor stops it before it writes anything') : bad('a moved anchor stops it');
+    is(fs.readFileSync(path.join(moved,'server','server.js'),'utf8'), before, 'and the file is left exactly as it was');
+
+    fs.rmSync(tmp, {recursive:true, force:true});
+    fs.rmSync(notApp, {recursive:true, force:true});
+    fs.rmSync(moved, {recursive:true, force:true});
+  }
+}
+
+/* ---------------------------------------------------------- */
 console.log('\n' + '-'.repeat(58));
 console.log(failures ? `FAILED — ${failures} of ${checks} checks failed` : `PASSED — all ${checks} checks`);
 process.exit(failures ? 1 : 0);

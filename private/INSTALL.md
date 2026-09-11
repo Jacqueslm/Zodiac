@@ -22,28 +22,36 @@ the two versions drift and the one that drifts is the one nobody is looking at.
 
 ## Install
 
-**1. Copy the page in**
+Unzip this folder somewhere, then one command:
 
 ```
-cp private/key.html  <recovery-app>/TurnSomeDayIntoOneday/key.html
+node install.js /path/to/TurnSomeDayIntoOneday
 ```
 
-**2. Make the four edits to `server/server.js` and `robots.txt`**
+That copies `key.html` in and makes all four edits. Then ship it the way you
+normally ship — Railway picks up the push.
 
-They are written out in full, with the surrounding code, in
-`private/server-patch.js`. Short version:
+**See what it would do first, without changing anything:**
 
-| # | Where | What |
-|---|-------|------|
-| 1 | `server.js`, under `isOwnerRequest` (~line 806) | add `isFriendlyRequest()` |
-| 2 | `server.js`, next to the `admin-stats.html` 404 (~line 163) | `app.get('/key.html', …404)` |
-| 3 | `server.js`, with the other page routes | `app.get('/key', …)` |
-| 4 | `robots.txt`, by the `/l/` block | `Disallow: /key` |
+```
+node install.js /path/to/TurnSomeDayIntoOneday --dry
+```
 
-Edit 2 **must** sit above `app.use(express.static(...))`. Whichever is
-registered first wins, and static would win.
+It is safe to run twice — it checks for its own work and skips what is already
+done. It keeps `server.js.bak` and `robots.txt.bak` next to the originals. If
+the app has changed and it cannot find where an edit goes, it stops **before
+writing anything** and tells you which one, rather than leaving the app
+half-patched. It also parses the patched `server.js` and puts the old one back
+if the result is broken.
 
-**3. Restart.** That's it. No new dependency, no new env var, no schema change.
+If you would rather do it by hand, `server-patch.js` shows every edit with its
+surrounding code.
+
+**The one that matters if you do it by hand:** the `/key.html` 404 must sit
+*above* `app.use(express.static(...))`. Whichever is registered first wins, and
+static would win — the page would be served to anybody who typed the URL.
+
+No new dependency, no new env var, no schema change.
 
 ---
 
@@ -55,6 +63,13 @@ Whoever is in **`FRIENDLY_EMAILS`** on Railway, plus whoever is in
 Adding somebody: Railway → Variables → `FRIENDLY_EMAILS` → add their email,
 comma-separated → Save. No deploy. Removing somebody: delete their email.
 They are locked out on their next click.
+
+**You do not need to be in that list.** `APP_OWNER_EMAIL` is already set and
+already lets you through. `FRIENDLY_EMAILS` is only for the few other people.
+
+Note: as of the last check of your Railway variables, `FRIENDLY_EMAILS` was not
+among them. If it is still missing, create it — an unset one just means nobody
+but you gets in, which is a fine place to start.
 
 ---
 
